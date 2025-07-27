@@ -1,5 +1,6 @@
 package com.example.vibra
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,7 +19,10 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.currentBackStackEntryAsState
+
+import com.example.vibra.model.Music
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +31,7 @@ fun MusicListScreen(navController: NavHostController) {
     var selectedTab by remember { mutableStateOf("Chansons") }
 
     val tabs = listOf("Chansons", "Artistes", "Albums")
-    val itemsList = List(100) { "$selectedTab $it" }
+    val musicList = List(100) { Music(name = "$selectedTab $it") }
 
     Scaffold(
         topBar = {
@@ -142,13 +146,38 @@ fun MusicListScreen(navController: NavHostController) {
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                items(itemsList) { item ->
-                    Text(
-                        text = item,
-                        color = MaterialTheme.colorScheme.onBackground,
+                items(musicList) { music ->
+                    Row(
                         modifier = Modifier
-                            .padding(vertical = 6.dp)
-                    )
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                        ) {
+                            Text(
+                                text = music.name,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "${music.artist ?: "Unknown"} • ${music.album ?: "Unfinished"}",
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        Image(
+                            painter = painterResource(id = music.image),
+                            contentDescription = "Music cover",
+                            modifier = Modifier
+                                .size(64.dp)
+                                .aspectRatio(1f)
+                        )
+                    }
                 }
             }
         }
