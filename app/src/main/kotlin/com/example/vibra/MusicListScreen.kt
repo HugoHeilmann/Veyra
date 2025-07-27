@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 import com.example.vibra.model.Music
+import com.example.vibra.model.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -150,6 +151,10 @@ fun MusicListScreen(navController: NavHostController) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable {
+                                MusicHolder.currentMusic = music
+                                navController.navigate("player")
+                            }
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

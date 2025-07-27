@@ -33,7 +33,7 @@ fun VibraApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("music_list") { MusicListScreen(navController) }
-            composable("player") { PlayerScreen(navController) }
+            composable("player") { PlayerScreen() }
             composable("settings") { SettingsScreen(navController) }
         }
     }
