@@ -1,5 +1,9 @@
 package com.example.vibra
 
+import android.content.Context
+import android.media.MediaScannerConnection
+import android.os.Environment
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,20 +23,46 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 import com.example.vibra.model.Music
 import com.example.vibra.model.MusicHolder
+import com.example.vibra.model.loadMusicFromDevice
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicListScreen(navController: NavHostController) {
+    val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf("Chansons") }
+    var allMusic by remember { mutableStateOf<List<Music>>(emptyList()) }
+
+    // Charger les musiques au lancement
+    LaunchedEffect(Unit) {
+        Log.d("Vibra", "Chargement de la musique...")
+
+        //scanMusicFolder(context)
+        val loaded = loadMusicFromDevice(context)
+        Log.d("Vibra", "Musique chargée: ${loaded.size} éléments")
+        allMusic = loaded
+
+        // allMusic = loadMusicFromDevice(context)
+    }
+
+    val musicList = allMusic.filter {
+        val match = it.name.contains(searchText, ignoreCase = true) ||
+                it.artist?.contains(searchText, ignoreCase = true) == true ||
+                it.album?.contains(searchText, ignoreCase = true) == true
+        if (match) {
+            Log.d("Vibra", "Match: ${it.name}")
+        }
+        match
+    }
 
     val tabs = listOf("Chansons", "Artistes", "Albums")
-    val musicList = List(100) { Music(name = "$selectedTab $it") }
 
     Scaffold(
         topBar = {
@@ -186,5 +216,25 @@ fun MusicListScreen(navController: NavHostController) {
                 }
             }
         }
+    }
+}
+
+fun scanMusicFolder(context: Context) {
+    val musicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath)
+
+    if (musicDir.exists()) {
+        musicDir.listFiles()?.forEach { file ->
+            if (file.extension.equals("mp3", ignoreCase = true)) {
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(file.absolutePath),
+                    arrayOf("audio/mpeg")
+                ) { path, uri ->
+                    Log.d("Scan", "Fichier scanné : $path -> $uri")
+                }
+            }
+        }
+    } else {
+        Log.d("Scan", "Dossier /Music/ introuvable")
     }
 }
