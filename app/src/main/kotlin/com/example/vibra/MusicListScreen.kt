@@ -2,6 +2,7 @@ package com.example.vibra
 
 import android.content.Context
 import android.media.MediaScannerConnection
+import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -44,7 +45,7 @@ fun MusicListScreen(navController: NavHostController) {
     LaunchedEffect(Unit) {
         Log.d("Vibra", "Chargement de la musique...")
 
-        //scanMusicFolder(context)
+        scanMusicFolder(context)
         val loaded = loadMusicFromDevice(context)
         Log.d("Vibra", "Musique chargée: ${loaded.size} éléments")
         allMusic = loaded
@@ -182,7 +183,7 @@ fun MusicListScreen(navController: NavHostController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                MusicHolder.currentMusic = music
+                                MusicHolder.setCurrentMusic(music, musicList)
                                 navController.navigate("player")
                             }
                             .padding(vertical = 8.dp),
