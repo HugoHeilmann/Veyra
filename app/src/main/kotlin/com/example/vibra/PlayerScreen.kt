@@ -1,11 +1,11 @@
 package com.example.vibra
 
-import android.media.MediaPlayer
-import android.net.Uri
+import androidx.compose.animation.Crossfade
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +22,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun PlayerScreen(navController: NavController) {
     val context = LocalContext.current
-    val music = MusicHolder.currentMusic
+    val currentMusic by rememberUpdatedState(MusicHolder.currentMusic)
+    val music = currentMusic
 
     if (music == null) {
         Box(
@@ -36,10 +37,10 @@ fun PlayerScreen(navController: NavController) {
 
     var isPlaying by remember { mutableStateOf(MusicPlayerManager.isPlaying()) }
 
-    var currentTime by remember { mutableStateOf(0f) }
-    var duration by remember { mutableStateOf(0f) }
+    var currentTime by remember { mutableFloatStateOf(0f) }
+    var duration by remember { mutableFloatStateOf(0f) }
 
-    var sliderPosition by remember { mutableStateOf(0f) }
+    var sliderPosition by remember { mutableFloatStateOf(0f) }
     var isUserSeeking by remember { mutableStateOf(false) }
 
     LaunchedEffect(music) {
@@ -90,12 +91,36 @@ fun PlayerScreen(navController: NavController) {
         // 🔙 Bouton retour
         Row(modifier = Modifier.fillMaxWidth()) {
             IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
             }
         }
 
-        // 🎵 Image
-        Image(
+        // 🎵 Image + textes
+        Crossfade(targetState = music, label = "music transition") { animatedMusic ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Image(
+                    painter = painterResource(id = animatedMusic.image),
+                    contentDescription = "Image album",
+                    modifier = Modifier
+                        .size(280.dp)
+                        .padding(bottom = 24.dp)
+                )
+
+                Text(text = animatedMusic.name, style = MaterialTheme.typography.headlineSmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = animatedMusic.artist ?: "Unknown",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+                Text(
+                    text = animatedMusic.album ?: "Unfinished",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+        }
+        /*Image(
             painter = painterResource(id = music.image),
             contentDescription = "Image album",
             modifier = Modifier
@@ -107,7 +132,7 @@ fun PlayerScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = music.artist ?: "Unknown", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
         Text(text = music.album ?: "Unfinished", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-
+        */
         Spacer(modifier = Modifier.height(32.dp))
 
         // 🎚️ Slider
@@ -144,7 +169,12 @@ fun PlayerScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { /* Previous */ }) {
+            IconButton(onClick = {
+                val previousMusic = MusicHolder.getPrevious()
+                if (previousMusic != null) {
+                    MusicHolder.setCurrentMusic(previousMusic, MusicHolder.musicList)
+                }
+            }) {
                 Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
             }
 
@@ -162,7 +192,12 @@ fun PlayerScreen(navController: NavController) {
                 )
             }
 
-            IconButton(onClick = { /* Next */ }) {
+            IconButton(onClick = {
+                val nextMusic = MusicHolder.getNext()
+                if (nextMusic != null) {
+                    MusicHolder.setCurrentMusic(nextMusic, MusicHolder.musicList)
+                }
+            }) {
                 Icon(Icons.Default.SkipNext, contentDescription = "Suivant")
             }
         }
