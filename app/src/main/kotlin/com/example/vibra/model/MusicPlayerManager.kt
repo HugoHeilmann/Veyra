@@ -2,7 +2,7 @@ package com.example.vibra.model
 
 import android.content.Context
 import android.media.MediaPlayer
-import android.net.Uri
+import androidx.core.net.toUri
 
 object MusicPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
@@ -20,7 +20,7 @@ object MusicPlayerManager {
         currentMusic = music
 
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(context, Uri.parse(music.uri))
+            setDataSource(context, music.uri.toUri())
             prepareAsync()
             setOnPreparedListener {
                 start()

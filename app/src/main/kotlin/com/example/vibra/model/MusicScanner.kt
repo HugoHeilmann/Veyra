@@ -1,5 +1,6 @@
 package com.example.vibra.model
 
+import android.content.ContentUris
 import android.util.Log
 import android.content.Context
 import android.provider.MediaStore
@@ -30,20 +31,23 @@ fun loadMusicFromDevice(context: Context): List<Music> {
         sortOrder
     )
 
-    cursor?.use {
-        val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-        val artistColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-        val albumColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+    cursor?.use { it ->
         val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+        val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
 
         while (it.moveToNext()) {
-            val title = it.getString(titleColumn) ?: "Unknown Title"
-            val artist = it.getString(artistColumn)
-            val album = it.getString(albumColumn)
             val data = it.getString(dataColumn)
+
+            val rawTitle = it.getString(titleColumn)
 
             // Filtrer uniquement les .mp3 dans le dossier /Music/
             if (data.endsWith(".mp3", ignoreCase = true) && data.contains("/Music/")) {
+                val parts = rawTitle.split(" - ")
+
+                val artist = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
+                val title = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
+                val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
+
                 musicList.add(
                     Music(
                         name = title,
