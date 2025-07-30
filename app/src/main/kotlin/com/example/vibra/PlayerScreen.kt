@@ -22,7 +22,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun PlayerScreen(navController: NavController) {
     val context = LocalContext.current
-    val currentMusic by rememberUpdatedState(MusicHolder.currentMusic)
+    val currentMusic by rememberUpdatedState(MusicHolder.getCurrentMusic())
     val music = currentMusic
 
     if (music == null) {
@@ -172,7 +172,7 @@ fun PlayerScreen(navController: NavController) {
             IconButton(onClick = {
                 val previousMusic = MusicHolder.getPrevious()
                 if (previousMusic != null) {
-                    MusicHolder.setCurrentMusic(previousMusic, MusicHolder.musicList)
+                    MusicHolder.setCurrentMusic(previousMusic, MusicHolder.getMusicList())
                 }
             }) {
                 Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
@@ -195,7 +195,7 @@ fun PlayerScreen(navController: NavController) {
             IconButton(onClick = {
                 val nextMusic = MusicHolder.getNext()
                 if (nextMusic != null) {
-                    MusicHolder.setCurrentMusic(nextMusic, MusicHolder.musicList)
+                    MusicHolder.setCurrentMusic(nextMusic, MusicHolder.getMusicList())
                 }
             }) {
                 Icon(Icons.Default.SkipNext, contentDescription = "Suivant")

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.vibra.model.MusicHolder
 import com.example.vibra.ui.theme.VibraTheme
 
 class MainActivity : ComponentActivity() {
@@ -55,6 +56,12 @@ fun VibraApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("music_list") { MusicListScreen(navController) }
+            composable("artist_detail/{artistName}") { backStackEntry ->
+                val artistName = backStackEntry.arguments?.getString("artistName")
+                artistName?.let {
+                    ArtistDetailScreen(artistName = it, navController = navController)
+                }
+            }
             composable("player") { PlayerScreen(navController) }
             composable("settings") { SettingsScreen(navController) }
         }
