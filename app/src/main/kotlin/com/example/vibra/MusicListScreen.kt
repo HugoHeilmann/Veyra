@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -35,10 +36,10 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MusicListScreen(navController: NavHostController) {
+fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chansons") {
     val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf("Chansons") }
+    var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
     var allMusic by remember { mutableStateOf<List<Music>>(emptyList()) }
 
     // Charger les musiques au lancement

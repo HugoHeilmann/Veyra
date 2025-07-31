@@ -120,19 +120,7 @@ fun PlayerScreen(navController: NavController) {
                 )
             }
         }
-        /*Image(
-            painter = painterResource(id = music.image),
-            contentDescription = "Image album",
-            modifier = Modifier
-                .size(280.dp)
-                .padding(bottom = 24.dp)
-        )
 
-        Text(text = music.name, style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = music.artist ?: "Unknown", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-        Text(text = music.album ?: "Unfinished", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        */
         Spacer(modifier = Modifier.height(32.dp))
 
         // 🎚️ Slider

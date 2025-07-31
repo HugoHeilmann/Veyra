@@ -55,7 +55,10 @@ fun VibraApp() {
             startDestination = "music_list",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("music_list") { MusicListScreen(navController) }
+            composable("music_list?selectedTab={selectedTab}") { backStackEntry ->
+                val selectedTab = backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
+                MusicListScreen(navController, selectedTab)
+            }
             composable("artist_detail/{artistName}") { backStackEntry ->
                 val artistName = backStackEntry.arguments?.getString("artistName")
                 artistName?.let {

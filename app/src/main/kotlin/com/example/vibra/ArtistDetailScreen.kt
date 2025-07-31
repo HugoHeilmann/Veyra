@@ -1,6 +1,6 @@
 package com.example.vibra
 
-import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,10 +28,6 @@ import com.example.vibra.model.MusicHolder
 fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
 
     val songs = MusicHolder.getArtistMap()[artistName] ?: emptyList()
-    /*
-    val artistMap = MusicHolder.getArtistMap()
-    val matchedKey = artistMap.keys.firstOrNull { it.equals(artistName, ignoreCase = true) }
-    val songs = matchedKey?.let { artistMap[it] } ?: emptyList()*/
 
     Scaffold(
         topBar = {
@@ -46,7 +42,10 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.popBackStack()
+                        navController.navigate("music_list?selectedTab=Artistes") {
+                            popUpTo("music_list") { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -62,6 +61,10 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable {
+                            MusicHolder.setCurrentMusic(song, songs)
+                            navController.navigate("player")
+                        }
                         .padding(16.dp)
                 ) {
                     Text(
