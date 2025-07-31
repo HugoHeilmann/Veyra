@@ -80,6 +80,13 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             }
     }
 
+    // Map des musiques selon l'album
+    val albumMap = remember(musicList) {
+        musicList
+            .filter { !it.album.isNullOrBlank() }
+            .groupBy { it.album ?: "Unfinished" }
+    }
+
     val tabs = listOf("Chansons", "Artistes", "Albums")
 
     Scaffold(
@@ -247,6 +254,31 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                             ) {
                                 Text(
                                     text = artist,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
+                                    color = Color.Gray,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                } else if (selectedTab == "Albums") {
+                    albumMap.forEach { (album, songs) ->
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        // Navigation vers l'écran détaillé d'un album
+                                        navController.navigate("album_detail/${Uri.encode(album)}")
+                                    }
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                Text(
+                                    text = album,
                                     color = MaterialTheme.colorScheme.onBackground,
                                     style = MaterialTheme.typography.titleMedium
                                 )

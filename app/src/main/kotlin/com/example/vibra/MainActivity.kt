@@ -65,6 +65,12 @@ fun VibraApp() {
                     ArtistDetailScreen(artistName = it, navController = navController)
                 }
             }
+            composable("album_detail/{albumName}") { backStackEntry ->
+                val albumName = backStackEntry.arguments?.getString("albumName")
+                albumName?.let {
+                    AlbumDetailScreen(albumName = it, navController = navController)
+                }
+            }
             composable("player") { PlayerScreen(navController) }
             composable("settings") { SettingsScreen(navController) }
         }
