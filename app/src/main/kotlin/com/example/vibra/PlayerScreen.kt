@@ -22,7 +22,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun PlayerScreen(navController: NavController) {
     val context = LocalContext.current
-    val currentMusic by rememberUpdatedState(MusicHolder.currentMusic)
+    val currentMusic by rememberUpdatedState(MusicHolder.getCurrentMusic())
     val music = currentMusic
 
     if (music == null) {
@@ -120,19 +120,7 @@ fun PlayerScreen(navController: NavController) {
                 )
             }
         }
-        /*Image(
-            painter = painterResource(id = music.image),
-            contentDescription = "Image album",
-            modifier = Modifier
-                .size(280.dp)
-                .padding(bottom = 24.dp)
-        )
 
-        Text(text = music.name, style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(text = music.artist ?: "Unknown", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-        Text(text = music.album ?: "Unfinished", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        */
         Spacer(modifier = Modifier.height(32.dp))
 
         // 🎚️ Slider
@@ -172,7 +160,7 @@ fun PlayerScreen(navController: NavController) {
             IconButton(onClick = {
                 val previousMusic = MusicHolder.getPrevious()
                 if (previousMusic != null) {
-                    MusicHolder.setCurrentMusic(previousMusic, MusicHolder.musicList)
+                    MusicHolder.setCurrentMusic(previousMusic, MusicHolder.getMusicList())
                 }
             }) {
                 Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
@@ -195,7 +183,7 @@ fun PlayerScreen(navController: NavController) {
             IconButton(onClick = {
                 val nextMusic = MusicHolder.getNext()
                 if (nextMusic != null) {
-                    MusicHolder.setCurrentMusic(nextMusic, MusicHolder.musicList)
+                    MusicHolder.setCurrentMusic(nextMusic, MusicHolder.getMusicList())
                 }
             }) {
                 Icon(Icons.Default.SkipNext, contentDescription = "Suivant")

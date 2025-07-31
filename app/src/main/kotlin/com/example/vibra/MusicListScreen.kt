@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -35,10 +36,10 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MusicListScreen(navController: NavHostController) {
+fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chansons") {
     val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf("Chansons") }
+    var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
     var allMusic by remember { mutableStateOf<List<Music>>(emptyList()) }
 
     // Charger les musiques au lancement
@@ -48,11 +49,13 @@ fun MusicListScreen(navController: NavHostController) {
         scanMusicFolder(context)
         val loaded = loadMusicFromDevice(context)
         Log.d("Vibra", "Musique chargée: ${loaded.size} éléments")
-        allMusic = loaded
+        MusicHolder.setMusicList(loaded)
+        allMusic = MusicHolder.getMusicList()
 
         // allMusic = loadMusicFromDevice(context)
     }
 
+    // Toutes les musiques
     val musicList = allMusic.filter {
         val match = it.name.contains(searchText, ignoreCase = true) ||
                 it.artist?.contains(searchText, ignoreCase = true) == true ||
@@ -61,6 +64,20 @@ fun MusicListScreen(navController: NavHostController) {
             Log.d("Vibra", "Match: ${it.name}")
         }
         match
+    }
+
+    // Map des musiques selon l'artiste
+    val artistMap = remember(musicList) {
+        musicList
+            .filter { !it.artist.isNullOrBlank() }
+            .groupBy {
+                val rawArtist = it.artist ?: "Unknown"
+
+                // Nettoie tout ce qui est après "ft", "feat" ou "featuring" (insensible à la casse)
+                rawArtist
+                    .replace(Regex("\\s+(ft\\.?|feat\\.?|featuring)\\s+.*", RegexOption.IGNORE_CASE), "")
+                    .trim()
+            }
     }
 
     val tabs = listOf("Chansons", "Artistes", "Albums")
@@ -178,41 +195,68 @@ fun MusicListScreen(navController: NavHostController) {
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                items(musicList) { music ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                MusicHolder.setCurrentMusic(music, musicList)
-                                navController.navigate("player")
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
+                if (selectedTab == "Chansons") {
+                    items(musicList) { music ->
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp)
+                                .fillMaxWidth()
+                                .clickable {
+                                    MusicHolder.setCurrentMusic(music, musicList)
+                                    navController.navigate("player")
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = music.name,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                text = "${music.artist ?: "Unknown"} • ${music.album ?: "Unfinished"}",
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodySmall
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
+                            ) {
+                                Text(
+                                    text = music.name,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "${music.artist ?: "Unknown"} • ${music.album ?: "Unfinished"}",
+                                    color = Color.Gray,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+
+                            Image(
+                                painter = painterResource(id = music.image),
+                                contentDescription = "Music cover",
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .aspectRatio(1f)
                             )
                         }
-
-                        Image(
-                            painter = painterResource(id = music.image),
-                            contentDescription = "Music cover",
-                            modifier = Modifier
-                                .size(64.dp)
-                                .aspectRatio(1f)
-                        )
+                    }
+                } else if (selectedTab == "Artistes") {
+                    artistMap.forEach { (artist, songs) ->
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        // Navigation vers l'écran détaillé d'un artiste
+                                        navController.navigate("artist_detail/${Uri.encode(artist)}")
+                                    }
+                                    .padding(vertical = 12.dp)
+                            ) {
+                                Text(
+                                    text = artist,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
+                                    color = Color.Gray,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
                     }
                 }
             }
