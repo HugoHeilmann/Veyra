@@ -26,8 +26,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.vibra.components.MusicRow
 
 import com.example.vibra.model.Music
 import com.example.vibra.model.MusicHolder
@@ -197,60 +197,58 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             }
 
             // 📄 Liste scrollable
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (selectedTab == "Chansons") {
-                    items(musicList) { music ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    MusicHolder.setCurrentMusic(music, musicList)
-                                    navController.navigate("player")
-                                }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 8.dp)
-                            ) {
-                                Text(
-                                    text = music.name,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "${music.artist ?: "Unknown"} • ${music.album ?: "Unfinished"}",
-                                    color = Color.Gray,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
+                    val groupedSongs = groupByFirstLetter(musicList) { it.name }
 
-                            Image(
-                                painter = painterResource(id = music.image),
-                                contentDescription = "Music cover",
+                    groupedSongs.forEach { (letter, songs) ->
+                        item {
+                            Text(
+                                text = letter.toString(),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
-                                    .size(64.dp)
-                                    .aspectRatio(1f)
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
                             )
+                        }
+
+                        items(songs) { music ->
+                            MusicRow(
+                                music = music,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            ) {
+                                MusicHolder.setCurrentMusic(music, musicList)
+                                navController.navigate("player")
+                            }
                         }
                     }
                 } else if (selectedTab == "Artistes") {
-                    artistMap.forEach { (artist, songs) ->
+                    val groupedArtists = groupByFirstLetter(artistMap.keys.toList()) { it }
+
+                    groupedArtists.forEach { (letter, artistNames) ->
                         item {
+                            Text(
+                                text = letter.toString(),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            )
+                        }
+
+                        items(artistNames) { artist ->
+                            val songs = artistMap[artist] ?: emptyList()
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        // Navigation vers l'écran détaillé d'un artiste
                                         navController.navigate("artist_detail/${Uri.encode(artist)}")
                                     }
-                                    .padding(vertical = 12.dp)
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
                             ) {
                                 Text(
                                     text = artist,
@@ -266,16 +264,29 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         }
                     }
                 } else if (selectedTab == "Albums") {
-                    albumMap.forEach { (album, songs) ->
+                    val groupedAlbums = groupByFirstLetter(albumMap.keys.toList()) { it }
+
+                    groupedAlbums.forEach { (letter, albumNames) ->
                         item {
+                            Text(
+                                text = letter.toString(),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            )
+                        }
+
+                        items(albumNames) { album ->
+                            val songs = albumMap[album] ?: emptyList()
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        // Navigation vers l'écran détaillé d'un album
                                         navController.navigate("album_detail/${Uri.encode(album)}")
                                     }
-                                    .padding(vertical = 12.dp)
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
                             ) {
                                 Text(
                                     text = album,
@@ -314,4 +325,12 @@ fun scanMusicFolder(context: Context) {
     } else {
         Log.d("Scan", "Dossier /Music/ introuvable")
     }
+}
+
+fun <T> groupByFirstLetter(list: List<T>, keySelector: (T) -> String?): Map<Char, List<T>> {
+    return list
+        .filter { keySelector(it).isNullOrBlank().not() }
+        .sortedBy { keySelector(it)?.lowercase() }
+        .groupBy { keySelector(it)?.firstOrNull()?.uppercaseChar() ?: '#' }
+        .toSortedMap()
 }
