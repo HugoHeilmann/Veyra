@@ -1,11 +1,10 @@
-package com.example.vibra
+package com.example.vibra.screens
 
 import android.content.Context
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -116,41 +115,6 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                 )
             )
         },
-        bottomBar = {
-            val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.LibraryMusic, contentDescription = "Ma musique") },
-                    label = { Text("Ma musique") },
-                    selected = currentRoute == "music_list",
-                    onClick = {
-                        if (currentRoute != "music_list") {
-                            navController.navigate("music_list") {
-                                popUpTo("music_list") { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = "Paramètres") },
-                    label = { Text("Paramètres") },
-                    selected = currentRoute == "settings",
-                    onClick = {
-                        if (currentRoute != "settings") {
-                            navController.navigate("settings") {
-                                popUpTo("music_list") // ou "settings", à adapter selon ton graph
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-                )
-            }
-        }
-
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -198,106 +162,110 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
 
             // 📄 Liste scrollable
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                if (selectedTab == "Chansons") {
-                    val groupedSongs = groupByFirstLetter(musicList) { it.name }
+                when (selectedTab) {
+                    "Chansons" -> {
+                        val groupedSongs = groupByFirstLetter(musicList) { it.name }
 
-                    groupedSongs.forEach { (letter, songs) ->
-                        item {
-                            Text(
-                                text = letter.toString(),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
-                            )
-                        }
+                        groupedSongs.forEach { (letter, songs) ->
+                            item {
+                                Text(
+                                    text = letter.toString(),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                                )
+                            }
 
-                        items(songs) { music ->
-                            MusicRow(
-                                music = music,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
-                            ) {
-                                MusicHolder.setCurrentMusic(music, musicList)
-                                navController.navigate("player")
+                            items(songs) { music ->
+                                MusicRow(
+                                    music = music,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                                ) {
+                                    MusicHolder.setCurrentMusic(music, null)
+                                    navController.navigate("player")
+                                }
                             }
                         }
                     }
-                } else if (selectedTab == "Artistes") {
-                    val groupedArtists = groupByFirstLetter(artistMap.keys.toList()) { it }
+                    "Artistes" -> {
+                        val groupedArtists = groupByFirstLetter(artistMap.keys.toList()) { it }
 
-                    groupedArtists.forEach { (letter, artistNames) ->
-                        item {
-                            Text(
-                                text = letter.toString(),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
-                            )
-                        }
+                        groupedArtists.forEach { (letter, artistNames) ->
+                            item {
+                                Text(
+                                    text = letter.toString(),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                                )
+                            }
 
-                        items(artistNames) { artist ->
-                            val songs = artistMap[artist] ?: emptyList()
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        navController.navigate("artist_detail/${Uri.encode(artist)}")
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 16.dp)
-                            ) {
-                                Text(
-                                    text = artist,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
-                                    color = Color.Gray,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                            items(artistNames) { artist ->
+                                val songs = artistMap[artist] ?: emptyList()
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            navController.navigate("artist_detail/${Uri.encode(artist)}")
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 16.dp)
+                                ) {
+                                    Text(
+                                        text = artist,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
+                                        color = Color.Gray,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
                         }
                     }
-                } else if (selectedTab == "Albums") {
-                    val groupedAlbums = groupByFirstLetter(albumMap.keys.toList()) { it }
+                    "Albums" -> {
+                        val groupedAlbums = groupByFirstLetter(albumMap.keys.toList()) { it }
 
-                    groupedAlbums.forEach { (letter, albumNames) ->
-                        item {
-                            Text(
-                                text = letter.toString(),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
-                            )
-                        }
+                        groupedAlbums.forEach { (letter, albumNames) ->
+                            item {
+                                Text(
+                                    text = letter.toString(),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                                )
+                            }
 
-                        items(albumNames) { album ->
-                            val songs = albumMap[album] ?: emptyList()
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        navController.navigate("album_detail/${Uri.encode(album)}")
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 16.dp)
-                            ) {
-                                Text(
-                                    text = album,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
-                                    color = Color.Gray,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                            items(albumNames) { album ->
+                                val songs = albumMap[album] ?: emptyList()
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            navController.navigate("album_detail/${Uri.encode(album)}")
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 16.dp)
+                                ) {
+                                    Text(
+                                        text = album,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
+                                        color = Color.Gray,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
                         }
                     }

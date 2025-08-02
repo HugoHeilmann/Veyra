@@ -1,4 +1,4 @@
-package com.example.vibra
+package com.example.vibra.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -25,9 +25,9 @@ import com.example.vibra.model.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
+fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
 
-    val songs = MusicHolder.getAlbumSongs(albumName)
+    val songs = MusicHolder.getArtistSongs(artistName)
 
     Scaffold(
         topBar = {
@@ -37,12 +37,12 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = albumName)
+                        Text(text = artistName)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.navigate("music_list?selectedTab=Albums") {
+                        navController.navigate("music_list?selectedTab=Artistes") {
                             popUpTo("music_list") { inclusive = true }
                             launchSingleTop = true
                         }
@@ -55,7 +55,7 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                 }
             )
         }
-    ){ innerPadding ->
+    ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
             items(songs) { song ->
                 Column(
@@ -72,7 +72,7 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                         color = Color.White
                     )
                     Text(
-                        text = song.artist ?: "Unknown Artist",
+                        text = song.album ?: "Unknown Album",
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 4.dp)
                     )
