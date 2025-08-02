@@ -4,18 +4,19 @@ import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.navigation.compose.*
+import com.example.vibra.components.BottomNavigationBar
+import com.example.vibra.components.MiniPlayerBar
 import com.example.vibra.model.MusicHolder
+import com.example.vibra.screens.*
 import com.example.vibra.ui.theme.VibraTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,8 +33,10 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun VibraApp() {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-    // Gestion de la permission pour lire les fichiers audio
+    // Permission audio
     val audioPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_AUDIO
     } else {
@@ -42,14 +45,23 @@ fun VibraApp() {
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { /* On continue même si la permission est refusée */ }
+        onResult = { /* Ignorer si refusée */ }
     )
 
     LaunchedEffect(Unit) {
         permissionLauncher.launch(audioPermission)
     }
 
-    Scaffold { innerPadding ->
+    Scaffold(
+        bottomBar = {
+            if (currentRoute != "player") {
+                Column {
+                    MiniPlayerBar(navController)
+                    BottomNavigationBar(navController)
+                }
+            }
+        }
+    ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = "music_list",

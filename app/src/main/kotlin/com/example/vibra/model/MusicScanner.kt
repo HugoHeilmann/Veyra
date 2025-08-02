@@ -1,7 +1,5 @@
 package com.example.vibra.model
 
-import android.content.ContentUris
-import android.util.Log
 import android.content.Context
 import android.provider.MediaStore
 import com.example.vibra.R
