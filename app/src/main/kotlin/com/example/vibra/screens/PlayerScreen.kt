@@ -74,7 +74,7 @@ fun PlayerScreen(navController: NavController) {
                 if (currentTime >= duration - 0.5f) {
                     val nextMusic = MusicHolder.getNext()
                     if (nextMusic != null) {
-                        MusicHolder.setCurrentMusic(nextMusic, MusicHolder.getMusicContext())
+                        MusicHolder.setPlayedMusic(nextMusic)
                         MusicPlayerManager.playMusic(context, nextMusic) { durMs ->
                             duration = durMs / 1000f
                             currentTime = 0f
@@ -182,15 +182,29 @@ fun PlayerScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val isShuffled = MusicHolder.isShuffled
+
+            // Shuffle toggle
+            IconButton(onClick = {
+                MusicHolder.enableShuffle(!isShuffled)
+            }) {
+                Icon(
+                    imageVector = if (isShuffled) Icons.Default.Shuffle else Icons.Default.Loop,
+                    contentDescription = if (isShuffled) "Désactiver le mode aléatoire" else "Activer le mode aléatoire"
+                )
+            }
+
+            // Previous
             IconButton(onClick = {
                 val previousMusic = MusicHolder.getPrevious()
                 if (previousMusic != null) {
-                    MusicHolder.setCurrentMusic(previousMusic, MusicHolder.getMusicContext())
+                    MusicHolder.setPlayedMusic(previousMusic)
                 }
             }) {
                 Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
             }
 
+            // Play/Pause
             IconButton(onClick = {
                 isPlaying = if (isPlaying) {
                     MusicPlayerManager.pauseMusic(); false
@@ -205,14 +219,18 @@ fun PlayerScreen(navController: NavController) {
                 )
             }
 
+            // Next
             IconButton(onClick = {
                 val nextMusic = MusicHolder.getNext()
                 if (nextMusic != null) {
-                    MusicHolder.setCurrentMusic(nextMusic, MusicHolder.getMusicContext())
+                    MusicHolder.setPlayedMusic(nextMusic)
                 }
             }) {
                 Icon(Icons.Default.SkipNext, contentDescription = "Suivant")
             }
+
+            // Spacer pour equilibrer avec le bouton shuffle
+            Spacer(modifier = Modifier.size(48.dp))
         }
     }
 }
