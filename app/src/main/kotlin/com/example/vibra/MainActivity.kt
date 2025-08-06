@@ -1,6 +1,7 @@
 package com.example.vibra
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,21 +13,36 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.core.app.ActivityCompat
+import androidx.core.app.ActivityCompat.requestPermissions
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.navigation.compose.*
 import com.example.vibra.components.BottomNavigationBar
 import com.example.vibra.components.MiniPlayerBar
-import com.example.vibra.model.MusicHolder
 import com.example.vibra.screens.*
+import com.example.vibra.service.NotificationService
 import com.example.vibra.ui.theme.VibraTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Permission notif
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 123)
+            }
+        }
+
         setContent {
             VibraTheme {
                 VibraApp()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
     }
 }
 

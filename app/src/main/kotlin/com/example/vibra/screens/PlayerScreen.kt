@@ -74,7 +74,7 @@ fun PlayerScreen(navController: NavController) {
                 if (currentTime >= duration - 0.5f) {
                     val nextMusic = MusicHolder.getNext()
                     if (nextMusic != null) {
-                        MusicHolder.setPlayedMusic(nextMusic)
+                        MusicHolder.setPlayedMusic(context, nextMusic)
                         MusicPlayerManager.playMusic(context, nextMusic) { durMs ->
                             duration = durMs / 1000f
                             currentTime = 0f
@@ -198,7 +198,7 @@ fun PlayerScreen(navController: NavController) {
             IconButton(onClick = {
                 val previousMusic = MusicHolder.getPrevious()
                 if (previousMusic != null) {
-                    MusicHolder.setPlayedMusic(previousMusic)
+                    MusicHolder.setPlayedMusic(context, previousMusic)
                 }
             }) {
                 Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
@@ -223,7 +223,7 @@ fun PlayerScreen(navController: NavController) {
             IconButton(onClick = {
                 val nextMusic = MusicHolder.getNext()
                 if (nextMusic != null) {
-                    MusicHolder.setPlayedMusic(nextMusic)
+                    MusicHolder.setPlayedMusic(context, nextMusic)
                 }
             }) {
                 Icon(Icons.Default.SkipNext, contentDescription = "Suivant")
