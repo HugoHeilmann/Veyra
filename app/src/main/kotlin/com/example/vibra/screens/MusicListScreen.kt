@@ -1,8 +1,11 @@
 package com.example.vibra.screens
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.media.MediaScannerConnection
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.util.Log
 import androidx.compose.foundation.background
@@ -20,17 +23,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.core.app.NotificationCompat
 import com.example.vibra.components.MusicRow
 
 import com.example.vibra.model.Music
 import com.example.vibra.model.MusicHolder
 import com.example.vibra.model.loadMusicFromDevice
+
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -185,7 +187,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                         .fillMaxWidth()
                                         .padding(vertical = 8.dp, horizontal = 16.dp)
                                 ) {
-                                    MusicHolder.setCurrentMusic(music, null)
+                                    MusicHolder.setCurrentMusic(context, music, null)
                                     navController.navigate("player")
                                 }
                             }

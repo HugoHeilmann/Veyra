@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.vibra.model.MusicHolder
@@ -26,7 +27,7 @@ import com.example.vibra.model.MusicHolder
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
-
+    val context = LocalContext.current
     val songs = MusicHolder.getAlbumSongs(albumName)
 
     Scaffold(
@@ -62,7 +63,7 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            MusicHolder.setCurrentMusic(song, songs)
+                            MusicHolder.setCurrentMusic(context,song, songs)
                             navController.navigate("player")
                         }
                         .padding(16.dp)
