@@ -12,7 +12,7 @@ class NotificationReceiver : BroadcastReceiver() {
             "ACTION_PREVIOUS" -> {
                 val previous = MusicHolder.getPrevious()
                 previous?.let {
-                    MusicHolder.setCurrentMusic(context, it, MusicHolder.getMusicContext())
+                    MusicHolder.setPlayedMusic(context, it)
                 }
             }
             "ACTION_PLAY_PAUSE" -> {
@@ -27,7 +27,7 @@ class NotificationReceiver : BroadcastReceiver() {
             "ACTION_NEXT" -> {
                 val next = MusicHolder.getNext()
                 next?.let {
-                    MusicHolder.setCurrentMusic(context, it, MusicHolder.getMusicContext())
+                    MusicHolder.setPlayedMusic(context, it)
                 }
             }
         }
