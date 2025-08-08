@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.vibra.model.MusicHolder
@@ -129,7 +130,11 @@ fun PlayerScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(text = animatedMusic.name, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = animatedMusic.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = animatedMusic.artist ?: "Unknown",

@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.example.vibra.service.NotificationReceiver
 
 import com.example.vibra.R
+import com.example.vibra.service.NotificationService
 
 object MusicHolder {
     private var currentMusic: Music? = null
@@ -54,7 +55,7 @@ object MusicHolder {
         currentMusic = music
 
         // Launch Notification
-        showNotification(context, music)
+        NotificationService.start(context, music)
     }
 
     fun setCurrentMusic(context: Context, music: Music, contextList: List<Music>? = null) {
@@ -63,7 +64,7 @@ object MusicHolder {
         shuffledContextList = originalContextList.shuffled()
 
         // Launch Notification
-        showNotification(context, music)
+        NotificationService.update(context, music)
     }
 
     fun enableShuffle(enabled: Boolean) {
@@ -96,69 +97,4 @@ object MusicHolder {
             list[(index - 1 + list.size) % list.size]
         } else null
     }
-
-    fun getMusicContext(): List<Music> = getActiveList()
-}
-
-fun showNotification(context: Context, music: Music) {
-    val channelId = "vibra_channel"
-    val notificationId = 42
-
-    // Créer le canal (si nécessaire)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val name = "Vibra Notification Channel"
-        val descriptionText = "Notifications pour Vibra"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel(channelId, name, importance).apply {
-            description = descriptionText
-        }
-        val notificationManager: NotificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
-    }
-
-    // Créer les PendingIntent pour chaque action
-    val previousIntent = Intent(context, NotificationReceiver::class.java).apply {
-        action = "ACTION_PREVIOUS"
-    }
-    val playPauseIntent = Intent(context, NotificationReceiver::class.java).apply {
-        action = "ACTION_PLAY_PAUSE"
-    }
-    val nextIntent = Intent(context, NotificationReceiver::class.java).apply {
-        action = "ACTION_NEXT"
-    }
-
-    val previousPendingIntent = PendingIntent.getBroadcast(
-        context, 0, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    val playPausePendingIntent = PendingIntent.getBroadcast(
-        context, 1, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    val nextPendingIntent = PendingIntent.getBroadcast(
-        context, 2, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val playText = if (MusicPlayerManager.isPlaying()) {
-        "Pause"
-    } else {
-        "Play"
-    }
-
-    // Créer la notification
-    val builder = NotificationCompat.Builder(context, channelId)
-        .setSmallIcon(R.drawable.music_note)
-        .setContentTitle(music.name)
-        .setContentText("Lecture en cours")
-        .setPriority(NotificationCompat.PRIORITY_LOW)
-        .setOngoing(true)
-        .addAction(R.drawable.ic_previous, "Précédent", previousPendingIntent)
-        .addAction(if(MusicPlayerManager.isPlaying()) {
-            R.drawable.ic_pause
-        } else {
-            R.drawable.ic_play
-        }, "Play/Pause", playPausePendingIntent)
-        .addAction(R.drawable.ic_next, "Suivant", nextPendingIntent)
-
-    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    notificationManager.notify(notificationId, builder.build())
 }

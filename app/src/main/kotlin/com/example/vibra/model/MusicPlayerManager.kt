@@ -6,7 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.State
+import androidx.core.app.ServiceCompat.startForeground
 import androidx.core.net.toUri
+import com.example.vibra.service.NotificationService
 
 object MusicPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
