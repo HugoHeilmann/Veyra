@@ -10,25 +10,37 @@ class NotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             "ACTION_PREVIOUS" -> {
-                val previous = MusicHolder.getPrevious()
-                previous?.let {
+                MusicHolder.getPrevious()?.let {
                     MusicHolder.setPlayedMusic(context, it)
                 }
+                NotificationService.update(context)
             }
             "ACTION_PLAY_PAUSE" -> {
-                // À adapter selon ton PlayerManager
+                // toggle play/pause
                 val current = MusicHolder.getCurrentMusic()
                 if (MusicPlayerManager.isPlaying()) {
-                    MusicPlayerManager.pauseMusic()
+                    MusicPlayerManager.pauseMusic(context)
                 } else {
                     current?.let { MusicPlayerManager.playMusic(context, it) }
                 }
+                NotificationService.update(context)
+            }
+            // Compatibility: si on reçoit explicitement ACTION_PLAY / ACTION_PAUSE (rare),
+            // on les traite également.
+            "ACTION_PLAY" -> {
+                val current = MusicHolder.getCurrentMusic()
+                current?.let { MusicPlayerManager.playMusic(context, it) }
+                NotificationService.update(context)
+            }
+            "ACTION_PAUSE" -> {
+                MusicPlayerManager.pauseMusic(context)
+                NotificationService.update(context)
             }
             "ACTION_NEXT" -> {
-                val next = MusicHolder.getNext()
-                next?.let {
+                MusicHolder.getNext()?.let {
                     MusicHolder.setPlayedMusic(context, it)
                 }
+                NotificationService.update(context)
             }
         }
     }

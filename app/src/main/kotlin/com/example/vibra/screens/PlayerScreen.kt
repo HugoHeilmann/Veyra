@@ -212,7 +212,7 @@ fun PlayerScreen(navController: NavController) {
             // Play/Pause
             IconButton(onClick = {
                 isPlaying = if (isPlaying) {
-                    MusicPlayerManager.pauseMusic(); false
+                    MusicPlayerManager.pauseMusic(context); false
                 } else {
                     MusicPlayerManager.playMusic(context, music); true
                 }

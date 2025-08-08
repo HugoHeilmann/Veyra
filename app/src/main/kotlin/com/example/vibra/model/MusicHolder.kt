@@ -64,7 +64,7 @@ object MusicHolder {
         shuffledContextList = originalContextList.shuffled()
 
         // Launch Notification
-        NotificationService.update(context, music)
+        NotificationService.update(context)
     }
 
     fun enableShuffle(enabled: Boolean) {
