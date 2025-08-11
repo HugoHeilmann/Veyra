@@ -209,6 +209,15 @@ fun PlayerScreen(navController: NavController) {
                 Icon(Icons.Default.SkipPrevious, contentDescription = "Précédent")
             }
 
+            // Reculer 10s
+            IconButton(onClick = {
+                val newPos = MusicPlayerManager.rewind10Seconds()
+                sliderPosition = newPos
+                currentTime = newPos
+            }) {
+                Icon(Icons.Default.Replay10, contentDescription = "Reculer 10 secondes")
+            }
+
             // Play/Pause
             IconButton(onClick = {
                 isPlaying = if (isPlaying) {
@@ -222,6 +231,15 @@ fun PlayerScreen(navController: NavController) {
                     contentDescription = "Play/Pause",
                     modifier = Modifier.size(64.dp)
                 )
+            }
+
+            // Avancer 10s
+            IconButton(onClick = {
+                val newPos = MusicPlayerManager.forward10Seconds()
+                sliderPosition = newPos
+                currentTime = newPos
+            }) {
+                Icon(Icons.Default.Forward10, contentDescription = "Avancer 10 secondes")
             }
 
             // Next

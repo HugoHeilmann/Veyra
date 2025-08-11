@@ -72,6 +72,26 @@ object MusicPlayerManager {
         mediaPlayer?.seekTo(positionMs)
     }
 
+    fun rewind10Seconds(): Float {
+        mediaPlayer?.let {
+            val newPos = (it.currentPosition - 10_000).coerceAtLeast(0)
+            it.seekTo(newPos)
+            return newPos / 1000f
+        }
+
+        return 0f
+    }
+
+    fun forward10Seconds(): Float {
+        mediaPlayer?.let {
+            val newPos = (it.currentPosition + 10_000).coerceAtMost(it.duration - 1_000)
+            it.seekTo(newPos)
+            return newPos / 1000f
+        }
+
+        return 0f
+    }
+
     fun isCurrentlyPlaying(music: Music): Boolean {
         return currentMusic?.uri == music.uri && mediaPlayer?.isPlaying == true
     }
