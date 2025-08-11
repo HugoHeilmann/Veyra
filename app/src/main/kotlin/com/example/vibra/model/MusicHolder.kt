@@ -53,6 +53,7 @@ object MusicHolder {
 
     fun setPlayedMusic(context: Context, music: Music) {
         currentMusic = music
+        MusicPlayerManager.playMusic(context, music)
 
         // Launch Notification
         NotificationService.start(context, music)
