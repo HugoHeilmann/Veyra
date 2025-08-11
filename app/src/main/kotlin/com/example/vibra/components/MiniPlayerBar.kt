@@ -26,7 +26,7 @@ import com.example.vibra.model.MusicPlayerManager
 fun MiniPlayerBar(navController: NavHostController) {
     val context = LocalContext.current
     val currentMusic by rememberUpdatedState(MusicHolder.getCurrentMusic())
-    val isPlaying by MusicPlayerManager.isPlaying
+    val isPlaying = MusicPlayerManager.isPlaying()
 
     currentMusic?.let { music ->
         Surface(
@@ -103,7 +103,7 @@ fun MiniPlayerBar(navController: NavHostController) {
                 // Play/Pause
                 IconButton(onClick = {
                     if (isPlaying) {
-                        MusicPlayerManager.pauseMusic()
+                        MusicPlayerManager.pauseMusic(context)
                     } else {
                         MusicPlayerManager.playMusic(context, music)
                     }
