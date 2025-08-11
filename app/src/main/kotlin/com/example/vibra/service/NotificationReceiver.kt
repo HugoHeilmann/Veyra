@@ -15,6 +15,10 @@ class NotificationReceiver : BroadcastReceiver() {
                 }
                 NotificationService.update(context)
             }
+            "ACTION_REWIND_10" -> {
+                MusicPlayerManager.rewind10Seconds()
+                NotificationService.update(context)
+            }
             "ACTION_PLAY_PAUSE" -> {
                 // toggle play/pause
                 val current = MusicHolder.getCurrentMusic()
@@ -34,6 +38,10 @@ class NotificationReceiver : BroadcastReceiver() {
             }
             "ACTION_PAUSE" -> {
                 MusicPlayerManager.pauseMusic(context)
+                NotificationService.update(context)
+            }
+            "ACTION_FORWARD_10" -> {
+                MusicPlayerManager.forward10Seconds()
                 NotificationService.update(context)
             }
             "ACTION_NEXT" -> {

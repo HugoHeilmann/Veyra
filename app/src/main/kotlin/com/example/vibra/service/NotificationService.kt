@@ -160,6 +160,16 @@ class NotificationService : Service() {
             Intent(this, NotificationReceiver::class.java).apply { action = "ACTION_NEXT" },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val rewind10Pending = PendingIntent.getBroadcast(
+            this, 3,
+            Intent(this, NotificationReceiver::class.java).apply { action = "ACTION_REWIND_10" },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val forward10Pending = PendingIntent.getBroadcast(
+            this, 4,
+            Intent(this, NotificationReceiver::class.java).apply { action = "ACTION_FORWARD_10" },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.music_note)
@@ -169,11 +179,13 @@ class NotificationService : Service() {
             .setOngoing(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // visible écran verrouillé
             .addAction(R.drawable.ic_previous, "Précédent", previousPending)
+            .addAction(R.drawable.ic_rewind_10, "-10s", rewind10Pending)
             .addAction(
                 if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
                 if (isPlaying) "Pause" else "Lecture",
                 playPausePending
             )
+            .addAction(R.drawable.ic_forward_10, "+10s", forward10Pending)
             .addAction(R.drawable.ic_next, "Suivant", nextPending)
             .setStyle(
                 MediaStyle()
