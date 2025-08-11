@@ -116,10 +116,26 @@ class NotificationService : Service() {
         return START_NOT_STICKY
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+
+        // stop music
+        MusicPlayerManager.stopMusic()
+
+        // stop service and notification
+        stopForeground(true)
+        stopSelf()
+    }
+
     override fun onDestroy() {
         mediaSession.release()
+
+        // stop music
+        MusicPlayerManager.stopMusic()
+
+        // stop service and notification
         stopForeground(true)
-        super.onDestroy()
+        stopSelf()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

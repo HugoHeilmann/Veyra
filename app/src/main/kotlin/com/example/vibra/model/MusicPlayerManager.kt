@@ -14,7 +14,7 @@ object MusicPlayerManager {
     private var currentMusic: Music? = null
 
     private var _isPlaying by mutableStateOf(false)
-    val isPlayingState: State<Boolean> get() = androidx.compose.runtime.mutableStateOf(_isPlaying)
+    val isPlayingState: State<Boolean> get() = mutableStateOf(_isPlaying)
 
     fun playMusic(context: Context, music: Music, onPrepared: (Int) -> Unit = {}) {
         if (mediaPlayer != null && currentMusic?.uri == music.uri) {
