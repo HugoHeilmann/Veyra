@@ -1,6 +1,7 @@
 package com.example.vibra
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat
@@ -20,6 +22,7 @@ import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.navigation.compose.*
 import com.example.vibra.components.BottomNavigationBar
 import com.example.vibra.components.MiniPlayerBar
+import com.example.vibra.model.MusicPlayerManager
 import com.example.vibra.screens.*
 import com.example.vibra.service.NotificationService
 import com.example.vibra.ui.theme.VibraTheme
@@ -43,6 +46,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopService(Intent(this, NotificationService::class.java))
     }
 }
 

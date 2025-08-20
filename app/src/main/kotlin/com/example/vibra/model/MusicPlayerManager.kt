@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.State
 import androidx.core.net.toUri
-import com.example.vibra.service.NotificationService
 
 object MusicPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
@@ -21,7 +20,6 @@ object MusicPlayerManager {
             if (mediaPlayer?.isPlaying == false) {
                 mediaPlayer?.start()
                 _isPlaying = true
-                NotificationService.update(context)
             }
             return
         }
@@ -35,12 +33,10 @@ object MusicPlayerManager {
             setOnPreparedListener {
                 start()
                 _isPlaying = true
-                NotificationService.update(context) // important : update après démarrage réel
                 onPrepared.invoke(duration)
             }
             setOnCompletionListener {
                 _isPlaying = false
-                NotificationService.update(context)
             }
         }
     }
@@ -48,13 +44,6 @@ object MusicPlayerManager {
     fun pauseMusic(context: Context) {
         mediaPlayer?.pause()
         _isPlaying = false
-        NotificationService.update(context)
-    }
-
-    fun play(context: Context) {
-        mediaPlayer?.start()
-        _isPlaying = true
-        NotificationService.update(context)
     }
 
     fun isPlaying(): Boolean {
