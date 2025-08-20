@@ -10,13 +10,14 @@
         android:theme="@style/Theme.Vibra"
         android:icon="@mipmap/vibra_logo">
 
-        <receiver android:name=".service.NotificationReceiver" android:exported="false" />
-
         <service
             android:name=".service.NotificationService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false" />
+
+        <receiver
+            android:name=".service.NotificationActionReceiver"
+            android:exported="false" />
 
         <activity android:name=".MainActivity"
             android:exported="true">

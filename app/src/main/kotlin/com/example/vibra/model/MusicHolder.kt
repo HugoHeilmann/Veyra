@@ -1,18 +1,11 @@
 package com.example.vibra.model
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.app.NotificationCompat
-import com.example.vibra.service.NotificationReceiver
 
-import com.example.vibra.R
 import com.example.vibra.service.NotificationService
 
 object MusicHolder {
@@ -55,8 +48,12 @@ object MusicHolder {
         currentMusic = music
         MusicPlayerManager.playMusic(context, music)
 
-        // Launch Notification
-        NotificationService.start(context, music)
+        // update notification
+        val intent = Intent(context, NotificationService::class.java).apply {
+            putExtra("NOTIF_TITLE", music.name)
+            putExtra("NOTIF_TEXT", "${music.artist} - ${music.album}")
+        }
+        context.startService(intent)
     }
 
     fun setCurrentMusic(context: Context, music: Music, contextList: List<Music>? = null) {
@@ -64,15 +61,17 @@ object MusicHolder {
         originalContextList = (contextList ?: musicList).sortedBy { it.name.lowercase() }
         shuffledContextList = originalContextList.shuffled()
 
-        // Launch Notification
-        NotificationService.update(context)
+        // Launch notification
+        val intent = Intent(context, NotificationService::class.java).apply {
+            putExtra("NOTIF_TITLE", music.name)
+            putExtra("NOTIF_TEXT", "${music.artist} - ${music.album}")
+        }
+        context.startForegroundService(intent)
     }
 
     fun enableShuffle(enabled: Boolean) {
         isShuffled = enabled
     }
-
-    fun isShuffleEnabled(): Boolean = isShuffled
 
     fun getMusicList(): List<Music> = musicList
     fun getArtistSongs(artist: String): List<Music> = artistMap[artist] ?: emptyList()
