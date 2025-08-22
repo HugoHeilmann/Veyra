@@ -15,21 +15,14 @@ object MusicPlayerManager {
 
     private var _isPlaying by mutableStateOf(false)
 
+    private var onCompletionListener: (() ->  Unit)? = null
+
     // Audio focus change listener
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                // Immediat pause
-                pauseMusicInternal()
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                // Lower volume if another sound wants to go on top of the music
-                mediaPlayer?.setVolume(0.2f, 0.2f)
-            }
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                // Retrieve focus -> initial volume
-                mediaPlayer?.setVolume(1f, 1f)
-            }
+            AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pauseMusicInternal()
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> mediaPlayer?.setVolume(0.2f, 0.2f)
+            AudioManager.AUDIOFOCUS_GAIN -> mediaPlayer?.setVolume(1f, 1f)
         }
     }
 
@@ -64,7 +57,7 @@ object MusicPlayerManager {
             setOnCompletionListener {
                 _isPlaying = false
                 MediaSessionManager.updatePlaybackState(false)
-                abandonAudioFocus()
+                onCompletionListener?.invoke()
             }
         }
     }
@@ -81,12 +74,16 @@ object MusicPlayerManager {
     }
 
     fun stopMusic() {
+        stopMusicInternal()
         abandonAudioFocus()
+        MediaSessionManager.updatePlaybackState(false)
+    }
+
+    private fun stopMusicInternal() {
         mediaPlayer?.release()
         mediaPlayer = null
         currentMusic = null
         _isPlaying = false
-        MediaSessionManager.updatePlaybackState(false)
     }
 
     fun isPlaying(): Boolean = _isPlaying
@@ -115,15 +112,15 @@ object MusicPlayerManager {
         return 0f
     }
 
-    fun isCurrentlyPlaying(music: Music): Boolean {
-        return currentMusic?.uri == music.uri && mediaPlayer?.isPlaying == true
-    }
-
     fun getCurrentMusic(): Music? = currentMusic
 
     fun getCurrentPosition(): Int = mediaPlayer?.currentPosition ?: 0
 
     fun getDuration(): Int = mediaPlayer?.duration ?: 0
+
+    fun setOnCompletionListener(listener: () -> Unit) {
+        onCompletionListener = listener
+    }
 
     // Ask for audio focus
     private fun requestAudioFocus(): Boolean {
