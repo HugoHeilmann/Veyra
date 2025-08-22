@@ -73,7 +73,7 @@ fun PlayerScreen(navController: NavController) {
                     sliderPosition = currentTime
                 }
 
-                if (currentTime >= duration - 0.5f) {
+                /*if (currentTime >= duration - 0.5f) {
                     val nextMusic = MusicHolder.getNext()
                     if (nextMusic != null) {
                         MusicHolder.setPlayedMusic(context, nextMusic)
@@ -88,7 +88,7 @@ fun PlayerScreen(navController: NavController) {
                         sliderPosition = 0f
                         isPlaying = true
                     }
-                }
+                }*/
             }
             delay(500)
         }

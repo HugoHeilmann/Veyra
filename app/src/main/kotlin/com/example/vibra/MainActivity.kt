@@ -45,6 +45,14 @@ class MainActivity : ComponentActivity() {
         // Init MediaSessionManager
         MediaSessionManager.init(this)
 
+        MusicPlayerManager.setOnCompletionListener {
+            val nextMusic = MusicHolder.getNext()
+
+            if (nextMusic != null) {
+                MusicHolder.setPlayedMusic(this, nextMusic)
+            }
+        }
+
         setContent {
             VibraTheme {
                 VibraApp()
