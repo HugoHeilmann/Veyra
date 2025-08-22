@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
 import com.example.vibra.components.MusicRow
 import com.example.vibra.model.Music
 import com.example.vibra.model.MusicHolder
@@ -183,7 +184,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             // 📄 Liste scrollable avec gestion des tabs
             when (selectedTab) {
                 "Chansons" -> {
-                    val groupedSongs = groupByFirstLetter(musicList) { it.name }
+                    val groupedSongs = remember(musicList) {
+                        groupByFirstLetter(musicList) { it.name }
+                    }
                     val sections = remember(groupedSongs) {
                         buildSectionsFromGroupedMap(groupedSongs)
                     }
@@ -219,7 +222,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                     )
                 }
                 "Artistes" -> {
-                    val groupedArtists = groupByFirstLetter(artistMap.keys.toList()) { it }
+                    val groupedArtists = remember(artistMap.keys) {
+                        groupByFirstLetter(artistMap.keys.toList()) { it }
+                    }
                     val sections = remember(groupedArtists) {
                         buildSectionsFromGroupedMap(groupedArtists)
                     }
@@ -261,7 +266,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                     )
                 }
                 "Albums" -> {
-                    val groupedAlbums = groupByFirstLetter(albumMap.keys.toList()) { it }
+                    val groupedAlbums = remember(albumMap.keys) {
+                        groupByFirstLetter(albumMap.keys.toList()) { it }
+                    }
                     val sections = remember(groupedAlbums) {
                         buildSectionsFromGroupedMap(groupedAlbums)
                     }
@@ -529,7 +536,7 @@ private fun <T> buildSectionsFromGroupedMap(grouped: Map<Char, List<T>>): List<S
         { ch ->
             when {
                 ch in '0'..'9' -> 0
-                ch in 'A'..'Z' || ch in 'a'..'z' || ch.isLetter() -> 1
+                ch.isLetter() -> 1
                 ch == '#' -> 3
                 else -> 2
             }
