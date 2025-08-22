@@ -42,6 +42,7 @@ fun loadMusicFromDevice(context: Context): List<Music> {
             if (data.endsWith(".mp3", ignoreCase = true) && data.contains("/Music/")) {
                 val parts = rawTitle.split(" - ")
 
+                val filename = data.substringAfterLast("/")
                 val artist = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
                 val title = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
                 val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
@@ -55,6 +56,17 @@ fun loadMusicFromDevice(context: Context): List<Music> {
                         uri = data
                     )
                 )
+
+                val metadata = MusicMetadata(
+                    fileName = filename,
+                    title = title,
+                    artist = artist,
+                    album = album,
+                    filePath = data,
+                    playlists = mutableListOf()
+                )
+
+                MetadataManager.addIfNotExists(context, metadata)
             }
         }
     }

@@ -25,6 +25,8 @@ import com.example.vibra.model.MusicPlayerManager
 import com.example.vibra.screens.*
 import com.example.vibra.service.NotificationService
 import com.example.vibra.ui.theme.VibraTheme
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +39,10 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Init metadata.json if needed
+        MetadataManager.initializeIfNeeded(this)
+
+        // Init MediaSessionManager
         MediaSessionManager.init(this)
 
         setContent {
@@ -94,6 +100,19 @@ fun VibraApp() {
             composable("music_list?selectedTab={selectedTab}") { backStackEntry ->
                 val selectedTab = backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
                 MusicListScreen(navController, selectedTab)
+            }
+            composable("editMusic/{uri}") { backStackEntry ->
+                val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""
+                val decodedUri = URLDecoder.decode(encodedUri, StandardCharsets.UTF_8.toString())
+                val music = MusicHolder.getMusicList().find { it.uri == decodedUri }
+
+                music?.let {
+                    EditMusicScreen(
+                        music = it,
+                        onSave = { navController.navigate("music_list?selectedTab=Chansons") },
+                        onCancel = { navController.navigate("music_list?selectedTab=Chansons") }
+                    )
+                }
             }
             composable("artist_detail/{artistName}") { backStackEntry ->
                 val artistName = backStackEntry.arguments?.getString("artistName")
