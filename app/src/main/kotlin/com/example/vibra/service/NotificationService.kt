@@ -2,7 +2,6 @@ package com.example.vibra.service
 
 import android.Manifest
 import android.app.*
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
@@ -11,10 +10,11 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.example.vibra.MainActivity
 import com.example.vibra.R
+import com.example.vibra.model.MediaSessionManager
 
 class NotificationService : Service() {
 
-    private lateinit var mediaSession: MediaSessionCompat
+    private var mediaSession: MediaSessionCompat? = null
 
     companion object {
         private const val CHANNEL_ID = "custom_channel"
@@ -26,22 +26,14 @@ class NotificationService : Service() {
         createNotificationChannel()
 
         // Init media session
-        mediaSession = MediaSessionCompat(this, "VibraMediaSession").apply {
-            isActive = true
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mediaSession.release()
+        mediaSession = MediaSessionManager.getSession()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Ensure MediaSession active
-        if (!::mediaSession.isInitialized) {
-            mediaSession = MediaSessionCompat(this, "VibraMediaSession").apply {
-                isActive = true
-            }
+        if (mediaSession == null) {
+            MediaSessionManager.init(this)
+            mediaSession = MediaSessionManager.getSession()
         }
 
         val title = intent?.getStringExtra("NOTIF_TITLE") ?: "Vibra"
@@ -126,7 +118,7 @@ class NotificationService : Service() {
             .setStyle(
                 MediaStyle()
                     .setShowActionsInCompactView()
-                    .setMediaSession(mediaSession.sessionToken)
+                    .setMediaSession(mediaSession?.sessionToken)
             )
             .build()
             .apply { flags = flags or Notification.FLAG_NO_CLEAR or Notification.FLAG_ONGOING_EVENT }

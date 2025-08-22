@@ -43,6 +43,7 @@ object MusicPlayerManager {
                 requestAudioFocus()
                 mediaPlayer?.start()
                 _isPlaying = true
+                MediaSessionManager.updatePlaybackState(true)
             }
             return
         }
@@ -54,12 +55,15 @@ object MusicPlayerManager {
             setDataSource(context, music.uri.toUri())
             prepareAsync()
             setOnPreparedListener {
+                requestAudioFocus()
                 start()
                 _isPlaying = true
+                MediaSessionManager.updatePlaybackState(true)
                 onPrepared.invoke(duration)
             }
             setOnCompletionListener {
                 _isPlaying = false
+                MediaSessionManager.updatePlaybackState(false)
                 abandonAudioFocus()
             }
         }
@@ -67,6 +71,7 @@ object MusicPlayerManager {
 
     fun pauseMusic(context: Context) {
         pauseMusicInternal()
+        MediaSessionManager.updatePlaybackState(false)
         abandonAudioFocus()
     }
 
@@ -81,6 +86,7 @@ object MusicPlayerManager {
         mediaPlayer = null
         currentMusic = null
         _isPlaying = false
+        MediaSessionManager.updatePlaybackState(false)
     }
 
     fun isPlaying(): Boolean = _isPlaying
