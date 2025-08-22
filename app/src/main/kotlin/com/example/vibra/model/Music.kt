@@ -7,7 +7,8 @@ data class Music(
     val artist: String? = null,
     val album: String? = null,
     val image: Int = R.drawable.default_album_cover,
-    val uri: String
+    val uri: String,
+    val coverPath: String? = null
 )
 
 fun createMusic(
@@ -15,7 +16,8 @@ fun createMusic(
     artist: String? = null,
     album: String? = null,
     image: Int? = null,
-    uri: String
+    uri: String,
+    coverPath: String? = null
 ): Music {
     val defaultImageId = R.drawable.default_album_cover
     return Music(
@@ -23,6 +25,7 @@ fun createMusic(
         artist = artist,
         album = album,
         image = image ?: defaultImageId,
-        uri = uri
+        uri = uri,
+        coverPath = coverPath
     )
 }

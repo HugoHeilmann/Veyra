@@ -1,6 +1,10 @@
 package com.example.vibra.screens
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,9 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import com.example.vibra.R
 import com.example.vibra.model.Music
-import com.example.vibra.model.MusicMetadata
 
 @Composable
 fun EditMusicScreen(
@@ -20,6 +24,21 @@ fun EditMusicScreen(
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
+
+    var coverPath by remember { mutableStateOf(music.coverPath) }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            uri?.let {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                coverPath = it.toString()
+            }
+        }
+    )
 
     var title by remember { mutableStateOf(music.name) }
     var artist by remember { mutableStateOf(music.artist ?: "Unknown") }
@@ -33,11 +52,16 @@ fun EditMusicScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
-            painter = painterResource(id = R.drawable.default_album_cover),
+            painter = if (coverPath != null) {
+                rememberAsyncImagePainter(coverPath)
+            } else {
+                painterResource(id = R.drawable.default_album_cover)
+            },
             contentDescription = "Music cover",
             modifier = Modifier
                 .size(240.dp)
                 .padding(24.dp)
+                .clickable { imagePicker.launch(arrayOf("image/*")) }
         )
 
         // title input
@@ -81,7 +105,8 @@ fun EditMusicScreen(
                         filePath = music.uri,
                         title = title,
                         artist = artist,
-                        album = album
+                        album = album,
+                        coverPath = coverPath
                     )
 
                     // Redirection

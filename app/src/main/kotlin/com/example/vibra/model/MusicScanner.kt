@@ -47,12 +47,15 @@ fun loadMusicFromDevice(context: Context): List<Music> {
                 val title = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
                 val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
 
+                val existingMetadata = MetadataManager.getByPath(context, data)
+                val coverPath = existingMetadata?.coverPath
+
                 musicList.add(
                     Music(
                         name = title,
                         artist = artist,
                         album = album,
-                        image = R.drawable.default_album_cover,
+                        image = if (coverPath != null) 0 else R.drawable.default_album_cover,
                         uri = data
                     )
                 )
@@ -63,7 +66,8 @@ fun loadMusicFromDevice(context: Context): List<Music> {
                     artist = artist,
                     album = album,
                     filePath = data,
-                    playlists = mutableListOf()
+                    playlists = existingMetadata?.playlists ?: mutableListOf(),
+                    coverPath = coverPath
                 )
 
                 MetadataManager.addIfNotExists(context, metadata)

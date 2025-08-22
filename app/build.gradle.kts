@@ -38,6 +38,7 @@ android {
 }
 
 dependencies {
+    implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.media:media:1.7.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.android.material:material:1.11.0")

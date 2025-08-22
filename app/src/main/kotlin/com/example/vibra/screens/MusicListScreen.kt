@@ -28,12 +28,15 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
 import com.example.vibra.components.MusicRow
 import com.example.vibra.model.Music
 import com.example.vibra.model.MusicHolder
 import com.example.vibra.model.loadMusicFromDevice
 import com.example.vibra.model.toMusic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -51,42 +54,57 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
 
     // Charger les musiques au lancement
     LaunchedEffect(Unit) {
-        scanMusicFolder(context)
+        if (MusicHolder.getMusicList().isEmpty()) {
+            allMusic = emptyList()
 
-        loadMusicFromDevice(context)
+            launch(Dispatchers.IO) {
+                scanMusicFolder(context)
+                loadMusicFromDevice(context)
 
-        val metadataList = MetadataManager.readAll(context)
-        val musics = metadataList.map { it.toMusic() }
+                val metadataList = MetadataManager.readAll(context)
+                val musics = metadataList.map { it.toMusic() }
 
-        MusicHolder.setMusicList(musics)
-        allMusic = musics
+                withContext(Dispatchers.Main) {
+                    MusicHolder.setMusicList(musics)
+                    allMusic = musics
+                }
+            }
+        } else {
+            allMusic = MusicHolder.getMusicList()
+        }
     }
 
-    // Toutes les musiques
-    val musicList = allMusic.filter {
-        val match = it.name.contains(searchText, ignoreCase = true) ||
+    // all musics
+    val musicList by remember(allMusic, searchText) {
+        derivedStateOf {
+            allMusic.filter {
+                it.name.contains(searchText, ignoreCase = true) ||
                 it.artist?.contains(searchText, ignoreCase = true) == true ||
                 it.album?.contains(searchText, ignoreCase = true) == true
-        match
-    }
-
-    // Map des musiques selon l'artiste
-    val artistMap = remember(musicList) {
-        musicList
-            .filter { !it.artist.isNullOrBlank() }
-            .groupBy {
-                val rawArtist = it.artist ?: "Unknown"
-                rawArtist
-                    .replace(Regex("\\s+(ft\\.?|feat\\.?|featuring)\\s+.*", RegexOption.IGNORE_CASE), "")
-                    .trim()
             }
+        }
     }
 
-    // Map des musiques selon l'album
-    val albumMap = remember(musicList) {
-        musicList
-            .filter { !it.album.isNullOrBlank() }
-            .groupBy { it.album ?: "Unfinished" }
+    // music map according to artist
+    val artistMap by remember(musicList) {
+        derivedStateOf {
+            musicList
+                .filter { !it.artist.isNullOrBlank() }
+                .groupBy {
+                    it.artist!!
+                        .replace(Regex("\\s+(ft\\.?|feat\\.?|featuring)\\s+.*", RegexOption.IGNORE_CASE), "")
+                        .trim()
+                }
+        }
+    }
+
+    // music map according to album
+    val albumMap by remember(musicList) {
+        derivedStateOf {
+            musicList
+                .filter { !it.album.isNullOrBlank() }
+                .groupBy { it.album!! }
+        }
     }
 
     val tabs = listOf("Chansons", "Artistes", "Albums")
@@ -166,7 +184,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             // 📄 Liste scrollable avec gestion des tabs
             when (selectedTab) {
                 "Chansons" -> {
-                    val groupedSongs = groupByFirstLetter(musicList) { it.name }
+                    val groupedSongs = remember(musicList) {
+                        groupByFirstLetter(musicList) { it.name }
+                    }
                     val sections = remember(groupedSongs) {
                         buildSectionsFromGroupedMap(groupedSongs)
                     }
@@ -202,7 +222,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                     )
                 }
                 "Artistes" -> {
-                    val groupedArtists = groupByFirstLetter(artistMap.keys.toList()) { it }
+                    val groupedArtists = remember(artistMap.keys) {
+                        groupByFirstLetter(artistMap.keys.toList()) { it }
+                    }
                     val sections = remember(groupedArtists) {
                         buildSectionsFromGroupedMap(groupedArtists)
                     }
@@ -244,7 +266,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                     )
                 }
                 "Albums" -> {
-                    val groupedAlbums = groupByFirstLetter(albumMap.keys.toList()) { it }
+                    val groupedAlbums = remember(albumMap.keys) {
+                        groupByFirstLetter(albumMap.keys.toList()) { it }
+                    }
                     val sections = remember(groupedAlbums) {
                         buildSectionsFromGroupedMap(groupedAlbums)
                     }
@@ -512,7 +536,7 @@ private fun <T> buildSectionsFromGroupedMap(grouped: Map<Char, List<T>>): List<S
         { ch ->
             when {
                 ch in '0'..'9' -> 0
-                ch in 'A'..'Z' || ch in 'a'..'z' || ch.isLetter() -> 1
+                ch.isLetter() -> 1
                 ch == '#' -> 3
                 else -> 2
             }
