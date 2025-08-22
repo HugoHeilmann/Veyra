@@ -90,7 +90,6 @@ fun MiniPlayerBar(navController: NavHostController) {
                     val previousMusic = MusicHolder.getPrevious()
                     if (previousMusic != null) {
                         MusicHolder.setPlayedMusic(context, previousMusic)
-                        MusicPlayerManager.playMusic(context, previousMusic)
                     }
                 }) {
                     Icon(
@@ -120,7 +119,6 @@ fun MiniPlayerBar(navController: NavHostController) {
                     val nextMusic = MusicHolder.getNext()
                     if (nextMusic != null) {
                         MusicHolder.setPlayedMusic(context, nextMusic)
-                        MusicPlayerManager.playMusic(context, nextMusic)
                     }
                 }) {
                     Icon(
