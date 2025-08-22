@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.navigation.compose.*
 import com.example.vibra.components.BottomNavigationBar
 import com.example.vibra.components.MiniPlayerBar
+import com.example.vibra.model.MusicHolder
 import com.example.vibra.model.MusicPlayerManager
 import com.example.vibra.screens.*
 import com.example.vibra.service.NotificationService
@@ -47,6 +48,8 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopService(Intent(this, NotificationService::class.java))
+        MusicHolder.reset()
+        MusicPlayerManager.stopMusic()
     }
 }
 
