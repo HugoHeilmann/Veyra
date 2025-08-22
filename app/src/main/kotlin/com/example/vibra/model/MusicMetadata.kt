@@ -8,7 +8,8 @@ data class MusicMetadata(
     var artist: String,                                  // artiste (modifiable en local)
     var album: String,                                   // album (modifiable en local)
     val filePath: String,                                // chemin complet pour le MediaPlayer
-    var playlists: MutableList<String> = mutableListOf() // playlists associées
+    var playlists: MutableList<String> = mutableListOf(),// playlists associées
+    var coverPath: String? = null
 )
 
 fun MusicMetadata.toMusic(): Music {
@@ -17,6 +18,7 @@ fun MusicMetadata.toMusic(): Music {
         artist = this.artist,
         album = this.album,
         image = R.drawable.default_album_cover,
-        uri = this.filePath
+        uri = this.filePath,
+        coverPath = this.coverPath
     )
 }

@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import com.example.vibra.model.Music
 import com.example.vibra.R
 
@@ -63,7 +64,11 @@ fun MusicRow(
         )
 
         Image(
-            painter = painterResource(id = music.image),
+            painter = if (music.coverPath != null) {
+                rememberAsyncImagePainter(music.coverPath)
+            } else {
+                painterResource(id = music.image)
+            },
             contentDescription = "Music cover",
             modifier = Modifier
                 .size(64.dp)

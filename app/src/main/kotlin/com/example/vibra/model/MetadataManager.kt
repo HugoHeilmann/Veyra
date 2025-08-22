@@ -48,7 +48,14 @@ object MetadataManager {
         }
     }
 
-    fun updateMetadata(context: Context, filePath: String, title: String, artist: String, album: String) {
+    fun updateMetadata(
+        context: Context,
+        filePath: String,
+        title: String,
+        artist: String,
+        album: String,
+        coverPath: String? = null
+    ) {
         val list = readAll(context)
         val index = list.indexOfFirst { it.filePath == filePath }
 
@@ -57,7 +64,8 @@ object MetadataManager {
             list[index] = existing.copy(
                 title = title,
                 artist = artist,
-                album = album
+                album = album,
+                coverPath = coverPath ?: existing.coverPath
             )
             writeAll(context, list)
         }

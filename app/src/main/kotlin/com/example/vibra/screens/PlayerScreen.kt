@@ -16,6 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.vibra.model.MusicHolder
 import com.example.vibra.model.MusicPlayerManager
 import kotlinx.coroutines.delay
@@ -121,7 +122,11 @@ fun PlayerScreen(navController: NavController) {
                     .padding(top = 16.dp)
             ) {
                 Image(
-                    painter = painterResource(id = animatedMusic.image),
+                    painter = if (music.coverPath != null) {
+                        rememberAsyncImagePainter(music.coverPath)
+                    } else {
+                        painterResource(id = animatedMusic.image)
+                    },
                     contentDescription = "Image album",
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
