@@ -1,11 +1,8 @@
 package com.example.vibra.screens
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.media.MediaScannerConnection
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.util.Log
 import androidx.compose.foundation.background
@@ -14,7 +11,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -31,14 +27,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationCompat
 import androidx.navigation.NavHostController
 import com.example.vibra.components.MusicRow
 import com.example.vibra.model.Music
 import com.example.vibra.model.MusicHolder
 import com.example.vibra.model.loadMusicFromDevice
+import com.example.vibra.model.toMusic
 import kotlinx.coroutines.launch
 import java.io.File
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -53,13 +51,15 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
 
     // Charger les musiques au lancement
     LaunchedEffect(Unit) {
-        Log.d("Vibra", "Chargement de la musique...")
-
         scanMusicFolder(context)
-        val loaded = loadMusicFromDevice(context)
-        Log.d("Vibra", "Musique chargée: ${loaded.size} éléments")
-        MusicHolder.setMusicList(loaded)
-        allMusic = MusicHolder.getMusicList()
+
+        loadMusicFromDevice(context)
+
+        val metadataList = MetadataManager.readAll(context)
+        val musics = metadataList.map { it.toMusic() }
+
+        MusicHolder.setMusicList(musics)
+        allMusic = musics
     }
 
     // Toutes les musiques
@@ -188,11 +188,16 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                 music = music,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
-                            ) {
-                                MusicHolder.setCurrentMusic(context, music, null)
-                                navController.navigate("player")
-                            }
+                                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                                onClick = {
+                                    MusicHolder.setCurrentMusic(context, music, null)
+                                    navController.navigate("player")
+                                },
+                                onEditClick = { selectedMusic ->
+                                    val encodedUri = URLEncoder.encode(selectedMusic.uri, StandardCharsets.UTF_8.toString())
+                                    navController.navigate("editMusic/${encodedUri}")
+                                }
+                            )
                         }
                     )
                 }
