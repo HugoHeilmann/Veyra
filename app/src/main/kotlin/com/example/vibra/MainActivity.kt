@@ -14,14 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.requestPermissions
-import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.navigation.compose.*
 import com.example.vibra.components.BottomNavigationBar
 import com.example.vibra.components.MiniPlayerBar
+import com.example.vibra.model.MediaSessionManager
 import com.example.vibra.model.MusicHolder
 import com.example.vibra.model.MusicPlayerManager
 import com.example.vibra.screens.*
@@ -29,6 +27,7 @@ import com.example.vibra.service.NotificationService
 import com.example.vibra.ui.theme.VibraTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Permission notif
@@ -37,6 +36,8 @@ class MainActivity : ComponentActivity() {
                 requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 123)
             }
         }
+
+        MediaSessionManager.init(this)
 
         setContent {
             VibraTheme {

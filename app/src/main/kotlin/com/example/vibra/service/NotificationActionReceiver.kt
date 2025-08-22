@@ -3,6 +3,7 @@ package com.example.vibra.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.example.vibra.model.MediaSessionManager
 import com.example.vibra.model.MusicHolder
 import com.example.vibra.model.MusicPlayerManager
 
@@ -22,11 +23,13 @@ class NotificationActionReceiver: BroadcastReceiver() {
             "ACTION_PLAY_PAUSE" -> {
                 if (MusicPlayerManager.isPlaying()) {
                     MusicPlayerManager.pauseMusic(context)
+                    MediaSessionManager.updatePlaybackState(false)
                 } else {
                     val current = MusicPlayerManager.getCurrentMusic()
 
                     if (current != null) {
                         MusicPlayerManager.playMusic(context, current)
+                        MediaSessionManager.updatePlaybackState(true)
                     }
                 }
             }
