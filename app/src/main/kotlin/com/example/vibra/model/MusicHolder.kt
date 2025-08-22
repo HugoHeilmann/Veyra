@@ -97,4 +97,14 @@ object MusicHolder {
             list[(index - 1 + list.size) % list.size]
         } else null
     }
+
+    fun reset() {
+        currentMusic = null
+        musicList = emptyList()
+        originalContextList = emptyList()
+        shuffledContextList = emptyList()
+        artistMap.clear()
+        albumMap.clear()
+        isShuffled = false
+    }
 }
