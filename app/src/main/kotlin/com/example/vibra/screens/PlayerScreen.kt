@@ -63,7 +63,9 @@ fun PlayerScreen(navController: NavController) {
 
     LaunchedEffect(true) {
         while (true) {
-            if (MusicPlayerManager.isPlaying()) {
+            isPlaying = MusicPlayerManager.isPlaying()
+
+            if (isPlaying) {
                 val pos = MusicPlayerManager.getCurrentPosition() / 1000f
                 val dur = MusicPlayerManager.getDuration() / 1000f
                 duration = dur.coerceAtLeast(1f)
@@ -72,23 +74,6 @@ fun PlayerScreen(navController: NavController) {
                 if (!isUserSeeking) {
                     sliderPosition = currentTime
                 }
-
-                /*if (currentTime >= duration - 0.5f) {
-                    val nextMusic = MusicHolder.getNext()
-                    if (nextMusic != null) {
-                        MusicHolder.setPlayedMusic(context, nextMusic)
-                        MusicPlayerManager.playMusic(context, nextMusic) { durMs ->
-                            duration = durMs / 1000f
-                            currentTime = 0f
-                            sliderPosition = 0f
-                            isPlaying = true
-                        }
-                    } else {
-                        currentTime = 0f
-                        sliderPosition = 0f
-                        isPlaying = true
-                    }
-                }*/
             }
             delay(500)
         }
@@ -225,10 +210,10 @@ fun PlayerScreen(navController: NavController) {
 
             // Play/Pause
             IconButton(onClick = {
-                isPlaying = if (isPlaying) {
-                    MusicPlayerManager.pauseMusic(context); false
+                if (isPlaying) {
+                    MusicPlayerManager.pauseMusic(context)
                 } else {
-                    MusicPlayerManager.playMusic(context, music); true
+                    MusicPlayerManager.playMusic(context, music)
                 }
             }) {
                 Icon(
