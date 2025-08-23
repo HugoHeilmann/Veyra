@@ -10,11 +10,10 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.example.vibra.MainActivity
 import com.example.vibra.R
-import com.example.vibra.model.MediaSessionManager
 
 class NotificationService : Service() {
 
-    private var mediaSession: MediaSessionCompat? = null
+    private lateinit var mediaSession: MediaSessionCompat
 
     companion object {
         private const val CHANNEL_ID = "custom_channel"
@@ -26,14 +25,22 @@ class NotificationService : Service() {
         createNotificationChannel()
 
         // Init media session
-        mediaSession = MediaSessionManager.getSession()
+        mediaSession = MediaSessionCompat(this, "VibraMediaSession").apply {
+            isActive = true
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaSession.release()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Ensure MediaSession active
-        if (mediaSession == null) {
-            MediaSessionManager.init(this)
-            mediaSession = MediaSessionManager.getSession()
+        if (!::mediaSession.isInitialized) {
+            mediaSession = MediaSessionCompat(this, "VibraMediaSession").apply {
+                isActive = true
+            }
         }
 
         val title = intent?.getStringExtra("NOTIF_TITLE") ?: "Vibra"
@@ -118,7 +125,7 @@ class NotificationService : Service() {
             .setStyle(
                 MediaStyle()
                     .setShowActionsInCompactView()
-                    .setMediaSession(mediaSession?.sessionToken)
+                    .setMediaSession(mediaSession.sessionToken)
             )
             .build()
             .apply { flags = flags or Notification.FLAG_NO_CLEAR or Notification.FLAG_ONGOING_EVENT }
