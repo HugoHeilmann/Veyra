@@ -1,4 +1,4 @@
-package com.example.vibra.screens
+package com.example.veyra.screens
 
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,8 +14,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.example.vibra.R
-import com.example.vibra.model.Music
+import com.example.veyra.R
+import com.example.veyra.model.Music
 
 @Composable
 fun EditMusicScreen(

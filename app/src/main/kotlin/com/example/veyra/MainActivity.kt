@@ -1,4 +1,4 @@
-package com.example.vibra
+package com.example.veyra
 
 import android.Manifest
 import android.content.Intent
@@ -17,14 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.navigation.compose.*
-import com.example.vibra.components.BottomNavigationBar
-import com.example.vibra.components.MiniPlayerBar
-import com.example.vibra.model.MediaSessionManager
-import com.example.vibra.model.MusicHolder
-import com.example.vibra.model.MusicPlayerManager
-import com.example.vibra.screens.*
-import com.example.vibra.service.NotificationService
-import com.example.vibra.ui.theme.VibraTheme
+import com.example.veyra.components.BottomNavigationBar
+import com.example.veyra.components.MiniPlayerBar
+import com.example.veyra.model.MediaSessionManager
+import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.MusicPlayerManager
+import com.example.veyra.screens.*
+import com.example.veyra.service.NotificationService
+import com.example.veyra.ui.theme.VeyraTheme
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
@@ -54,8 +54,8 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            VibraTheme {
-                VibraApp()
+            VeyraTheme {
+                VeyraApp()
             }
         }
     }
@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun VibraApp() {
+fun VeyraApp() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

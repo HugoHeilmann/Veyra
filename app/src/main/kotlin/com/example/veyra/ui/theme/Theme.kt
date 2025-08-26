@@ -1,4 +1,4 @@
-package com.example.vibra.ui.theme
+package com.example.veyra.ui.theme
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -14,7 +14,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun VibraTheme(content: @Composable () -> Unit) {
+fun VeyraTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
         typography = Typography(), // Tu peux ajouter une typo custom si besoin

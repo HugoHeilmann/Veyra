@@ -1,6 +1,6 @@
-package com.example.vibra.model
+package com.example.veyra.model
 
-import com.example.vibra.R
+import com.example.veyra.R
 
 data class MusicMetadata(
     val fileName: String,                                // nom du fichier brut

@@ -1,4 +1,4 @@
-package com.example.vibra.model
+package com.example.veyra.model
 
 import android.content.Context
 import android.media.AudioManager

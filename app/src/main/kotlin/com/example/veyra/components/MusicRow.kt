@@ -1,4 +1,4 @@
-package com.example.vibra.components
+package com.example.veyra.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -13,8 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.example.vibra.model.Music
-import com.example.vibra.R
+import com.example.veyra.model.Music
+import com.example.veyra.R
 
 @Composable
 fun MusicRow(

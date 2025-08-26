@@ -1,4 +1,4 @@
-package com.example.vibra.screens
+package com.example.veyra.screens
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
@@ -17,8 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.vibra.model.MusicHolder
-import com.example.vibra.model.MusicPlayerManager
+import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.MusicPlayerManager
 import kotlinx.coroutines.delay
 
 @Composable

@@ -6,9 +6,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
-        android:label="Vibra"
-        android:theme="@style/Theme.Vibra"
-        android:icon="@mipmap/vibra_logo">
+        android:label="Veyra"
+        android:theme="@style/Theme.Veyra"
+        android:icon="@mipmap/veyra_logo">
 
         <service
             android:name=".service.NotificationService"

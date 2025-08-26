@@ -1,5 +1,5 @@
 import android.content.Context
-import com.example.vibra.model.MusicMetadata
+import com.example.veyra.model.MusicMetadata
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File

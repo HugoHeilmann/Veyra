@@ -16,5 +16,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Vibra"
+rootProject.name = "Veyra"
 include(":app")

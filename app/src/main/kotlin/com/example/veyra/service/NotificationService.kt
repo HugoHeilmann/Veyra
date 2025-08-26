@@ -1,4 +1,4 @@
-package com.example.vibra.service
+package com.example.veyra.service
 
 import android.Manifest
 import android.app.*
@@ -8,8 +8,8 @@ import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
-import com.example.vibra.MainActivity
-import com.example.vibra.R
+import com.example.veyra.MainActivity
+import com.example.veyra.R
 
 class NotificationService : Service() {
 
@@ -25,7 +25,7 @@ class NotificationService : Service() {
         createNotificationChannel()
 
         // Init media session
-        mediaSession = MediaSessionCompat(this, "VibraMediaSession").apply {
+        mediaSession = MediaSessionCompat(this, "VeyraMediaSession").apply {
             isActive = true
         }
     }
@@ -38,12 +38,12 @@ class NotificationService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Ensure MediaSession active
         if (!::mediaSession.isInitialized) {
-            mediaSession = MediaSessionCompat(this, "VibraMediaSession").apply {
+            mediaSession = MediaSessionCompat(this, "VeyraMediaSession").apply {
                 isActive = true
             }
         }
 
-        val title = intent?.getStringExtra("NOTIF_TITLE") ?: "Vibra"
+        val title = intent?.getStringExtra("NOTIF_TITLE") ?: "Veyra"
         val text = intent?.getStringExtra("NOTIF_TEXT") ?: "Unknown artist - Unknown album"
 
         startForeground(NOTIF_ID, buildNotification(title, text))

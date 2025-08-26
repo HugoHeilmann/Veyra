@@ -1,4 +1,4 @@
-package com.example.vibra.screens
+package com.example.veyra.screens
 
 import android.content.Context
 import android.media.MediaScannerConnection
@@ -28,12 +28,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
-import com.example.vibra.components.MusicRow
-import com.example.vibra.model.Music
-import com.example.vibra.model.MusicHolder
-import com.example.vibra.model.loadMusicFromDevice
-import com.example.vibra.model.toMusic
+import com.example.veyra.components.MusicRow
+import com.example.veyra.model.Music
+import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.loadMusicFromDevice
+import com.example.veyra.model.toMusic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -125,7 +124,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Vibra",
+                            text = "Veyra",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.titleLarge
                         )
