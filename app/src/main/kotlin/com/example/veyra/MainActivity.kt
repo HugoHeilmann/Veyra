@@ -65,6 +65,7 @@ class MainActivity : ComponentActivity() {
         stopService(Intent(this, NotificationService::class.java))
         MusicHolder.reset()
         MusicPlayerManager.stopMusic()
+        MetadataManager.cleanup(this)
     }
 }
 

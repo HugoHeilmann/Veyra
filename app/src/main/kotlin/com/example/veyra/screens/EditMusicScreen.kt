@@ -3,7 +3,6 @@ package com.example.veyra.screens
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,10 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import com.example.veyra.R
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import com.example.veyra.model.Music
 
 @Composable
@@ -51,12 +50,14 @@ fun EditMusicScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = if (coverPath != null) {
-                rememberAsyncImagePainter(coverPath)
-            } else {
-                painterResource(id = R.drawable.default_album_cover)
-            },
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(coverPath ?: music.image)
+                .size(Size.ORIGINAL)
+                .crossfade(true)
+                .error(music.image)
+                .fallback(music.image)
+                .build(),
             contentDescription = "Music cover",
             modifier = Modifier
                 .size(240.dp)
@@ -108,6 +109,8 @@ fun EditMusicScreen(
                         album = album,
                         coverPath = coverPath
                     )
+
+                    music.coverPath = coverPath
 
                     // Redirection
                     onSave()
