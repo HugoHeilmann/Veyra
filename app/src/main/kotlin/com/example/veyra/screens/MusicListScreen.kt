@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -26,11 +27,14 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.veyra.components.MusicRow
 import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.MusicListViewModel
 import com.example.veyra.model.loadMusicFromDevice
 import com.example.veyra.model.toMusic
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +54,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
     var searchText by remember { mutableStateOf("") }
     var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
     var allMusic by remember { mutableStateOf<List<Music>>(emptyList()) }
+
+    val viewModel: MusicListViewModel = viewModel()
+    val scope = rememberCoroutineScope()
 
     // Charger les musiques au lancement
     LaunchedEffect(Unit) {
@@ -106,6 +113,28 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
         }
     }
 
+    // Remember scroll
+    val songsListState = rememberLazyListState()
+    val artistsListState = rememberLazyListState()
+    val albumsListState = rememberLazyListState()
+
+    LaunchedEffect(allMusic) {
+        if (allMusic.isNotEmpty()) {
+            songsListState.scrollToItem(viewModel.songsScroll.first, viewModel.songsScroll.second)
+            artistsListState.scrollToItem(viewModel.artistsScroll.first, viewModel.artistsScroll.second)
+            albumsListState.scrollToItem(viewModel.albumsScroll.first, viewModel.albumsScroll.second)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.songsScroll = songsListState.firstVisibleItemIndex to songsListState.firstVisibleItemScrollOffset
+            viewModel.artistsScroll = artistsListState.firstVisibleItemIndex to artistsListState.firstVisibleItemScrollOffset
+            viewModel.albumsScroll = albumsListState.firstVisibleItemIndex to albumsListState.firstVisibleItemScrollOffset
+        }
+    }
+
+    // Tabs
     val tabs = listOf("Chansons", "Artistes", "Albums")
 
     Scaffold(
@@ -217,7 +246,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     navController.navigate("editMusic/${encodedUri}")
                                 }
                             )
-                        }
+                        },
+                        listState = songsListState
                     )
                 }
                 "Artistes" -> {
@@ -261,7 +291,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
-                        }
+                        },
+                        listState = artistsListState
                     )
                 }
                 "Albums" -> {
@@ -305,7 +336,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
-                        }
+                        },
+                        listState = albumsListState
                     )
                 }
             }
@@ -358,20 +390,14 @@ private data class Section<T>(
 private fun <T> AlphabeticalListWithFastScroller(
     sections: List<Section<T>>,
     itemContent: @Composable (T) -> Unit,
-    headerContent: @Composable (String) -> Unit
+    headerContent: @Composable (String) -> Unit,
+    listState: LazyListState
 ) {
-    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
     // Positions des headers dans la LazyColumn
-    val headerPositions = remember(sections) {
-        val positions = mutableListOf<Int>()
-        var runningIndex = 0
-        sections.forEach { s ->
-            positions += runningIndex
-            runningIndex += 1 + s.items.size
-        }
-        positions
+    val headerPositions = sections.mapIndexed { index, section ->
+        sections.take(index).sumOf { it.items.size + 1 }
     }
 
     val allLabels = remember(sections) { sections.map { it.label } }
@@ -381,47 +407,9 @@ private fun <T> AlphabeticalListWithFastScroller(
     var previewLabel by remember { mutableStateOf<String?>(null) }
 
     val density = LocalDensity.current
-    val minSlotPx = with(density) { 16.dp.toPx() } // hauteur mini par label pour éviter le clipping
 
-    // Calcul dynamique des labels affichés (sous-échantillonnage si nécessaire)
-    val displayLabels by remember(allLabels, scrollerHeightPx) {
-        mutableStateOf(run {
-            if (scrollerHeightPx <= 0) return@run allLabels // avant mesure, on affiche tout
-            val maxVisible = max(1, floor(scrollerHeightPx / minSlotPx).toInt())
-            if (allLabels.size <= maxVisible) {
-                allLabels
-            } else {
-                val step = ceil(allLabels.size / maxVisible.toFloat()).toInt().coerceAtLeast(1)
-                val disp = mutableListOf<String>()
-                var i = 0
-                while (i < allLabels.size) {
-                    disp += allLabels[i]
-                    i += step
-                }
-                // Assure que le dernier affiché est le dernier réel
-                if (disp.last() != allLabels.last()) {
-                    if (disp.isNotEmpty()) disp[disp.lastIndex] = allLabels.last() else disp += allLabels.last()
-                }
-                disp
-            }
-        })
-    }
-
-    // Mapping label affiché -> index réel (proche) dans allLabels
-    val displayToRealIndex by remember(allLabels, displayLabels) {
-        mutableStateOf(run {
-            if (displayLabels.size == allLabels.size) {
-                allLabels.indices.toList()
-            } else {
-                val maxVisible = displayLabels.size
-                val step = allLabels.lastIndex.toFloat() / (maxVisible - 1).coerceAtLeast(1)
-                List(maxVisible) { i ->
-                    val real = (i * step).toInt().coerceIn(0, allLabels.lastIndex)
-                    real
-                }
-            }
-        })
-    }
+    val displayLabels = calculateDisplayLabels(allLabels, scrollerHeightPx, density)
+    val displayToRealIndex = calculateDisplayToRealIndex(allLabels, displayLabels)
 
     // Conteneur global pour permettre la bulle d’aperçu en overlay, tout en gardant la barre à droite "à côté"
     Box(Modifier.fillMaxSize()) {
@@ -463,7 +451,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                                 previewLabel = allLabels[realIdx]
                                 isDragging = true
                                 scope.launch {
-                                    listState.scrollToItem(headerPositions[realIdx])
+                                    listState.animateScrollToItem(headerPositions[realIdx])
                                 }
                                 isDragging = false
                             }
@@ -475,6 +463,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                             onDragEnd = { isDragging = false; previewLabel = null },
                             onDragCancel = { isDragging = false; previewLabel = null }
                         ) { change, _ ->
+                            change.consume()
                             if (scrollerHeightPx > 0 && displayLabels.isNotEmpty()) {
                                 val y = change.position.y.coerceIn(0f, scrollerHeightPx.toFloat())
                                 val idx = ((y / scrollerHeightPx) * displayLabels.size)
@@ -482,7 +471,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                                 val realIdx = displayToRealIndex[idx]
                                 previewLabel = allLabels[realIdx]
                                 scope.launch {
-                                    listState.scrollToItem(headerPositions[realIdx])
+                                    listState.animateScrollToItem(headerPositions[realIdx])
                                 }
                             }
                         }
@@ -492,9 +481,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                 Column(
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(vertical = 4.dp)
+                    modifier = Modifier.fillMaxHeight()
                 ) {
                     displayLabels.forEach { lbl ->
                         Text(
@@ -527,6 +514,35 @@ private fun <T> AlphabeticalListWithFastScroller(
                 )
             }
         }
+    }
+}
+
+private fun calculateDisplayLabels(
+    allLabels: List<String>,
+    scrollerHeightPx: Int,
+    density: Density
+): List<String> {
+    if (scrollerHeightPx <= 0) return allLabels
+    val minSlotPx = with(density) { 16.dp.toPx() } // attention, à adapter avec LocalDensity si nécessaire
+    val maxVisible = max(1, floor(scrollerHeightPx / minSlotPx).toInt())
+    if (allLabels.size <= maxVisible) return allLabels
+    val step = ceil(allLabels.size / maxVisible.toFloat()).toInt().coerceAtLeast(1)
+    val disp = mutableListOf<String>()
+    var i = 0
+    while (i < allLabels.size) {
+        disp += allLabels[i]
+        i += step
+    }
+    if (disp.last() != allLabels.last()) disp[disp.lastIndex] = allLabels.last()
+    return disp
+}
+
+private fun calculateDisplayToRealIndex(allLabels: List<String>, displayLabels: List<String>): List<Int> {
+    return if (displayLabels.size == allLabels.size) allLabels.indices.toList()
+    else {
+        val maxVisible = displayLabels.size
+        val step = allLabels.lastIndex.toFloat() / (maxVisible - 1).coerceAtLeast(1)
+        List(maxVisible) { i -> (i * step).toInt().coerceIn(0, allLabels.lastIndex) }
     }
 }
 
