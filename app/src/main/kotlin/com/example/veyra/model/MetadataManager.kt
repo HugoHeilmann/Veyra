@@ -1,4 +1,6 @@
 import android.content.Context
+import androidx.core.net.toUri
+import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicMetadata
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -74,5 +76,47 @@ object MetadataManager {
     // Récupérer une entrée par chemin
     fun getByPath(context: Context, filePath: String): MusicMetadata? {
         return readAll(context).find { it.filePath == filePath }
+    }
+
+    // Remove all unused data
+    fun cleanup(context: Context) {
+        val list = readAll(context).toMutableList()
+        val existingPaths = MusicHolder.getMusicList().map { it.uri }.toSet()
+
+        // Remove suppressed musics
+        val cleanedList = list.filter { metadata ->
+            existingPaths.contains(metadata.filePath)
+        }.toMutableList()
+
+        // Covers verification
+        for (i in cleanedList.indices) {
+            val meta = cleanedList[i]
+
+            if (!meta.coverPath.isNullOrEmpty()) {
+                val path = meta.coverPath!!
+
+                val isValid = when {
+                    path.startsWith("content://") -> {
+                        try {
+                            val uri = path.toUri()
+                            context.contentResolver.openInputStream(uri)?.close()
+                            true
+                        } catch (_: Exception) {
+                            false
+                        }
+                    }
+                    path.startsWith("file://") || path.startsWith("/") -> {
+                        File(path).exists()
+                    }
+                    else -> false
+                }
+
+                if (!isValid) {
+                    cleanedList[i] = meta.copy(coverPath = null)
+                }
+            }
+        }
+
+        writeAll(context, cleanedList)
     }
 }

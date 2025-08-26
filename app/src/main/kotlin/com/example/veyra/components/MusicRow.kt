@@ -1,6 +1,5 @@
 package com.example.veyra.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
@@ -10,9 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import com.example.veyra.model.Music
 import com.example.veyra.R
 
@@ -63,12 +65,14 @@ fun MusicRow(
                 }
         )
 
-        Image(
-            painter = if (music.coverPath != null) {
-                rememberAsyncImagePainter(music.coverPath)
-            } else {
-                painterResource(id = music.image)
-            },
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(music.coverPath ?: music.image)
+                .size(Size.ORIGINAL)
+                .crossfade(true)
+                .error(music.image)
+                .fallback(music.image)
+                .build(),
             contentDescription = "Music cover",
             modifier = Modifier
                 .size(64.dp)
