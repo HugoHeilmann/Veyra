@@ -32,11 +32,11 @@ fun BottomNavigationBar(navController: NavHostController) {
         )
         NavigationBarItem(
             icon = { Icon(Icons.Filled.Settings, contentDescription = "Paramètres") },
-            label = { Text("Paramètres") },
-            selected = currentRoute == "settings",
+            label = { Text("Playlists") },
+            selected = currentRoute == "playlists",
             onClick = {
-                if (currentRoute != "settings") {
-                    navController.navigate("settings") {
+                if (currentRoute != "playlists") {
+                    navController.navigate("playlists") {
                         popUpTo("music_list")
                         launchSingleTop = true
                     }

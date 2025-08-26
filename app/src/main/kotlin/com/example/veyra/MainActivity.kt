@@ -22,6 +22,8 @@ import com.example.veyra.components.MiniPlayerBar
 import com.example.veyra.model.MediaSessionManager
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicPlayerManager
+import com.example.veyra.model.metadata.MetadataManager
+import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.screens.*
 import com.example.veyra.service.NotificationService
 import com.example.veyra.ui.theme.VeyraTheme
@@ -39,8 +41,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Init metadata.json if needed
+        // Init metadata if needed
         MetadataManager.initializeIfNeeded(this)
+        PlaylistManager.initializeIfNeeded(this)
 
         // Init MediaSessionManager
         MediaSessionManager.init(this)
@@ -136,7 +139,7 @@ fun VeyraApp() {
                 }
             }
             composable("player") { PlayerScreen(navController) }
-            composable("settings") { SettingsScreen(navController) }
+            composable("playlists") { PlaylistsScreen(navController) }
         }
     }
 }

@@ -1,3 +1,5 @@
+package com.example.veyra.model.metadata
+
 import android.content.Context
 import androidx.core.net.toUri
 import com.example.veyra.model.MusicHolder
