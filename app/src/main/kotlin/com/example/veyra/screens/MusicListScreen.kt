@@ -36,6 +36,7 @@ import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicListViewModel
 import com.example.veyra.model.loadMusicFromDevice
+import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.toMusic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
