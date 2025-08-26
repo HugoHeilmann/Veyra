@@ -1,4 +1,4 @@
-package com.example.vibra.screens
+package com.example.veyra.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

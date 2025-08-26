@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.vibra"
+    namespace = "com.example.veyra"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.vibra"
+        applicationId = "com.example.veyra"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

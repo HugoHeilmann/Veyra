@@ -1,11 +1,11 @@
-package com.example.vibra.service
+package com.example.veyra.service
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.example.vibra.model.MediaSessionManager
-import com.example.vibra.model.MusicHolder
-import com.example.vibra.model.MusicPlayerManager
+import com.example.veyra.model.MediaSessionManager
+import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.MusicPlayerManager
 
 class NotificationActionReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {

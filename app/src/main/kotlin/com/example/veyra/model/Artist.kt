@@ -1,4 +1,4 @@
-package com.example.vibra.model
+package com.example.veyra.model
 
 data class ArtistWithSongs(
     val artist: String,

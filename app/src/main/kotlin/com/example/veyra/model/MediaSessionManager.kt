@@ -1,4 +1,4 @@
-package com.example.vibra.model
+package com.example.veyra.model
 
 import android.content.Context
 import android.support.v4.media.session.MediaSessionCompat
@@ -11,7 +11,7 @@ object MediaSessionManager {
     fun init(context: Context) {
         if (mediaSession != null) return // déjà initialisée
 
-        mediaSession = MediaSessionCompat(context, "VibraSession").apply {
+        mediaSession = MediaSessionCompat(context, "VeyraSession").apply {
             setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
                         MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS

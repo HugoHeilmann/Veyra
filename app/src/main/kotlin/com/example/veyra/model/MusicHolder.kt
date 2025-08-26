@@ -1,4 +1,4 @@
-package com.example.vibra.model
+package com.example.veyra.model
 
 import android.content.Context
 import android.content.Intent
@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-import com.example.vibra.service.NotificationService
+import com.example.veyra.service.NotificationService
 
 object MusicHolder {
     private var currentMusic: Music? = null

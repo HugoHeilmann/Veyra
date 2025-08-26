@@ -1,8 +1,8 @@
-package com.example.vibra.model
+package com.example.veyra.model
 
 import android.content.Context
 import android.provider.MediaStore
-import com.example.vibra.R
+import com.example.veyra.R
 
 fun loadMusicFromDevice(context: Context): List<Music> {
     val musicList = mutableListOf<Music>()

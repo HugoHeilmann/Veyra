@@ -1,4 +1,4 @@
-package com.example.vibra.screens
+package com.example.veyra.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,13 +22,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.vibra.model.MusicHolder
+import com.example.veyra.model.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
+fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
     val context = LocalContext.current
-    val songs = MusicHolder.getArtistSongs(artistName)
+    val songs = MusicHolder.getAlbumSongs(albumName)
 
     Scaffold(
         topBar = {
@@ -38,12 +38,12 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = artistName)
+                        Text(text = albumName)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navController.navigate("music_list?selectedTab=Artistes") {
+                        navController.navigate("music_list?selectedTab=Albums") {
                             popUpTo("music_list") { inclusive = true }
                             launchSingleTop = true
                         }
@@ -56,14 +56,14 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                 }
             )
         }
-    ) { innerPadding ->
+    ){ innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
             items(songs) { song ->
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            MusicHolder.setCurrentMusic(context, song, songs)
+                            MusicHolder.setCurrentMusic(context,song, songs)
                             navController.navigate("player")
                         }
                         .padding(16.dp)
@@ -73,7 +73,7 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                         color = Color.White
                     )
                     Text(
-                        text = song.album ?: "Unknown Album",
+                        text = song.artist ?: "Unknown Artist",
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 4.dp)
                     )

@@ -1,4 +1,4 @@
-package com.example.vibra.components
+package com.example.veyra.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,8 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.vibra.model.MusicHolder
-import com.example.vibra.model.MusicPlayerManager
+import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.MusicPlayerManager
 
 @Composable
 fun MiniPlayerBar(navController: NavHostController) {
