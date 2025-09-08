@@ -1,6 +1,13 @@
 package com.example.veyra.model
 
+import android.bluetooth.BluetoothA2dp
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothHeadset
+import android.bluetooth.BluetoothProfile
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioManager
 import android.media.MediaPlayer
 import androidx.compose.runtime.getValue
@@ -12,10 +19,46 @@ object MusicPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
     private var currentMusic: Music? = null
     private var audioManager: AudioManager? = null
+    private var appContext: Context? = null
 
     private var _isPlaying by mutableStateOf(false)
 
     private var onCompletionListener: (() ->  Unit)? = null
+
+    private var receiversRegistered = false
+
+    private val audioNoisyReceiver = object: BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == intent?.action) {
+                pauseMusicInternal()
+                MediaSessionManager.updatePlaybackState(false)
+                abandonAudioFocus()
+            }
+        }
+    }
+
+    private val bluetoothReceiver = object: BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED,
+                    BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED -> {
+                        val state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1)
+
+                        if (state == BluetoothProfile.STATE_DISCONNECTED) {
+                            pauseMusicInternal()
+                            MediaSessionManager.updatePlaybackState(false)
+                            abandonAudioFocus()
+                        }
+                    }
+
+                BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                    pauseMusicInternal()
+                    MediaSessionManager.updatePlaybackState(false)
+                    abandonAudioFocus()
+                }
+            }
+        }
+    }
 
     // Audio focus change listener
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
@@ -26,10 +69,43 @@ object MusicPlayerManager {
         }
     }
 
-    fun playMusic(context: Context, music: Music, onPrepared: (Int) -> Unit = {}) {
+    fun init(context: Context) {
+        if (appContext == null) appContext = context.applicationContext
         if (audioManager == null) {
-            audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager = appContext!!.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         }
+        registerReceivers()
+    }
+
+    private fun registerReceivers() {
+        if (receiversRegistered) return
+        val ctx = appContext ?: return
+
+        ctx.registerReceiver(
+            audioNoisyReceiver,
+            IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        )
+
+        val btFilter = IntentFilter().apply {
+            addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
+            addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+        }
+        ctx.registerReceiver(bluetoothReceiver, btFilter)
+
+        receiversRegistered = true
+    }
+
+    private fun unregisterReceivers() {
+        if (!receiversRegistered) return
+        val ctx = appContext ?: return
+        try { ctx.unregisterReceiver(audioNoisyReceiver) } catch (_: Exception) {}
+        try { ctx.unregisterReceiver(bluetoothReceiver) } catch (_: Exception) {}
+        receiversRegistered = false
+    }
+
+    fun playMusic(context: Context, music: Music, onPrepared: (Int) -> Unit = {}) {
+        if (appContext == null) init(context)
 
         if (mediaPlayer != null && currentMusic?.uri == music.uri) {
             if (mediaPlayer?.isPlaying == false) {
@@ -84,6 +160,12 @@ object MusicPlayerManager {
         mediaPlayer = null
         currentMusic = null
         _isPlaying = false
+    }
+
+    fun release() {
+        stopMusicInternal()
+        abandonAudioFocus()
+        unregisterReceivers()
     }
 
     fun isPlaying(): Boolean = _isPlaying
