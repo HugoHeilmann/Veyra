@@ -395,85 +395,130 @@ private fun <T> AlphabeticalListWithFastScroller(
     listState: LazyListState
 ) {
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
 
-    // Positions des headers dans la LazyColumn
-    val headerPositions = sections.mapIndexed { index, section ->
-        sections.take(index).sumOf { it.items.size + 1 }
+    // 1) Indices de début de section (O(n))
+    val headerStartIndices = remember(sections) {
+        val out = ArrayList<Int>(sections.size)
+        var acc = 0
+        sections.forEach { s ->
+            out += acc
+            acc += 1 + s.items.size // 1 header + N items
+        }
+        out
     }
 
+    // 2) Labels
     val allLabels = remember(sections) { sections.map { it.label } }
 
+    // 3) État scroller
     var scrollerHeightPx by remember { mutableStateOf(0) }
     var isDragging by remember { mutableStateOf(false) }
     var previewLabel by remember { mutableStateOf<String?>(null) }
 
-    val density = LocalDensity.current
+    // 4) Affichage compressé des labels
+    val displayLabels = remember(allLabels, scrollerHeightPx) {
+        calculateDisplayLabels(allLabels, scrollerHeightPx, density)
+    }
+    val displayToRealIndex = remember(allLabels, displayLabels) {
+        calculateDisplayToRealIndex(allLabels, displayLabels)
+    }
 
-    val displayLabels = calculateDisplayLabels(allLabels, scrollerHeightPx, density)
-    val displayToRealIndex = calculateDisplayToRealIndex(allLabels, displayLabels)
+    // 5) Throttle: ne scroller que si la cible change
+    var lastTargetSection by remember { mutableStateOf(-1) }
 
-    // Conteneur global pour permettre la bulle d’aperçu en overlay, tout en gardant la barre à droite "à côté"
+    // 6) Un seul job de scroll à la fois
+    var scrollJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    fun launchScroll(toIndex: Int, animated: Boolean) {
+        if (toIndex < 0) return
+        scrollJob?.cancel()
+        scrollJob = scope.launch {
+            if (animated) listState.animateScrollToItem(toIndex)
+            else listState.scrollToItem(toIndex)
+        }
+    }
+
     Box(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxSize()) {
-            // --- Liste à gauche ---
+            // --- Liste ---
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight()
+                    .fillMaxHeight(),
+                userScrollEnabled = !isDragging // évite les conflits pendant le drag
             ) {
-                sections.forEach { section ->
-                    item(key = "header_${section.label}") {
+                sections.forEachIndexed { secIdx, section ->
+                    item(
+                        key = "header_${section.label}",
+                        contentType = "header"
+                    ) {
                         headerContent(section.label)
                     }
-                    items(section.items.size, key = { idx -> "item_${section.label}_$idx" }) { i ->
+                    items(
+                        count = section.items.size,
+                        key = { i -> "item_${section.label}_$i" },
+                        contentType = { "item" }
+                    ) { i ->
                         itemContent(section.items[i])
                     }
                 }
             }
 
-            // --- Index alphabétique à droite (côte à côte) ---
+            // --- Index alphabétique ---
             Box(
                 modifier = Modifier
                     .width(28.dp)
                     .fillMaxHeight()
-                    .padding(end = 6.dp) // petit espace du bord droit
+                    .padding(end = 6.dp)
                     .background(
                         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                         shape = MaterialTheme.shapes.small
                     )
                     .onGloballyPositioned { scrollerHeightPx = it.size.height }
+                    // TAP: une seule animation
                     .pointerInput(displayLabels) {
                         detectTapGestures { offset ->
-                            if (scrollerHeightPx > 0 && displayLabels.isNotEmpty()) {
-                                val idx = ((offset.y / scrollerHeightPx) * displayLabels.size)
-                                    .toInt().coerceIn(0, displayLabels.lastIndex)
-                                val realIdx = displayToRealIndex[idx]
-                                previewLabel = allLabels[realIdx]
-                                isDragging = true
-                                scope.launch {
-                                    listState.animateScrollToItem(headerPositions[realIdx])
-                                }
-                                isDragging = false
-                            }
+                            if (scrollerHeightPx <= 0 || displayLabels.isEmpty()) return@detectTapGestures
+                            val idx = ((offset.y / scrollerHeightPx) * displayLabels.size)
+                                .toInt().coerceIn(0, displayLabels.lastIndex)
+                            val realIdx = displayToRealIndex[idx]
+                            previewLabel = allLabels[realIdx]
+                            isDragging = false
+                            lastTargetSection = -1
+                            val listIndex = headerStartIndices[realIdx]
+                            launchScroll(listIndex, animated = true)
                         }
                     }
+                    // DRAG: scrollToItem instantané + throttle
                     .pointerInput(displayLabels) {
                         detectDragGestures(
-                            onDragStart = { isDragging = true },
-                            onDragEnd = { isDragging = false; previewLabel = null },
-                            onDragCancel = { isDragging = false; previewLabel = null }
+                            onDragStart = {
+                                isDragging = true
+                                lastTargetSection = -1
+                            },
+                            onDragEnd = {
+                                isDragging = false
+                                previewLabel = null
+                                lastTargetSection = -1
+                            },
+                            onDragCancel = {
+                                isDragging = false
+                                previewLabel = null
+                                lastTargetSection = -1
+                            }
                         ) { change, _ ->
                             change.consume()
-                            if (scrollerHeightPx > 0 && displayLabels.isNotEmpty()) {
-                                val y = change.position.y.coerceIn(0f, scrollerHeightPx.toFloat())
-                                val idx = ((y / scrollerHeightPx) * displayLabels.size)
-                                    .toInt().coerceIn(0, displayLabels.lastIndex)
-                                val realIdx = displayToRealIndex[idx]
+                            if (scrollerHeightPx <= 0 || displayLabels.isEmpty()) return@detectDragGestures
+                            val y = change.position.y.coerceIn(0f, scrollerHeightPx.toFloat())
+                            val idx = ((y / scrollerHeightPx) * displayLabels.size)
+                                .toInt().coerceIn(0, displayLabels.lastIndex)
+                            val realIdx = displayToRealIndex[idx]
+                            if (realIdx != lastTargetSection) {
+                                lastTargetSection = realIdx
                                 previewLabel = allLabels[realIdx]
-                                scope.launch {
-                                    listState.animateScrollToItem(headerPositions[realIdx])
-                                }
+                                val listIndex = headerStartIndices[realIdx]
+                                launchScroll(listIndex, animated = false) // 🔥 instantané pendant drag
                             }
                         }
                     },
@@ -496,7 +541,7 @@ private fun <T> AlphabeticalListWithFastScroller(
             }
         }
 
-        // --- Bulle d’aperçu (overlay, au centre) ---
+        // Bulle d’aperçu
         if (isDragging && previewLabel != null) {
             Box(
                 modifier = Modifier
@@ -517,6 +562,7 @@ private fun <T> AlphabeticalListWithFastScroller(
         }
     }
 }
+
 
 private fun calculateDisplayLabels(
     allLabels: List<String>,
