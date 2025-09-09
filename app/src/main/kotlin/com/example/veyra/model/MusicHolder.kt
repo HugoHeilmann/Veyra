@@ -17,6 +17,7 @@ object MusicHolder {
 
     private val artistMap = mutableMapOf<String, List<Music>>()
     private val albumMap = mutableMapOf<String, List<Music>>()
+    private val playlistMap = mutableMapOf<String, List<Music>>()
 
     var isShuffled by mutableStateOf(false)
         private set
@@ -42,6 +43,9 @@ object MusicHolder {
                 .groupBy { it.album ?: "Unfinished" }
                 .mapValues { entry -> entry.value.sortedBy { it.name.lowercase() } }
         )
+
+        playlistMap.clear()
+        // TODO fill playlistMap with metadatas
     }
 
     fun setPlayedMusic(context: Context, music: Music) {
@@ -76,6 +80,7 @@ object MusicHolder {
     fun getMusicList(): List<Music> = musicList
     fun getArtistSongs(artist: String): List<Music> = artistMap[artist] ?: emptyList()
     fun getAlbumSongs(album: String): List<Music> = albumMap[album] ?: emptyList()
+    fun getPlaylistSongs(playlist: String): List<Music> = playlistMap[playlist] ?: emptyList()
     fun getCurrentMusic(): Music? = currentMusic
 
     private fun getActiveList(): List<Music> {

@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,6 +59,15 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
         }
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
+            item {
+                RandomPlay(
+                    navController = navController,
+                    artist = artistName,
+                    album = "",
+                    playlist = ""
+                )
+            }
+
             items(songs) { song ->
                 Column(
                     modifier = Modifier
