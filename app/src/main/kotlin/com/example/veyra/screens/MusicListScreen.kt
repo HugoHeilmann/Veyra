@@ -491,7 +491,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                             isDragging = false
                             lastTargetSection = -1
                             val listIndex = headerStartIndices[realIdx]
-                            launchScroll(listIndex, animated = true)
+                            launchScroll(listIndex, animated = false)
                         }
                     }
                     // DRAG: scrollToItem instantané + throttle
