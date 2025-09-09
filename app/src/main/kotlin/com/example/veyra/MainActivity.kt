@@ -45,6 +45,9 @@ class MainActivity : ComponentActivity() {
         MetadataManager.initializeIfNeeded(this)
         PlaylistManager.initializeIfNeeded(this)
 
+        //
+        MusicPlayerManager.init(this)
+
         // Init MediaSessionManager
         MediaSessionManager.init(this)
 
@@ -68,6 +71,7 @@ class MainActivity : ComponentActivity() {
         stopService(Intent(this, NotificationService::class.java))
         MusicHolder.reset()
         MusicPlayerManager.stopMusic()
+        MusicPlayerManager.release()
         MetadataManager.cleanup(this)
     }
 }
