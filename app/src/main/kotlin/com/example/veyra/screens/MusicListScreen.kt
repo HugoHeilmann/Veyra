@@ -233,8 +233,12 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                             )
                         },
                         itemContent = { music ->
+                            val musicMetadata = MetadataManager.getByPath(context, music.uri)
+
+                            val musicReference = musicMetadata?.toMusic() ?: music
+
                             MusicRow(
-                                music = music,
+                                music = musicReference,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 8.dp, horizontal = 16.dp),
@@ -243,7 +247,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     navController.navigate("player")
                                 },
                                 onEditClick = { selectedMusic ->
-                                    val encodedUri = URLEncoder.encode(selectedMusic.uri, StandardCharsets.UTF_8.toString())
+                                    val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
                                     navController.navigate("editMusic/${encodedUri}")
                                 }
                             )
