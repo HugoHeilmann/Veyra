@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.veyra.components.MusicRow
+import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicListViewModel
@@ -165,6 +166,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                 )
             )
         },
+        contentWindowInsets = WindowInsets(0)
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -219,6 +221,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                     val sections = remember(groupedSongs) {
                         buildSectionsFromGroupedMap(groupedSongs)
                     }
+
+                    RandomPlay(navController, "", "", "")
 
                     AlphabeticalListWithFastScroller(
                         sections = sections,

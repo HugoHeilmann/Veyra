@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -111,7 +112,9 @@ fun VeyraApp() {
         NavHost(
             navController = navController,
             startDestination = "music_list",
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
         ) {
             composable("music_list?selectedTab={selectedTab}") { backStackEntry ->
                 val selectedTab = backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
