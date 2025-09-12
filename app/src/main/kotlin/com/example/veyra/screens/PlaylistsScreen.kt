@@ -7,8 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 import com.example.veyra.components.Playlist
 import com.example.veyra.components.PlaylistItem
@@ -49,24 +51,34 @@ fun PlaylistsScreen(navController: NavController) {
                 .padding(16.dp),
             contentAlignment = Alignment.TopCenter
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Button(onClick = { showDialog = true }) {
-                    Text(text = "Créer une nouvelle playlist")
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                LazyColumn {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
                     items(playlists) { playlist ->
                         PlaylistItem(
                             playlist = playlist,
-                            onEditClick = { /* TODO */},
+                            onEditClick = {
+                                val encoded = playlist.name.toUri()
+                                navController.navigate("edit_playlist/$encoded")
+                            },
                             onDeleteClick = {
                                 playlistToDelete = playlist
                                 showDeleteDialog = true
                             }
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = { showDialog = true }) {
+                    Text(text = "Créer une nouvelle playlist")
                 }
             }
 
@@ -100,14 +112,19 @@ fun PlaylistsScreen(navController: NavController) {
                         }
                     },
                     dismissButton = {
-                        Button(onClick = {
-                            showDialog = false
-                            playlistName = ""
-                        }) {
-                            Text("Annuler")
+                        TextButton(
+                            onClick = {
+                                showDialog = false
+                                playlistName = ""
+                            }
+                        ) {
+                            Text(
+                                "Annuler",
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     },
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color(0xFF2C2C2C)
                 )
             }
 
@@ -140,7 +157,7 @@ fun PlaylistsScreen(navController: NavController) {
                             Text("Annuler")
                         }
                     },
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color(0xFF2C2C2C)
                 )
             }
         }
