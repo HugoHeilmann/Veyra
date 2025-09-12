@@ -147,6 +147,16 @@ fun VeyraApp() {
             }
             composable("player") { PlayerScreen(navController) }
             composable("playlists") { PlaylistsScreen(navController) }
+            composable("edit_playlist/{playlistName}") { backStackEntry ->
+                val playlistName = backStackEntry.arguments?.getString("playlistName")
+
+                if (playlistName != null) {
+                    EditPlaylistScreen(
+                        playlistName = playlistName,
+                        navController = navController
+                    )
+                }
+            }
         }
     }
 }
