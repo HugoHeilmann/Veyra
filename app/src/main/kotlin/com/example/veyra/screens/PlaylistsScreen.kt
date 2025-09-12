@@ -1,5 +1,6 @@
 package com.example.veyra.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,8 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
@@ -16,10 +20,14 @@ import com.example.veyra.components.Playlist
 import com.example.veyra.components.PlaylistItem
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.model.metadata.PlaylistMetadata
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistsScreen(navController: NavController) {
+    val context = LocalContext.current
+
     var showDialog by remember { mutableStateOf(false) }
     var playlistName by remember { mutableStateOf("") }
 
@@ -32,6 +40,37 @@ fun PlaylistsScreen(navController: NavController) {
 
     var playlistToDelete by remember { mutableStateOf<Playlist?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // Focus requester pour le champ de la popup
+    val nameFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(showDialog) {
+        if (showDialog) {
+            // Donne le focus quand la popup apparaît
+            nameFocusRequester.requestFocus()
+        }
+    }
+
+    fun tryCreatePlaylist(): Boolean {
+        val name = playlistName.trim()
+        if (name.isEmpty()) {
+            Toast.makeText(context, "Le nom ne peut pas être vide.", Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        val alreadyExists = playlists.any { it.name.equals(name, ignoreCase = true) }
+        if (alreadyExists) {
+            Toast.makeText(context, "Une playlist avec ce nom existe déjà.", Toast.LENGTH_SHORT).show()
+            return false
+        }
+
+        // OK : on ajoute et on persiste
+        playlists = (playlists + Playlist(name, 0)).toMutableList()
+        PlaylistManager.addIfNotExists(
+            navController.context,
+            PlaylistMetadata(name = name)
+        )
+        return true
+    }
 
     Scaffold(
         topBar = {
@@ -84,29 +123,40 @@ fun PlaylistsScreen(navController: NavController) {
 
             if (showDialog) {
                 AlertDialog(
-                    onDismissRequest = { showDialog = false },
+                    onDismissRequest = {
+                        showDialog = false
+                        playlistName = ""
+                    },
                     title = { Text(text = "Nouvelle Playlist") },
                     text = {
                         Column {
                             OutlinedTextField(
                                 value = playlistName,
                                 onValueChange = { playlistName = it },
-                                label = { Text("Nom de la playlist") }
+                                label = { Text("Nom de la playlist") },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(nameFocusRequester),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        if (tryCreatePlaylist()) {
+                                            showDialog = false
+                                            playlistName = ""
+                                        }
+                                    }
+                                )
                             )
                         }
                     },
                     confirmButton = {
                         Button(onClick = {
-                            if (playlistName.isNotBlank()) {
-                                playlists = (playlists + Playlist(playlistName, 0)).toMutableList()
-
-                                PlaylistManager.addIfNotExists(
-                                    navController.context,
-                                    PlaylistMetadata(name = playlistName)
-                                )
+                            if (tryCreatePlaylist()) {
+                                showDialog = false
+                                playlistName = ""
                             }
-                            showDialog = false
-                            playlistName = ""
+                            // Sinon : on reste dans la popup (ne rien faire de plus)
                         }) {
                             Text("Enregistrer")
                         }
