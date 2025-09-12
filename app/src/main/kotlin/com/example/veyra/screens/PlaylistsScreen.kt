@@ -22,6 +22,7 @@ import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.model.metadata.PlaylistMetadata
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import com.example.veyra.model.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,6 +103,12 @@ fun PlaylistsScreen(navController: NavController) {
                     items(playlists) { playlist ->
                         PlaylistItem(
                             playlist = playlist,
+                            onPlayClick = {
+                                MusicHolder.buildPlaylistMap(context, MusicHolder.getMusicList())
+                                val songs = MusicHolder.getPlaylistSongs(playlist.name)
+                                MusicHolder.setCurrentMusic(context, songs[0], songs)
+                                navController.navigate("player")
+                            },
                             onEditClick = {
                                 val encoded = playlist.name.toUri()
                                 navController.navigate("edit_playlist/$encoded")

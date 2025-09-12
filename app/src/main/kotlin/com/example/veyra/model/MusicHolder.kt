@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.veyra.model.metadata.PlaylistManager
 
 import com.example.veyra.service.NotificationService
 
@@ -21,6 +22,19 @@ object MusicHolder {
 
     var isShuffled by mutableStateOf(false)
         private set
+
+    fun buildPlaylistMap(context: Context, allMusic: List<Music>) {
+        playlistMap.clear()
+        val allPlaylists = PlaylistManager.readAll(context)
+
+        allPlaylists.forEach { playlist ->
+            val musics = playlist.musicFiles.mapNotNull { filePath ->
+                allMusic.find { it.uri == filePath }
+            }
+            playlistMap[playlist.name] = musics
+        }
+    }
+
 
     fun setMusicList(list: List<Music>) {
         musicList = list.sortedBy { it.name.lowercase() }
@@ -45,7 +59,6 @@ object MusicHolder {
         )
 
         playlistMap.clear()
-        // TODO fill playlistMap with metadatas
     }
 
     fun setPlayedMusic(context: Context, music: Music) {

@@ -30,6 +30,7 @@ data class Playlist(
 @Composable
 fun PlaylistItem(
     playlist: Playlist,
+    onPlayClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -55,6 +56,16 @@ fun PlaylistItem(
             Text(text = "${playlist.musicCount} musiques", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
 
+        // Play button
+        IconButton(onClick = onPlayClick) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_play),
+                contentDescription = "Play Playlist",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
         // Delete button
         IconButton(onClick = onDeleteClick) {
             Icon(
@@ -71,8 +82,7 @@ fun PlaylistItem(
                 painter = painterResource(id = R.drawable.ic_edit),
                 contentDescription = "Edit playlist",
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .size(24.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
     }
