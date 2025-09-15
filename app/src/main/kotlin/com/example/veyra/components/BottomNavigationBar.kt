@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -18,7 +18,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
+fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = true) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     Column {
@@ -26,11 +26,12 @@ fun BottomNavigationBar(navController: NavHostController) {
 
         NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
             NavigationBarItem(
-                icon = { Icon(Icons.Filled.LibraryMusic, contentDescription = "Ma musique") },
+                icon = { Icon(Icons.Filled.MusicNote, contentDescription = "Ma musique") },
                 label = { Text("Ma musique") },
                 selected = currentRoute == "music_list",
+                enabled = isEnabled,
                 onClick = {
-                    if (currentRoute != "music_list") {
+                    if (currentRoute != "music_list" && isEnabled) {
                         navController.navigate("music_list") {
                             popUpTo("music_list") { inclusive = true }
                             launchSingleTop = true
@@ -39,11 +40,12 @@ fun BottomNavigationBar(navController: NavHostController) {
                 }
             )
             NavigationBarItem(
-                icon = { Icon(Icons.Filled.Settings, contentDescription = "Paramètres") },
+                icon = { Icon(Icons.Filled.LibraryMusic, contentDescription = "Paramètres") },
                 label = { Text("Playlists") },
                 selected = currentRoute == "playlists",
+                enabled = isEnabled,
                 onClick = {
-                    if (currentRoute != "playlists") {
+                    if (currentRoute != "playlists" && isEnabled) {
                         navController.navigate("playlists") {
                             popUpTo("music_list")
                             launchSingleTop = true
