@@ -17,6 +17,8 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.example.veyra.model.Music
 import com.example.veyra.R
+import com.example.veyra.model.metadata.MetadataManager
+import com.example.veyra.model.toMusic
 
 @Composable
 fun MusicRow(
@@ -25,6 +27,11 @@ fun MusicRow(
     onClick: () -> Unit,
     onEditClick: (Music) -> Unit
 ) {
+    val context = LocalContext.current
+
+    val usable = MetadataManager.getByPath(context, music.uri)
+    val musicToUse = usable?.toMusic() ?: music
+
     Row(
         modifier = modifier
             .clickable { onClick() }
@@ -37,17 +44,17 @@ fun MusicRow(
                 .padding(end = 8.dp)
         ) {
             Text(
-                text = music.name,
+                text = musicToUse.name,
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = music.artist ?: "Unknown",
+                text = musicToUse.artist ?: "Unknown",
                 color = Color.Gray,
                 style = MaterialTheme.typography.bodySmall
             )
             Text(
-                text = music.album ?: "Unknown album",
+                text = musicToUse.album ?: "Unknown album",
                 color = Color.Gray,
                 style = MaterialTheme.typography.bodySmall
             )
@@ -67,11 +74,11 @@ fun MusicRow(
 
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                .data(music.coverPath ?: music.image)
+                .data(musicToUse.coverPath ?: musicToUse.image)
                 .size(Size.ORIGINAL)
                 .crossfade(true)
-                .error(music.image)
-                .fallback(music.image)
+                .error(musicToUse.image)
+                .fallback(musicToUse.image)
                 .build(),
             contentDescription = "Music cover",
             modifier = Modifier
