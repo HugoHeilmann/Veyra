@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat.checkSelfPermission
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import com.example.veyra.components.BottomNavigationBar
 import com.example.veyra.components.MiniPlayerBar
@@ -83,6 +84,8 @@ fun VeyraApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val appUiVm: AppUIViewModel = viewModel()
+
     // Permission audio
     val audioPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_AUDIO
@@ -104,7 +107,10 @@ fun VeyraApp() {
             if (currentRoute != "player") {
                 Column {
                     MiniPlayerBar(navController)
-                    BottomNavigationBar(navController)
+                    BottomNavigationBar(
+                        navController,
+                        isEnabled = appUiVm.isBottomBarEnabled
+                    )
                 }
             }
         }

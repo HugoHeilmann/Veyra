@@ -5,6 +5,7 @@ import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.veyra.AppUIViewModel
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.Music
@@ -53,17 +55,28 @@ import kotlin.math.max
 @Composable
 fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chansons") {
     val context = LocalContext.current
+    val appUiVm: AppUIViewModel = viewModel(context as ComponentActivity)
+
     var searchText by remember { mutableStateOf("") }
     var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
     var allMusic by remember { mutableStateOf<List<Music>>(emptyList()) }
 
+    val metadataByPath by remember(allMusic) {
+        mutableStateOf(
+            MetadataManager.readAll(context).associateBy { it.filePath }
+        )
+    }
+
     val viewModel: MusicListViewModel = viewModel()
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) { appUiVm.updateBottomBarEnabled(false) }
 
     // Charger les musiques au lancement
     LaunchedEffect(Unit) {
         if (MusicHolder.getMusicList().isEmpty()) {
             allMusic = emptyList()
+            appUiVm.updateBottomBarEnabled(false)
 
             launch(Dispatchers.IO) {
                 scanMusicFolder(context)
@@ -75,10 +88,12 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                 withContext(Dispatchers.Main) {
                     MusicHolder.setMusicList(musics)
                     allMusic = musics
+                    appUiVm.updateBottomBarEnabled(true)
                 }
             }
         } else {
             allMusic = MusicHolder.getMusicList()
+            appUiVm.updateBottomBarEnabled(true)
         }
     }
 
@@ -237,9 +252,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                             )
                         },
                         itemContent = { music ->
-                            val musicMetadata = MetadataManager.getByPath(context, music.uri)
-
-                            val musicReference = musicMetadata?.toMusic() ?: music
+                            val musicReference = metadataByPath[music.uri]?.toMusic() ?: music
 
                             MusicRow(
                                 music = musicReference,
