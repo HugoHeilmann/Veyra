@@ -1,31 +1,37 @@
 package com.example.veyra.screens
 
-import android.R.attr.title
-import android.view.Surface
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -52,8 +58,10 @@ fun EditPlaylistScreen(
 ) {
     val context = LocalContext.current
 
+    // Liste complète de chansons
     val allSongs: List<Music> = remember { MusicHolder.getMusicList() }
 
+    // Sélections initiales de la playlist
     val initialSelected: List<String> = remember {
         PlaylistManager.readAll(context)
             .find { it.name == playlistName }
@@ -61,8 +69,26 @@ fun EditPlaylistScreen(
             ?: emptyList()
     }
 
+    // État de sélection courant
     val selected = remember {
         mutableStateListOf<String>().apply { addAll(initialSelected) }
+    }
+
+    // --- 🔎 Recherche ---
+    var searchText by remember { mutableStateOf("") }
+    // Liste filtrée (nom, artiste, album)
+    val filteredSongs by remember(allSongs, searchText) {
+        derivedStateOf {
+            if (searchText.isBlank()) allSongs
+            else {
+                val q = searchText.trim().lowercase()
+                allSongs.filter { m ->
+                    m.name.lowercase().contains(q) ||
+                            (m.artist?.lowercase()?.contains(q) == true) ||
+                            (m.album?.lowercase()?.contains(q) == true)
+                }
+            }
+        }
     }
 
     fun toggleSelection(filePath: String) {
@@ -121,62 +147,100 @@ fun EditPlaylistScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            items(
-                items = allSongs,
-                key = { it.uri }
-            ) { music ->
-                val isSelected = selected.contains(music.uri)
-                val bg = if (isSelected)
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                else
-                    MaterialTheme.colorScheme.surface
-
-                ListItem(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(
-                            width = 2.dp,
-                            color = bg,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable { toggleSelection(music.uri) }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    headlineContent = {
-                        Text(
-                            text = music.name,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    supportingContent = {
-                        val artist = music.artist ?: "Artiste inconnu"
-                        Text(artist, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    },
-                    trailingContent = {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = { toggleSelection(music.uri) }
+            // --- 🔎 Barre de recherche ---
+            OutlinedTextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                placeholder = { Text("Rechercher une musique") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchText.isNotBlank()) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Effacer",
+                            modifier = Modifier
+                                .clickable { searchText = "" }
+                                .padding(4.dp)
                         )
                     }
-                )
-            }
-            if (allSongs.isEmpty()) {
-                item {
-                    Box(
+                }
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // --- Liste des morceaux filtrés ---
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = filteredSongs,
+                    key = { it.uri } // clé stable
+                ) { music ->
+                    val isSelected = selected.contains(music.uri)
+                    val bg = if (isSelected)
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    else
+                        MaterialTheme.colorScheme.surface
+
+                    ListItem(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Aucune musique trouvée")
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                width = 2.dp,
+                                color = bg,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable { toggleSelection(music.uri) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        headlineContent = {
+                            Text(
+                                text = music.name,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        supportingContent = {
+                            val artist = music.artist ?: "Artiste inconnu"
+                            val album = music.album
+                            val line = if (!album.isNullOrBlank()) "$artist • $album" else artist
+                            Text(line, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        },
+                        trailingContent = {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = { toggleSelection(music.uri) }
+                            )
+                        }
+                    )
+                }
+
+                if (filteredSongs.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                if (searchText.isBlank())
+                                    "Aucune musique trouvée"
+                                else
+                                    "Aucun résultat pour “$searchText”"
+                            )
+                        }
                     }
                 }
             }
