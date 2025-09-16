@@ -100,6 +100,13 @@ fun EditMusicScreen(
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            OutlinedButton(
+                onClick = { onCancel() },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Annuler")
+            }
+
             Button(
                 onClick = {
                     MetadataManager.updateMetadata(
@@ -119,13 +126,6 @@ fun EditMusicScreen(
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Sauvegarder")
-            }
-
-            OutlinedButton(
-                onClick = { onCancel() },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Annuler")
             }
         }
     }

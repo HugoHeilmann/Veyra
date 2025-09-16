@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -23,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.veyra.components.MusicRow
 import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.metadata.PlaylistManager
@@ -82,7 +81,26 @@ fun PlaylistPreviewScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = playlistName, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                title = {
+                    Text(
+                        text = playlistName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                navigationIcon = {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Retour",
+                        modifier = Modifier
+                            .clickable {
+                                navController.navigate("playlists") {
+                                    popUpTo("playlists") { inclusive = true }
+                                }
+                            }
+                            .padding(8.dp)
+                    )
+                }
             )
         }
     ) { paddingValues ->
