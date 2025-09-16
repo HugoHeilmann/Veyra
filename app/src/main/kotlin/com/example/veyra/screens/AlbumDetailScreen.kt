@@ -22,7 +22,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.RandomPlay
+import com.example.veyra.components.TopBar
 import com.example.veyra.model.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,29 +35,7 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = albumName)
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        navController.navigate("music_list?selectedTab=Albums") {
-                            popUpTo("music_list") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour"
-                        )
-                    }
-                }
-            )
+            TopBar(albumName, "music_list?selectedTab=Albums", navController)
         }
     ){ innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
@@ -78,14 +58,9 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                         }
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = song.name,
-                        color = Color.White
-                    )
-                    Text(
-                        text = song.artist ?: "Unknown Artist",
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 4.dp)
+                    BlandMusicRow(
+                        song.name,
+                        song.artist ?: "Unknown Artist"
                     )
                 }
             }

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.veyra.AppUIViewModel
+import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.Music
@@ -302,15 +303,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     }
                                     .padding(vertical = 12.dp, horizontal = 16.dp)
                             ) {
-                                Text(
-                                    text = artist,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
-                                    color = Color.Gray,
-                                    style = MaterialTheme.typography.bodySmall
+                                BlandMusicRow(
+                                    artist,
+                                    "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
                                 )
                             }
                         },
@@ -347,15 +342,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     }
                                     .padding(vertical = 12.dp, horizontal = 16.dp)
                             ) {
-                                Text(
-                                    text = album,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
-                                    color = Color.Gray,
-                                    style = MaterialTheme.typography.bodySmall
+                                BlandMusicRow(
+                                    album,
+                                    "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
                                 )
                             }
                         },

@@ -69,13 +69,4 @@ object MediaSessionManager {
 
         mediaSession?.setPlaybackState(playbackState)
     }
-
-    fun getSession(): MediaSessionCompat? = mediaSession
-    fun getToken() = mediaSession?.sessionToken
-
-    fun release() {
-        mediaSession?.isActive = false
-        mediaSession?.release()
-        mediaSession = null
-    }
 }

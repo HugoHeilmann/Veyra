@@ -56,34 +56,6 @@ object PlaylistManager {
         writeAll(context, updated)
     }
 
-    // Ajouter une musique à une playlist
-    fun addMusic(context: Context, playlistName: String, filePath: String) {
-        val list = readAll(context)
-        val index = list.indexOfFirst { it.name == playlistName }
-        if (index >= 0) {
-            val playlist = list[index]
-            if (!playlist.musicFiles.contains(filePath)) {
-                playlist.musicFiles.add(filePath)
-                list[index] = playlist
-                writeAll(context, list)
-            }
-        }
-    }
-
-    // Supprimer une musique d'une playlist
-    fun removeMusic(context: Context, playlistName: String, filePath: String) {
-        val list = readAll(context)
-        val index = list.indexOfFirst { it.name == playlistName }
-        if (index >= 0) {
-            val playlist = list[index]
-            if (playlist.musicFiles.contains(filePath)) {
-                playlist.musicFiles.remove(filePath)
-                list[index] = playlist
-                writeAll(context, list)
-            }
-        }
-    }
-
     // Récupérer une playlist par nom
     fun getByName(context: Context, playlistName: String): PlaylistMetadata? {
         return readAll(context).find { it.name == playlistName }

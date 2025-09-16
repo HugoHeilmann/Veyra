@@ -34,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.veyra.components.BlandMusicRow
+import com.example.veyra.components.TopBar
 import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.metadata.PlaylistManager
@@ -80,28 +82,7 @@ fun PlaylistPreviewScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = playlistName,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Retour",
-                        modifier = Modifier
-                            .clickable {
-                                navController.navigate("playlists") {
-                                    popUpTo("playlists") { inclusive = true }
-                                }
-                            }
-                            .padding(8.dp)
-                    )
-                }
-            )
+            TopBar(playlistName, "playlists", navController)
         }
     ) { paddingValues ->
         Column(
@@ -152,14 +133,9 @@ fun PlaylistPreviewScreen(
                             }
                             .padding(16.dp)
                     ) {
-                        Text(
-                            text = music.name,
-                            color = Color.White
-                        )
-                        Text(
-                            text = (music.artist ?: "Unknown Artist") + " - " + (music.album ?: "Unknown Album"),
-                            color = Color.Gray,
-                            modifier = Modifier.padding(top = 4.dp)
+                        BlandMusicRow(
+                            music.name,
+                            (music.artist ?: "Unknown Artist") + " - " + (music.album ?: "Unknown Album")
                         )
                     }
                 }
