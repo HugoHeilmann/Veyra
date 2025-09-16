@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -74,18 +75,26 @@ fun EditPlaylistScreen(
         mutableStateListOf<String>().apply { addAll(initialSelected) }
     }
 
+    var showSelectedOnly by remember { mutableStateOf(false) }
+
     // --- 🔎 Recherche ---
     var searchText by remember { mutableStateOf("") }
     // Liste filtrée (nom, artiste, album)
-    val filteredSongs by remember(allSongs, searchText) {
+    val filteredSongs by remember(allSongs, searchText, selected, showSelectedOnly) {
         derivedStateOf {
-            if (searchText.isBlank()) allSongs
+            val base = if (showSelectedOnly) {
+                allSongs.filter { music -> selected.contains(music.uri) }
+            } else {
+                allSongs
+            }
+
+            if (searchText.isBlank()) base
             else {
                 val q = searchText.trim().lowercase()
-                allSongs.filter { m ->
-                    m.name.lowercase().contains(q) ||
-                            (m.artist?.lowercase()?.contains(q) == true) ||
-                            (m.album?.lowercase()?.contains(q) == true)
+                base.filter { music ->
+                    music.name.lowercase().contains(q) ||
+                            (music.artist?.lowercase()?.contains(q) == true) ||
+                            (music.album?.lowercase()?.contains(q) == true)
                 }
             }
         }
@@ -98,7 +107,26 @@ fun EditPlaylistScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(text = playlistName, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                title = {
+                    Text(
+                        text = playlistName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                navigationIcon = {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Retour",
+                        modifier = Modifier
+                            .clickable {
+                                navController.navigate("playlists") {
+                                    popUpTo("playlists") { inclusive = true }
+                                }
+                            }
+                            .padding(8.dp)
+                    )
+                }
             )
         },
         bottomBar = {
@@ -174,6 +202,28 @@ fun EditPlaylistScreen(
                     }
                 }
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { showSelectedOnly = !showSelectedOnly }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Checkbox(
+                        checked = showSelectedOnly,
+                        onCheckedChange = { showSelectedOnly = it }
+                    )
+                    Text("Afficher seulement la sélection (${selected.size})")
+                }
+            }
 
             Spacer(Modifier.height(12.dp))
 

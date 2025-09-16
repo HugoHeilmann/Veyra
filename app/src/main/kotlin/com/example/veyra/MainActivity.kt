@@ -163,6 +163,16 @@ fun VeyraApp() {
                     )
                 }
             }
+            composable("playlist_preview/{playlistName}") { backStackEntry ->
+                val playlistName = backStackEntry.arguments?.getString("playlistName")
+
+                if (playlistName != null) {
+                    PlaylistPreviewScreen(
+                        playlistName = playlistName,
+                        navController = navController
+                    )
+                }
+            }
         }
     }
 }

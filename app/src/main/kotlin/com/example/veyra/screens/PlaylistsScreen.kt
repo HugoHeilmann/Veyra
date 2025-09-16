@@ -103,6 +103,9 @@ fun PlaylistsScreen(navController: NavController) {
                     items(playlists) { playlist ->
                         PlaylistItem(
                             playlist = playlist,
+                            onClick = {
+                                navController.navigate("playlist_preview/${playlist.name}")
+                            },
                             onPlayClick = {
                                 MusicHolder.buildPlaylistMap(context, MusicHolder.getMusicList())
                                 val songs = MusicHolder.getPlaylistSongs(playlist.name)
