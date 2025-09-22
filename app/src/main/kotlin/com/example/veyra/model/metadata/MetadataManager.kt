@@ -5,22 +5,45 @@ import androidx.core.net.toUri
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicMetadata
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import java.io.File
+import java.io.IOException
 
 object MetadataManager {
 
     private const val FILE_NAME = "metadata.json"
+    private const val TMP_SUFFIX = ".tmp"
     private val gson = Gson()
 
-    private fun getFile(context: Context): File {
-        return File(context.filesDir, FILE_NAME)
+    private fun getFile(context: Context): File = File(context.filesDir, FILE_NAME)
+
+    private fun stableKey(raw: String): String {
+        return if (raw.startsWith("content://")) {
+            raw
+        } else {
+            try {
+                File(raw).canonicalPath
+            } catch (_: Exception) {
+                raw
+            }
+        }
+    }
+
+    private fun writeTextAtomic(target: File, content: String) {
+        val tmp = File(target.parentFile, target.name + TMP_SUFFIX)
+        tmp.writeText(content)
+
+        if (!tmp.renameTo(target)) {
+            target.writeText(tmp.readText())
+            tmp.delete()
+        }
     }
 
     fun initializeIfNeeded(context: Context) {
         val file = getFile(context)
         if (!file.exists()) {
-            file.writeText("[]")
+            writeTextAtomic(file, "[]")
         }
     }
 
@@ -28,23 +51,32 @@ object MetadataManager {
     fun readAll(context: Context): MutableList<MusicMetadata> {
         val file = getFile(context)
         if (!file.exists()) initializeIfNeeded(context)
-        val json = file.readText()
+        val json = try {
+            file.readText()
+        } catch (_: IOException) {
+            "[]"
+        }
+
         val type = object : TypeToken<MutableList<MusicMetadata>>() {}.type
-        return gson.fromJson(json, type) ?: mutableListOf()
+        return try {
+            gson.fromJson<MutableList<MusicMetadata>>(json, type) ?: mutableListOf()
+        } catch (_: JsonSyntaxException) {
+            mutableListOf()
+        }
     }
 
     // Sauvegarder la liste complète
     fun writeAll(context: Context, list: List<MusicMetadata>) {
         val file = getFile(context)
-        file.writeText(gson.toJson(list))
+        val json = gson.toJson(list)
+        writeTextAtomic(file, json)
     }
 
     // Add entry if does not exists
     fun addIfNotExists(context: Context, metadata: MusicMetadata) {
         val list = readAll(context)
-
-        // verify by fileName
-        val exists = list.any { it.fileName == metadata.fileName }
+        val keyNew = stableKey(metadata.filePath)
+        val exists = list.any { stableKey(it.filePath) == keyNew }
 
         if (!exists) {
             list.add(metadata)
@@ -61,7 +93,8 @@ object MetadataManager {
         coverPath: String? = null
     ) {
         val list = readAll(context)
-        val index = list.indexOfFirst { it.filePath == filePath }
+        val key = stableKey(filePath)
+        val index = list.indexOfFirst { stableKey(it.filePath) == key }
 
         if (index >= 0) {
             val existing = list[index]
@@ -77,45 +110,44 @@ object MetadataManager {
 
     // Récupérer une entrée par chemin
     fun getByPath(context: Context, filePath: String): MusicMetadata? {
-        return readAll(context).find { it.filePath == filePath }
+        val key = stableKey(filePath)
+        return readAll(context).find { stableKey(it.filePath) == key }
     }
 
     // Remove all unused data
     fun cleanup(context: Context) {
         val list = readAll(context).toMutableList()
-        val existingPaths = MusicHolder.getMusicList().map { it.uri }.toSet()
 
-        // Remove suppressed musics
+        val existingKey: Set<String> = MusicHolder.getMusicList()
+            .map { it.uri }
+            .map { stableKey(it) }
+            .toSet()
+
         val cleanedList = list.filter { metadata ->
-            existingPaths.contains(metadata.filePath)
+            existingKey.contains(stableKey(metadata.filePath))
         }.toMutableList()
 
-        // Covers verification
         for (i in cleanedList.indices) {
             val meta = cleanedList[i]
+            val path = meta.coverPath ?: continue
 
-            if (!meta.coverPath.isNullOrEmpty()) {
-                val path = meta.coverPath!!
-
-                val isValid = when {
+            val isValid = try {
+                when {
                     path.startsWith("content://") -> {
-                        try {
-                            val uri = path.toUri()
-                            context.contentResolver.openInputStream(uri)?.close()
-                            true
-                        } catch (_: Exception) {
-                            false
-                        }
+                        context.contentResolver.openInputStream(path.toUri())?.close()
+                        true
                     }
                     path.startsWith("file://") || path.startsWith("/") -> {
                         File(path).exists()
                     }
                     else -> false
                 }
+            } catch (_: Exception) {
+                false
+            }
 
-                if (!isValid) {
-                    cleanedList[i] = meta.copy(coverPath = null)
-                }
+            if (!isValid) {
+                cleanedList[i] = meta.copy(coverPath = null)
             }
         }
 
