@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
@@ -48,6 +49,20 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                     if (currentRoute != "playlists" && isEnabled) {
                         navController.navigate("playlists") {
                             popUpTo("music_list")
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.Download, contentDescription = "Téléchargement") },
+                label = { Text("Téléchargement") },
+                selected = currentRoute == "download",
+                enabled = isEnabled,
+                onClick = {
+                    if (currentRoute != "download" && isEnabled) {
+                        navController.navigate("download") {
+                            popUpTo("download")
                             launchSingleTop = true
                         }
                     }

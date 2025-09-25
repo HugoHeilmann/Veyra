@@ -86,6 +86,13 @@ object MusicHolder {
         context.startForegroundService(intent)
     }
 
+    fun addMusic(music: Music) {
+        val updatedList = musicList.toMutableList()
+        updatedList.add(music)
+
+        setMusicList(updatedList)
+    }
+
     fun enableShuffle(enabled: Boolean) {
         isShuffled = enabled
     }
