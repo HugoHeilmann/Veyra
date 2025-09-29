@@ -1,6 +1,7 @@
 package com.example.veyra.screens
 
 import android.content.Context
+import android.content.Intent
 import android.media.MediaScannerConnection
 import android.os.Environment
 import android.util.Log
@@ -17,6 +18,7 @@ import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicMetadata
 import com.example.veyra.model.convert.YoutubeApi
 import com.example.veyra.model.metadata.MetadataManager
+import com.example.veyra.service.DownloadService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -99,6 +101,14 @@ fun DownloadScreen(context: Context = androidx.compose.ui.platform.LocalContext.
 
             Button(
                 onClick = {
+                    val intent = Intent(context, DownloadService::class.java).apply {
+                        putExtra("url", url)
+                        putExtra("title", title)
+                        putExtra("artist", artist)
+                        putExtra("album", album)
+                    }
+                    context.startService(intent)
+                    /*
                     scope.launch {
                         try {
                             status = "Extraction..."
@@ -199,7 +209,7 @@ fun DownloadScreen(context: Context = androidx.compose.ui.platform.LocalContext.
                             status = "Erreur : ${e.message}"
                             Log.e("VEYRA", "Erreur download", e)
                         }
-                    }
+                    }*/
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
