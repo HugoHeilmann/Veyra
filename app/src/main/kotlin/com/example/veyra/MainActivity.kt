@@ -28,6 +28,7 @@ import com.example.veyra.model.convert.OkHttpDownloader
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.screens.*
+import com.example.veyra.service.DownloadService
 import com.example.veyra.service.NotificationService
 import com.example.veyra.ui.theme.VeyraTheme
 import org.schabi.newpipe.extractor.NewPipe
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         stopService(Intent(this, NotificationService::class.java))
+        stopService(Intent(this, DownloadService::class.java))
         MusicHolder.reset()
         MusicPlayerManager.stopMusic()
         MusicPlayerManager.release()
