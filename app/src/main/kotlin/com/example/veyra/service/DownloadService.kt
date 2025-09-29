@@ -11,6 +11,7 @@ import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.MusicMetadata
+import com.example.veyra.model.convert.DownloadBroadcast
 import com.example.veyra.model.convert.YoutubeApi
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
@@ -52,8 +53,17 @@ class DownloadService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun sendStatus(message: String) {
+        val intent = Intent(DownloadBroadcast.ACTION_STATUS).apply {
+            putExtra(DownloadBroadcast.EXTRA_STATUS, message)
+            setPackage(packageName)
+        }
+        sendBroadcast(intent)
+    }
+
     private suspend fun downloadAndConvert(url: String, title: String, artist: String, album: String) {
-        Log.d("DownloadService", "Extraction…")
+        sendStatus("Extraction...")
+
         val videoId = YoutubeApi.extractVideoId(url) ?: return
 
         val playerJson = YoutubeApi.getPlayerResponse(videoId) ?: return
@@ -64,7 +74,8 @@ class DownloadService : Service() {
 
         val audioUrl = YoutubeApi.extractBestAudioUrl(playerJson) ?: return
 
-        Log.d("DownloadService", "Téléchargement…")
+        sendStatus("Téléchargement…")
+
         val tempFile = withContext(Dispatchers.IO) {
             val client = OkHttpClient()
             val req = Request.Builder().url(audioUrl).build()
@@ -78,7 +89,8 @@ class DownloadService : Service() {
             file
         }
 
-        Log.d("DownloadService", "Conversion…")
+        sendStatus("Conversion…")
+
         val outputFile = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
             "${(title.ifBlank { videoTitle }).trim()}.mp3"
@@ -100,7 +112,7 @@ class DownloadService : Service() {
             MusicMetadata(
                 videoTitle,
                 finalTitle,
-                finalArtist ?: "Unknown Artist",
+                finalArtist ?: "Unknown",
                 finalAlbum ?: "Unknown Album",
                 outputFile.absolutePath,
             )
@@ -124,9 +136,9 @@ class DownloadService : Service() {
                     album = finalAlbum
                 )
                 MusicHolder.addMusic(newMusic)
-                Log.d("DownloadService", "✅ Fini : ${outputFile.absolutePath}")
+                sendStatus("✅ Fini : ${outputFile.absolutePath}")
             } else {
-                Log.e("DownloadService", "❌ Erreur conversion")
+                sendStatus("❌ Erreur conversion")
             }
         }
     }
