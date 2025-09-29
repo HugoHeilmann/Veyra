@@ -7,7 +7,8 @@ import com.example.veyra.model.metadata.MetadataManager
 
 fun loadMusicFromDevice(context: Context): List<Music> {
     val musicList = mutableListOf<Music>()
-    val cr = context.contentResolver
+
+    val contentResolver = context.contentResolver
     val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
     val projection = arrayOf(
@@ -21,55 +22,58 @@ fun loadMusicFromDevice(context: Context): List<Music> {
     val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
     val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
-    cr.query(uri, projection, selection, null, sortOrder)?.use { c ->
-        val dataCol   = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-        val titleCol  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-        val artistCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-        val albumCol  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+    val cursor = contentResolver.query(
+        uri,
+        projection,
+        selection,
+        null,
+        sortOrder
+    )
 
-        while (c.moveToNext()) {
-            val path = c.getString(dataCol) ?: continue
+    cursor?.use { it ->
+        val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+        val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
 
-            // Filtre: uniquement /Music/*.mp3
-            if (!path.endsWith(".mp3", ignoreCase = true) || !path.contains("/Music/")) continue
+        while (it.moveToNext()) {
+            val data = it.getString(dataColumn)
 
-            val filename = path.substringAfterLast('/')
+            val rawTitle = it.getString(titleColumn)
 
-            // Valeurs brutes depuis MediaStore
-            val rawTitle  = c.getString(titleCol)
-            val rawArtist = c.getString(artistCol)
-            val rawAlbum  = c.getString(albumCol)
+            // Filtrer uniquement les .mp3 dans le dossier /Music/
+            if (data.endsWith(".mp3", ignoreCase = true) && data.contains("/Music/")) {
+                val parts = rawTitle.split(" - ")
 
-            // MediaStore peut renvoyer "<unknown>"
-            val artist = rawArtist?.takeIf { it.isNotBlank() && it != MediaStore.UNKNOWN_STRING }
-            val album  = rawAlbum ?.takeIf { it.isNotBlank() && it != MediaStore.UNKNOWN_STRING }
+                val filename = data.substringAfterLast("/")
+                val artist = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
+                val title = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
+                val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
 
-            // Toujours un titre : tag si dispo, sinon nom de fichier sans extension
-            val title = rawTitle?.takeIf { it.isNotBlank() && it != MediaStore.UNKNOWN_STRING }
-                ?: filename.removeSuffix(".mp3")
+                val existingMetadata = MetadataManager.getByPath(context, data)
+                val coverPath = existingMetadata?.coverPath
 
-            val existingMeta = MetadataManager.getByPath(context, path)
-            val coverPath = existingMeta?.coverPath
+                musicList.add(
+                    Music(
+                        name = title,
+                        artist = artist,
+                        album = album,
+                        image = if (coverPath != null) 0 else R.drawable.default_album_cover,
+                        uri = data
+                    )
+                )
 
-            musicList += Music(
-                name = title,
-                artist = artist,
-                album = album,
-                image = if (coverPath != null) 0 else R.drawable.default_album_cover,
-                uri = path
-            )
+                val metadata = MusicMetadata(
+                    fileName = filename,
+                    title = title,
+                    artist = artist,
+                    album = album,
+                    filePath = data,
+                    coverPath = coverPath
+                )
 
-            val md = MusicMetadata(
-                fileName = filename,
-                title = title,
-                artist = artist ?: "Unknown Artist",
-                album = album ?: "Unknown Album",
-                filePath = path,
-                playlists = existingMeta?.playlists ?: mutableListOf(),
-                coverPath = coverPath
-            )
-            MetadataManager.addIfNotExists(context, md)
+                MetadataManager.addIfNotExists(context, metadata)
+            }
         }
     }
+
     return musicList
 }
