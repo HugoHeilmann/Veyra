@@ -11,9 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arthenica.ffmpegkit.FFmpegKit
+import com.example.veyra.components.BottomNavigationBar
 import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.MusicMetadata
 import com.example.veyra.model.convert.YoutubeApi
+import com.example.veyra.model.metadata.MetadataManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -143,14 +146,28 @@ fun DownloadScreen(context: Context = androidx.compose.ui.platform.LocalContext.
                                 "${(title.ifBlank { videoTitle }).trim()}.mp3"
                             )
 
+                            // --- Construction des métadonnées ID3 ---
+                            val finalTitle = title.ifBlank { videoTitle }
+                            val finalArtist = artist.ifBlank { null }
+                            val finalAlbum  = album.ifBlank { null }
+
                             val metaArgs = buildString {
-                                // on écrit toujours un titre (champ saisi sinon vrai titre vidéo)
-                                append(" -metadata title=\"${esc(title.ifBlank { videoTitle })}\"")
-                                if (artist.isNotBlank()) append(" -metadata artist=\"${esc(artist)}\"")
-                                if (album.isNotBlank())  append(" -metadata album=\"${esc(album)}\"")
-                                // tags compatibles : ID3v2.3 + ID3v1
+                                append(" -metadata title=\"${esc(finalTitle)}\"")
+                                if (finalArtist != null) append(" -metadata artist=\"${esc(finalArtist)}\"")
+                                if (finalAlbum  != null) append(" -metadata album=\"${esc(finalAlbum)}\"")
                                 append(" -id3v2_version 3 -write_id3v1 1")
                             }
+
+                            MetadataManager.addIfNotExists(
+                                context,
+                                MusicMetadata(
+                                    videoTitle,
+                                    finalTitle,
+                                    finalArtist ?: "Unknown Artist",
+                                    finalAlbum ?: "Unknown Album",
+                                    outputFile.absolutePath,
+                                )
+                            )
 
                             val cmd = "-y -i \"${tempFile.absolutePath}\" -vn -ar 44100 -ac 2 -b:a 192k$metaArgs \"${outputFile.absolutePath}\""
 
@@ -168,9 +185,9 @@ fun DownloadScreen(context: Context = androidx.compose.ui.platform.LocalContext.
                                     // Dans l’app, on ajoute sans valeurs par défaut pour artiste/album
                                     val newMusic = Music(
                                         uri = outputFile.absolutePath,
-                                        name = title.ifBlank { videoTitle },
-                                        artist = artist.ifBlank { null },
-                                        album  = album.ifBlank  { null }
+                                        name = finalTitle,
+                                        artist = finalArtist,
+                                        album  = finalAlbum
                                     )
                                     MusicHolder.addMusic(newMusic)
                                     status = "✅ Fini : ${outputFile.absolutePath}"

@@ -8,7 +8,6 @@ data class MusicMetadata(
     var artist: String,                                  // artiste (modifiable en local)
     var album: String,                                   // album (modifiable en local)
     val filePath: String,                                // chemin complet pour le MediaPlayer
-    var playlists: MutableList<String> = mutableListOf(),// playlists associées
     var coverPath: String? = null
 )
 

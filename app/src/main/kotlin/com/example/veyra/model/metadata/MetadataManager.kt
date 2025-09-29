@@ -1,13 +1,10 @@
 package com.example.veyra.model.metadata
 
 import android.content.Context
-import androidx.core.net.toUri
-import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicMetadata
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
-import com.arthenica.ffmpegkit.FFmpegKit
 import java.io.File
 import java.io.IOException
 
@@ -117,42 +114,32 @@ object MetadataManager {
 
     // Remove all unused data
     fun cleanup(context: Context) {
-        /*
-        val list = readAll(context).toMutableList()
+        val file = getFile(context)
+        if (!file.exists()) return
 
-        val existingKey: Set<String> = MusicHolder.getMusicList()
-            .map { it.uri }
-            .map { stableKey(it) }
-            .toSet()
+        try {
+            val json = file.readText()
+            val gson = Gson()
+            val arr = com.google.gson.JsonParser.parseString(json).asJsonArray
 
-        val cleanedList = list.filter { metadata ->
-            existingKey.contains(stableKey(metadata.filePath))
-        }.toMutableList()
+            val cleanedJsonArray = arr.mapNotNull { element ->
+                val obj = element.asJsonObject
 
-        for (i in cleanedList.indices) {
-            val meta = cleanedList[i]
-            val path = meta.coverPath ?: continue
+                // Supprimer la clé "playlists" si elle existe
+                obj.remove("playlists")
 
-            val isValid = try {
-                when {
-                    path.startsWith("content://") -> {
-                        context.contentResolver.openInputStream(path.toUri())?.close()
-                        true
-                    }
-                    path.startsWith("file://") || path.startsWith("/") -> {
-                        File(path).exists()
-                    }
-                    else -> false
-                }
-            } catch (_: Exception) {
-                false
+                // Vérifier que le fichier existe toujours
+                val path = obj["filePath"]?.asString
+                if (path != null && File(path).exists()) obj else null
             }
 
-            if (!isValid) {
-                cleanedList[i] = meta.copy(coverPath = null)
-            }
+            // Réécrire le fichier nettoyé
+            val cleanedJson = gson.toJson(cleanedJsonArray)
+            writeTextAtomic(file, cleanedJson)
+
+        } catch (_: Exception) {
+            // en cas de JSON invalide → reset à []
+            writeTextAtomic(file, "[]")
         }
-
-        writeAll(context, cleanedList)*/
     }
 }

@@ -49,6 +49,8 @@ class MainActivity : ComponentActivity() {
 
         // Init metadata if needed
         MetadataManager.initializeIfNeeded(this)
+        MetadataManager.cleanup(this)
+
         PlaylistManager.initializeIfNeeded(this)
 
         //
