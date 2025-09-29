@@ -132,7 +132,7 @@ fun PlayerScreen(navController: NavController) {
                     color = Color.Gray
                 )
                 Text(
-                    text = animatedMusic.album ?: "Unfinished",
+                    text = animatedMusic.album ?: "Unknown Album",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray
                 )
