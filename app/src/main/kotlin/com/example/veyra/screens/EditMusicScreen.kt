@@ -15,6 +15,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import com.example.veyra.model.Music
+import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 
 @Composable
@@ -109,6 +110,14 @@ fun EditMusicScreen(
 
             Button(
                 onClick = {
+                    MusicHolder.updateMusic(
+                        filePath = music.uri,
+                        title = title,
+                        artist = artist,
+                        album = album,
+                        coverPath = coverPath
+                    )
+
                     MetadataManager.updateMetadata(
                         context = context,
                         filePath = music.uri,

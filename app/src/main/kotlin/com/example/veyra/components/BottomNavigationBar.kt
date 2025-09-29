@@ -29,7 +29,7 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
             NavigationBarItem(
                 icon = { Icon(Icons.Filled.MusicNote, contentDescription = "Ma musique") },
                 label = { Text("Ma musique") },
-                selected = currentRoute == "music_list",
+                selected = currentRoute?.startsWith("music_list") ?: false,
                 enabled = isEnabled,
                 onClick = {
                     if (currentRoute != "music_list" && isEnabled) {
@@ -43,7 +43,7 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
             NavigationBarItem(
                 icon = { Icon(Icons.Filled.LibraryMusic, contentDescription = "Paramètres") },
                 label = { Text("Playlists") },
-                selected = currentRoute == "playlists",
+                selected = currentRoute?.startsWith("playlists") ?: false,
                 enabled = isEnabled,
                 onClick = {
                     if (currentRoute != "playlists" && isEnabled) {
@@ -57,7 +57,7 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
             NavigationBarItem(
                 icon = { Icon(Icons.Filled.Download, contentDescription = "Téléchargement") },
                 label = { Text("Téléchargement") },
-                selected = currentRoute == "download",
+                selected = currentRoute?.startsWith("download") ?: false,
                 enabled = isEnabled,
                 onClick = {
                     if (currentRoute != "download" && isEnabled) {
