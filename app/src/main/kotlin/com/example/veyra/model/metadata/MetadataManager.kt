@@ -7,6 +7,7 @@ import com.example.veyra.model.MusicMetadata
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
+import com.arthenica.ffmpegkit.FFmpegKit
 import java.io.File
 import java.io.IOException
 
@@ -116,6 +117,7 @@ object MetadataManager {
 
     // Remove all unused data
     fun cleanup(context: Context) {
+        /*
         val list = readAll(context).toMutableList()
 
         val existingKey: Set<String> = MusicHolder.getMusicList()
@@ -151,6 +153,6 @@ object MetadataManager {
             }
         }
 
-        writeAll(context, cleanedList)
+        writeAll(context, cleanedList)*/
     }
 }

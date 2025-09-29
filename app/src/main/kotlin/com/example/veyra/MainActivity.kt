@@ -24,13 +24,17 @@ import com.example.veyra.components.MiniPlayerBar
 import com.example.veyra.model.MediaSessionManager
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.MusicPlayerManager
+import com.example.veyra.model.convert.OkHttpDownloader
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.screens.*
 import com.example.veyra.service.NotificationService
 import com.example.veyra.ui.theme.VeyraTheme
+import org.schabi.newpipe.extractor.NewPipe
+import org.schabi.newpipe.extractor.localization.Localization
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -52,6 +56,10 @@ class MainActivity : ComponentActivity() {
 
         // Init MediaSessionManager
         MediaSessionManager.init(this)
+
+        // Init NewPipeExtractor
+        val localization = Localization("en", "US")
+        NewPipe.init(OkHttpDownloader(), localization)
 
         MusicPlayerManager.setOnCompletionListener {
             val nextMusic = MusicHolder.getNext()
@@ -172,6 +180,9 @@ fun VeyraApp() {
                         navController = navController
                     )
                 }
+            }
+            composable("download") {
+                DownloadScreen()
             }
         }
     }

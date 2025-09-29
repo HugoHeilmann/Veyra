@@ -86,6 +86,13 @@ object MusicHolder {
         context.startForegroundService(intent)
     }
 
+    fun addMusic(music: Music) {
+        val updatedList = musicList.toMutableList()
+        updatedList.add(music)
+
+        setMusicList(updatedList)
+    }
+
     fun enableShuffle(enabled: Boolean) {
         isShuffled = enabled
     }
@@ -124,5 +131,22 @@ object MusicHolder {
         artistMap.clear()
         albumMap.clear()
         isShuffled = false
+    }
+
+    fun updateMusic(
+        filePath: String,
+        title: String,
+        artist: String,
+        album: String,
+        coverPath: String? = null
+    ) {
+        this.musicList.forEach { music ->
+            if (music.uri == filePath) {
+                music.name = title
+                music.artist = artist
+                music.album = album
+                music.coverPath = coverPath
+            }
+        }
     }
 }

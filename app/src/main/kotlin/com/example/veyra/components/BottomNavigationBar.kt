@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
@@ -28,7 +29,7 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
             NavigationBarItem(
                 icon = { Icon(Icons.Filled.MusicNote, contentDescription = "Ma musique") },
                 label = { Text("Ma musique") },
-                selected = currentRoute == "music_list",
+                selected = currentRoute?.startsWith("music_list") ?: false,
                 enabled = isEnabled,
                 onClick = {
                     if (currentRoute != "music_list" && isEnabled) {
@@ -42,12 +43,26 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
             NavigationBarItem(
                 icon = { Icon(Icons.Filled.LibraryMusic, contentDescription = "Paramètres") },
                 label = { Text("Playlists") },
-                selected = currentRoute == "playlists",
+                selected = currentRoute?.startsWith("playlists") ?: false,
                 enabled = isEnabled,
                 onClick = {
                     if (currentRoute != "playlists" && isEnabled) {
                         navController.navigate("playlists") {
                             popUpTo("music_list")
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+            NavigationBarItem(
+                icon = { Icon(Icons.Filled.Download, contentDescription = "Téléchargement") },
+                label = { Text("Téléchargement") },
+                selected = currentRoute?.startsWith("download") ?: false,
+                enabled = isEnabled,
+                onClick = {
+                    if (currentRoute != "download" && isEnabled) {
+                        navController.navigate("download") {
+                            popUpTo("download")
                             launchSingleTop = true
                         }
                     }

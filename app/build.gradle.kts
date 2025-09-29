@@ -37,7 +37,21 @@ android {
     }
 }
 
+repositories {
+    google()
+    mavenCentral()
+    maven("https://jitpack.io")
+    flatDir {
+        dirs("libs")
+    }
+}
+
 dependencies {
+    implementation("com.github.TeamNewPipe:newpipeextractor:master-SNAPSHOT")
+    implementation(files("libs/ffmpeg-kit.aar"))
+    implementation("com.arthenica:smart-exception-common:0.2.1")
+    implementation("com.arthenica:smart-exception-java:0.2.1")
+    implementation("com.arthenica:smart-exception-java9:0.2.1")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.media:media:1.7.0")
     implementation("com.google.code.gson:gson:2.10.1")
