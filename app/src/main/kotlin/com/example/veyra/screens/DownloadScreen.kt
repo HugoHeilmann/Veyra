@@ -11,7 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veyra.components.SelectorInput
-import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.service.DownloadService
 

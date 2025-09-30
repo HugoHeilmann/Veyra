@@ -16,7 +16,7 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.Music
-import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 
 @Composable

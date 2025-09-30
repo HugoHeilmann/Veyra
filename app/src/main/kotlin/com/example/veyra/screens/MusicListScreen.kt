@@ -37,11 +37,11 @@ import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.Music
-import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel
-import com.example.veyra.model.loadMusicFromDevice
+import com.example.veyra.utils.loadMusicFromDevice
 import com.example.veyra.model.metadata.MetadataManager
-import com.example.veyra.model.toMusic
+import com.example.veyra.model.metadata.toMusic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

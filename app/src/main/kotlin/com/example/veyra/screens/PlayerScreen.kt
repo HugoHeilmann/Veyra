@@ -17,8 +17,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.veyra.model.MusicHolder
-import com.example.veyra.model.MusicPlayerManager
+import com.example.veyra.model.data.MusicHolder
+import com.example.veyra.model.data.MusicPlayerManager
 import kotlinx.coroutines.delay
 
 @Composable

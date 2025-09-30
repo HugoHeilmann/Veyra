@@ -16,7 +16,7 @@ import androidx.navigation.NavHostController
 import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.RandomPlay
 import com.example.veyra.components.TopBar
-import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.data.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

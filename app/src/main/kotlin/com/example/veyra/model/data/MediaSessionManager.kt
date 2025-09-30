@@ -1,8 +1,10 @@
-package com.example.veyra.model
+package com.example.veyra.model.data
 
 import android.content.Context
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import com.example.veyra.model.data.MusicHolder
+import com.example.veyra.model.data.MusicPlayerManager
 
 object MediaSessionManager {
 

@@ -18,7 +18,7 @@ import coil.size.Size
 import com.example.veyra.model.Music
 import com.example.veyra.R
 import com.example.veyra.model.metadata.MetadataManager
-import com.example.veyra.model.toMusic
+import com.example.veyra.model.metadata.toMusic
 
 @Composable
 fun MusicRow(

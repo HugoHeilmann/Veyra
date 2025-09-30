@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.veyra.model.Music
-import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.data.MusicHolder
 
 @Composable
 fun RandomPlay(

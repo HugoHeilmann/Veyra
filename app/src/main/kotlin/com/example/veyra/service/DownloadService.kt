@@ -8,9 +8,9 @@ import android.os.IBinder
 import android.util.Log
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.example.veyra.model.Music
-import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
-import com.example.veyra.model.MusicMetadata
+import com.example.veyra.model.metadata.MusicMetadata
 import com.example.veyra.model.convert.DownloadBroadcast
 import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.convert.YoutubeApi

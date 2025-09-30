@@ -1,6 +1,7 @@
-package com.example.veyra.model
+package com.example.veyra.model.metadata
 
 import com.example.veyra.R
+import com.example.veyra.model.Music
 
 data class MusicMetadata(
     val fileName: String,                                // nom du fichier brut

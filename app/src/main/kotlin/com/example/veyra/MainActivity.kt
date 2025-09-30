@@ -21,9 +21,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import com.example.veyra.components.BottomNavigationBar
 import com.example.veyra.components.MiniPlayerBar
-import com.example.veyra.model.MediaSessionManager
-import com.example.veyra.model.MusicHolder
-import com.example.veyra.model.MusicPlayerManager
+import com.example.veyra.model.data.MediaSessionManager
+import com.example.veyra.model.data.MusicHolder
+import com.example.veyra.model.data.MusicPlayerManager
 import com.example.veyra.model.convert.OkHttpDownloader
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.PlaylistManager

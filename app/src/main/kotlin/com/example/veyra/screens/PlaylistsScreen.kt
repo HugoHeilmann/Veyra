@@ -22,7 +22,7 @@ import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.model.metadata.PlaylistMetadata
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import com.example.veyra.model.MusicHolder
+import com.example.veyra.model.data.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

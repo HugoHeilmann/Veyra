@@ -1,12 +1,13 @@
-package com.example.veyra.model
+package com.example.veyra.model.data
 
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.veyra.model.Music
+import com.example.veyra.model.data.MusicPlayerManager
 import com.example.veyra.model.metadata.PlaylistManager
-
 import com.example.veyra.service.NotificationService
 
 object MusicHolder {

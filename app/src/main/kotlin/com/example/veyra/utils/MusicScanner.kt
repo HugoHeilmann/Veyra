@@ -1,9 +1,11 @@
-package com.example.veyra.model
+package com.example.veyra.utils
 
 import android.content.Context
 import android.provider.MediaStore
 import com.example.veyra.R
+import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.MetadataManager
+import com.example.veyra.model.metadata.MusicMetadata
 
 fun loadMusicFromDevice(context: Context): List<Music> {
     val musicList = mutableListOf<Music>()

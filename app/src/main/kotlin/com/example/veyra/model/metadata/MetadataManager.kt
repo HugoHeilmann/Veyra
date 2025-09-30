@@ -1,7 +1,6 @@
 package com.example.veyra.model.metadata
 
 import android.content.Context
-import com.example.veyra.model.MusicMetadata
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
