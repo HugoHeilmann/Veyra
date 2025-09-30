@@ -98,7 +98,9 @@ object MusicHolder {
     }
 
     fun getMusicList(): List<Music> = musicList
+    fun getArtistList(): List<String> = artistMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
     fun getArtistSongs(artist: String): List<Music> = artistMap[artist] ?: emptyList()
+    fun getAlbumList(): List<String> = albumMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
     fun getAlbumSongs(album: String): List<Music> = albumMap[album] ?: emptyList()
     fun getPlaylistSongs(playlist: String): List<Music> = playlistMap[playlist] ?: emptyList()
     fun getCurrentMusic(): Music? = currentMusic
@@ -121,6 +123,24 @@ object MusicHolder {
         return if (list.isNotEmpty() && index != -1) {
             list[(index - 1 + list.size) % list.size]
         } else null
+    }
+
+    fun addElement(
+        music: Music,
+        artist: String,
+        album: String
+    ) {
+        if (artist !in artistMap.keys) {
+            artistMap[artist] = mutableListOf(music)
+        }
+
+        if (album !in albumMap.keys) {
+            albumMap[album] = mutableListOf(music)
+        }
+
+        // Remove empty keys
+        artistMap.entries.removeAll { it.value.isEmpty() }
+        albumMap.entries.removeAll { it.value.isEmpty() }
     }
 
     fun reset() {

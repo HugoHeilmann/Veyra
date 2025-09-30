@@ -13,6 +13,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.veyra.components.SelectorInput
+import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.convert.DownloadBroadcast
 import com.example.veyra.service.DownloadService
 
@@ -110,20 +112,18 @@ fun DownloadScreen(context: Context = LocalContext.current) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = artist,
-                onValueChange = { artist = it },
-                label = { Text("Artiste") },
-                modifier = Modifier.fillMaxWidth()
+            SelectorInput(
+                list = MusicHolder.getArtistList(),
+                placeholder = "Artiste",
+                onValueChange = { artist = it }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = album,
-                onValueChange = { album = it },
-                label = { Text("Album") },
-                modifier = Modifier.fillMaxWidth()
+            SelectorInput(
+                list = MusicHolder.getAlbumList(),
+                placeholder = "Album",
+                onValueChange = { album = it }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
