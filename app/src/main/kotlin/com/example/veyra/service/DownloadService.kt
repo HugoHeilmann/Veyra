@@ -12,6 +12,7 @@ import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.MusicMetadata
 import com.example.veyra.model.convert.DownloadBroadcast
+import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.convert.YoutubeApi
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
@@ -54,6 +55,8 @@ class DownloadService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun sendStatus(message: String) {
+        DownloadHolder.status.value = message
+
         val intent = Intent(DownloadBroadcast.ACTION_STATUS).apply {
             putExtra(DownloadBroadcast.EXTRA_STATUS, message)
             setPackage(packageName)
