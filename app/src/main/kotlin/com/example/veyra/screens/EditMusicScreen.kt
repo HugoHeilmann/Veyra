@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
+import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.Music
 import com.example.veyra.model.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
@@ -78,21 +79,19 @@ fun EditMusicScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // artist input
-        OutlinedTextField(
-            value = artist,
-            onValueChange = { artist = it },
-            label = { Text("Artiste") },
-            modifier = Modifier.fillMaxWidth()
+        SelectorInput(
+            list = MusicHolder.getArtistList(),
+            placeholder = music.artist ?: "Artiste",
+            onValueChange = { artist = it }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // album input
-        OutlinedTextField(
-            value = album,
-            onValueChange = { album = it },
-            label = { Text("Album") },
-            modifier = Modifier.fillMaxWidth()
+        SelectorInput(
+            list = MusicHolder.getAlbumList(),
+            placeholder = music.album ?: "Album",
+            onValueChange = { album = it }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -110,12 +109,22 @@ fun EditMusicScreen(
 
             Button(
                 onClick = {
+                    title = title.trim()
+                    artist = artist.trim()
+                    album = album.trim()
+
                     MusicHolder.updateMusic(
                         filePath = music.uri,
                         title = title,
                         artist = artist,
                         album = album,
                         coverPath = coverPath
+                    )
+
+                    MusicHolder.addElement(
+                        music = music,
+                        artist = artist,
+                        album = album
                     )
 
                     MetadataManager.updateMetadata(
