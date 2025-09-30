@@ -1,9 +1,7 @@
 package com.example.veyra.screens
 
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,66 +10,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.MusicHolder
-import com.example.veyra.model.convert.DownloadBroadcast
+import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.service.DownloadService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadScreen(context: Context = LocalContext.current) {
-    var url by rememberSaveable  { mutableStateOf("") }
-    var title by rememberSaveable  { mutableStateOf("") }
-    var artist by rememberSaveable  { mutableStateOf("") }
-    var album by rememberSaveable  { mutableStateOf("") }
-    var status by rememberSaveable  { mutableStateOf("OK") }
+    var url by rememberSaveable { mutableStateOf("") }
+    var title by rememberSaveable { mutableStateOf("") }
+    var artist by rememberSaveable { mutableStateOf("") }
+    var album by rememberSaveable { mutableStateOf("") }
 
-    // ✅ Receiver STABLE entre recompositions
-    val receiver = remember {
-        object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context?, intent: Intent?) {
-                if (intent?.action == DownloadBroadcast.ACTION_STATUS) {
-                    intent.getStringExtra(DownloadBroadcast.EXTRA_STATUS)?.let { msg ->
-                        status = msg
+    val status by DownloadHolder.status
 
-                        // ✅ Vider les inputs seulement en cas de succès
-                        if (msg.startsWith("✅")) {
-                            url = ""
-                            title = ""
-                            artist = ""
-                            album = ""
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // ✅ Enregistrement compat (gère les flags Android 13+ sous le capot)
-    DisposableEffect(Unit) {
-        val filter = IntentFilter(DownloadBroadcast.ACTION_STATUS)
-        ContextCompat.registerReceiver(
-            context,
-            receiver,
-            filter,
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-
-        onDispose {
-            try {
-                context.unregisterReceiver(receiver)
-            } catch (_: Exception) {
-                // au cas où il ait déjà été désenregistré
-            }
+    // ✅ Vider les inputs en cas de succès
+    LaunchedEffect(status) {
+        if (status.startsWith("✅")) {
+            url = ""
+            title = ""
+            artist = ""
+            album = ""
         }
     }
 
     val isLoading by remember {
         derivedStateOf {
             status.startsWith("Extraction") ||
-            status.startsWith("Téléchargement") ||
-            status.startsWith("Conversion")
+                    status.startsWith("Téléchargement") ||
+                    status.startsWith("Conversion")
         }
     }
 
@@ -130,7 +98,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
 
             Button(
                 onClick = {
-                    status = "Extraction…"
+                    DownloadHolder.status.value = "Extraction…"
 
                     val intent = Intent(context, DownloadService::class.java).apply {
                         putExtra("url", url)
