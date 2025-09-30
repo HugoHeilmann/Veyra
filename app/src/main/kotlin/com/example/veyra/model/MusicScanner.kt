@@ -44,8 +44,8 @@ fun loadMusicFromDevice(context: Context): List<Music> {
                 val parts = rawTitle.split(" - ")
 
                 val filename = data.substringAfterLast("/")
-                val artist = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
-                val title = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
+                val title = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
+                val artist = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
                 val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
 
                 val existingMetadata = MetadataManager.getByPath(context, data)
