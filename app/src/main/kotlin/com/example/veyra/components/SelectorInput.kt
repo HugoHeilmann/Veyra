@@ -19,13 +19,18 @@ import androidx.compose.ui.window.PopupProperties
 fun SelectorInput(
     list: List<String>,
     placeholder: String,
-    onValueChange: (String) -> Unit = {}
+    onValueChange: (String) -> Unit = {},
+    onRefCreated: ((() -> Unit) -> Unit)? = null
 ) {
-    var text by remember { mutableStateOf("") }  // toujours vide au départ
+    var text by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
 
     val filteredList = remember(text, list) {
         list.filter { it.contains(text, ignoreCase = true) }
+    }
+
+    LaunchedEffect(Unit) {
+        onRefCreated?.invoke { text = "" }
     }
 
     Column {
