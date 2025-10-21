@@ -6,7 +6,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.veyra.model.Music
-import com.example.veyra.model.data.MusicPlayerManager
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.service.NotificationService
 
@@ -21,7 +20,7 @@ object MusicHolder {
     private val albumMap = mutableMapOf<String, List<Music>>()
     private val playlistMap = mutableMapOf<String, List<Music>>()
 
-    var isShuffled by mutableStateOf(false)
+    var isShuffled by mutableStateOf(true)
         private set
 
     fun buildPlaylistMap(context: Context, allMusic: List<Music>) {

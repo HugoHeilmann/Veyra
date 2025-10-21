@@ -1,5 +1,6 @@
 package com.example.veyra.screens
 
+import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import com.example.veyra.model.data.MusicHolder
 
+@SuppressLint("MutableCollectionMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistsScreen(navController: NavController) {
@@ -109,8 +111,14 @@ fun PlaylistsScreen(navController: NavController) {
                             onPlayClick = {
                                 MusicHolder.buildPlaylistMap(context, MusicHolder.getMusicList())
                                 val songs = MusicHolder.getPlaylistSongs(playlist.name)
-                                MusicHolder.setCurrentMusic(context, songs[0], songs)
-                                navController.navigate("player")
+
+                                if (songs.isNotEmpty()) {
+                                    MusicHolder.setCurrentMusic(context, songs.random(), songs)
+                                    navController.navigate("player")
+                                } else {
+                                    // Tu peux afficher un Toast, un Snackbar ou ignorer
+                                    Toast.makeText(context, "La playlist est vide", Toast.LENGTH_SHORT).show()
+                                }
                             },
                             onEditClick = {
                                 val encoded = playlist.name.toUri()
