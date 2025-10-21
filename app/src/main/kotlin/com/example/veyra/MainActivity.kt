@@ -118,7 +118,7 @@ fun VeyraApp() {
 
     Scaffold(
         bottomBar = {
-            if (currentRoute != "player") {
+            if (currentRoute != "player" && currentRoute?.startsWith("editMusic") == false) {
                 Column {
                     MiniPlayerBar(navController)
                     BottomNavigationBar(
