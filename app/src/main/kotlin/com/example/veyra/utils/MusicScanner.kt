@@ -40,23 +40,19 @@ suspend fun loadMusicFromDeviceStream(
     cursor?.use { it ->
         val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
         val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-        val artistColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-        val albumColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
 
         while (it.moveToNext()) {
             val path = it.getString(dataColumn)
             if (!path.endsWith(".mp3", true) || !path.contains("/Music/")) continue
 
             val titleRaw = it.getString(titleColumn)
-            val artistRaw = it.getString(artistColumn)
-            val albumRaw = it.getString(albumColumn)
 
             val parts = titleRaw?.split(" - ") ?: emptyList()
             val filename = path.substringAfterLast("/")
 
-            val title = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: titleRaw ?: "Unknown Title"
-            val artist = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: artistRaw ?: "Unknown Artist"
-            val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: albumRaw ?: "Unknown Album"
+            val title = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
+            val artist = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
+            val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
 
             val existingMetadata = MetadataManager.getByPath(context, path)
             val coverPath = existingMetadata?.coverPath
