@@ -6,10 +6,13 @@ import com.example.veyra.R
 import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.MusicMetadata
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-fun loadMusicFromDevice(context: Context): List<Music> {
-    val musicList = mutableListOf<Music>()
-
+suspend fun loadMusicFromDeviceStream(
+    context: Context,
+    onBatchLoaded: suspend (List<Music>) -> Unit
+) = withContext(Dispatchers.IO) {
     val contentResolver = context.contentResolver
     val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
@@ -31,51 +34,59 @@ fun loadMusicFromDevice(context: Context): List<Music> {
         null,
         sortOrder
     )
+    val batch = mutableListOf<Music>()
+    var count = 0
 
     cursor?.use { it ->
         val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
         val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+        val artistColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+        val albumColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
 
         while (it.moveToNext()) {
-            val data = it.getString(dataColumn)
+            val path = it.getString(dataColumn)
+            if (!path.endsWith(".mp3", true) || !path.contains("/Music/")) continue
 
-            val rawTitle = it.getString(titleColumn)
+            val titleRaw = it.getString(titleColumn)
+            val artistRaw = it.getString(artistColumn)
+            val albumRaw = it.getString(albumColumn)
 
-            // Filtrer uniquement les .mp3 dans le dossier /Music/
-            if (data.endsWith(".mp3", ignoreCase = true) && data.contains("/Music/")) {
-                val parts = rawTitle.split(" - ")
+            val parts = titleRaw?.split(" - ") ?: emptyList()
+            val filename = path.substringAfterLast("/")
 
-                val filename = data.substringAfterLast("/")
-                val title = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
-                val artist = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
-                val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
+            val title = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: titleRaw ?: "Unknown Title"
+            val artist = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: artistRaw ?: "Unknown Artist"
+            val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: albumRaw ?: "Unknown Album"
 
-                val existingMetadata = MetadataManager.getByPath(context, data)
-                val coverPath = existingMetadata?.coverPath
+            val existingMetadata = MetadataManager.getByPath(context, path)
+            val coverPath = existingMetadata?.coverPath
 
-                musicList.add(
-                    Music(
-                        name = title,
-                        artist = artist,
-                        album = album,
-                        image = if (coverPath != null) 0 else R.drawable.default_album_cover,
-                        uri = data
-                    )
-                )
-
-                val metadata = MusicMetadata(
-                    fileName = filename,
-                    title = title,
+            batch.add(
+                Music(
+                    name = title,
                     artist = artist,
                     album = album,
-                    filePath = data,
-                    coverPath = coverPath
+                    image = R.drawable.default_album_cover,
+                    uri = path
                 )
+            )
 
-                MetadataManager.addIfNotExists(context, metadata)
+            val metadata = MusicMetadata(
+                fileName = filename,
+                title = title,
+                artist = artist,
+                album = album,
+                filePath = path,
+                coverPath = coverPath
+            )
+            MetadataManager.addIfNotExists(context, metadata)
+
+            if (++count % 50 == 0) {
+                onBatchLoaded(batch.toList())
+                batch.clear()
             }
         }
     }
 
-    return musicList
+    if (batch.isNotEmpty()) onBatchLoaded(batch.toList())
 }
