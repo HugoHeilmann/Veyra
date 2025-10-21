@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import com.example.veyra.components.BottomNavigationBar
 import com.example.veyra.components.MiniPlayerBar
+import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.data.MediaSessionManager
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.MusicPlayerManager
@@ -86,6 +87,7 @@ class MainActivity : ComponentActivity() {
         MusicHolder.reset()
         MusicPlayerManager.stopMusic()
         MusicPlayerManager.release()
+        DownloadHolder.reset()
         MetadataManager.cleanup(this)
     }
 }

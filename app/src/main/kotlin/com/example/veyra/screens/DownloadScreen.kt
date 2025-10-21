@@ -25,21 +25,26 @@ fun DownloadScreen(context: Context = LocalContext.current) {
 
     val status by DownloadHolder.status
 
+    var restoreArtistSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var restoreAlbumSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     // ✅ Vider les inputs en cas de succès
     LaunchedEffect(status) {
-        if (status.startsWith("✅")) {
+        if (status.startsWith("✅") || status.startsWith("OK")) {
             url = ""
             title = ""
             artist = ""
             album = ""
+            restoreArtistSelector?.invoke()
+            restoreAlbumSelector?.invoke()
         }
     }
 
     val isLoading by remember {
         derivedStateOf {
             status.startsWith("Extraction") ||
-                    status.startsWith("Téléchargement") ||
-                    status.startsWith("Conversion")
+            status.startsWith("Téléchargement") ||
+            status.startsWith("Conversion")
         }
     }
 
@@ -83,7 +88,8 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             SelectorInput(
                 list = MusicHolder.getArtistList(),
                 placeholder = "Artiste",
-                onValueChange = { artist = it }
+                onValueChange = { artist = it },
+                onRefCreated = { restoreArtistSelector = it }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -91,7 +97,8 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             SelectorInput(
                 list = MusicHolder.getAlbumList(),
                 placeholder = "Album",
-                onValueChange = { album = it }
+                onValueChange = { album = it },
+                onRefCreated = { restoreAlbumSelector = it }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
