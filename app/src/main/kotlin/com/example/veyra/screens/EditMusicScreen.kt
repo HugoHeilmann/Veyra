@@ -1,6 +1,7 @@
 package com.example.veyra.screens
 
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -18,6 +19,7 @@ import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
+import com.example.veyra.utils.FileUtils
 
 @Composable
 fun EditMusicScreen(
@@ -33,11 +35,23 @@ fun EditMusicScreen(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             uri?.let {
+                Log.d("EditMusicScreen", "Image sélectionnée : $it")
+
                 context.contentResolver.takePersistableUriPermission(
                     it,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
                 )
-                coverPath = it.toString()
+
+                val copiedPath = FileUtils.copyImageToInternalStorage(
+                    context = context,
+                    uri = it,
+                    musicId = music.uri
+                )
+                Log.d("EditMusicScreen", "Copie terminée : $copiedPath")
+
+                if (copiedPath != null) {
+                    coverPath = copiedPath
+                }
             }
         }
     )
@@ -53,6 +67,8 @@ fun EditMusicScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Log.d("EditMusicScreen", "Chemin affiché : $coverPath")
+
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(coverPath ?: music.image)
