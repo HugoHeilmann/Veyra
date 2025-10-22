@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,9 +40,9 @@ import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel
+import com.example.veyra.utils.loadMusicFromDevice
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
-import com.example.veyra.utils.loadMusicFromDeviceStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -81,17 +80,16 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             allMusic = emptyList()
             appUiVm.updateBottomBarEnabled(false)
 
-            scope.launch {
+            launch(Dispatchers.IO) {
                 scanMusicFolder(context)
+                loadMusicFromDevice(context)
 
-                loadMusicFromDeviceStream(context) { newBatch ->
-                    withContext(Dispatchers.Main) {
-                        allMusic = allMusic + newBatch
-                        MusicHolder.setMusicList(allMusic)
-                    }
-                }
+                val metadataList = MetadataManager.readAll(context)
+                val musics = metadataList.map { it.toMusic() }
 
                 withContext(Dispatchers.Main) {
+                    MusicHolder.setMusicList(musics)
+                    allMusic = musics
                     appUiVm.updateBottomBarEnabled(true)
                 }
             }
@@ -106,8 +104,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
         derivedStateOf {
             allMusic.filter {
                 it.name.contains(searchText, ignoreCase = true) ||
-                it.artist?.contains(searchText, ignoreCase = true) == true ||
-                it.album?.contains(searchText, ignoreCase = true) == true
+                        it.artist?.contains(searchText, ignoreCase = true) == true ||
+                        it.album?.contains(searchText, ignoreCase = true) == true
             }
         }
     }
@@ -187,193 +185,189 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
         },
         contentWindowInsets = WindowInsets(0)
     ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                BasicTextField(
-                    value = searchText,
-                    onValueChange = { searchText = it },
-                    singleLine = true,
-                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.small)
-                        .padding(12.dp),
-                    decorationBox = { innerTextField ->
-                        if (searchText.isEmpty()) {
-                            Text("Rechercher...", color = Color.Gray)
-                        }
-                        innerTextField()
+            // 🔍 Barre de recherche
+            BasicTextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                singleLine = true,
+                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.small)
+                    .padding(12.dp),
+                decorationBox = { innerTextField ->
+                    if (searchText.isEmpty()) {
+                        Text("Rechercher...", color = Color.Gray)
                     }
-                )
-
-                // 🧭 Onglets : Chansons / Artistes / Albums
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    tabs.forEach { tab ->
-                        val isSelected = tab == selectedTab
-                        Text(
-                            text = tab,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier
-                                .clickable { selectedTab = tab }
-                                .padding(vertical = 8.dp)
-                        )
-                    }
+                    innerTextField()
                 }
+            )
 
-                // 📄 Liste scrollable avec gestion des tabs
-                when (selectedTab) {
-                    "Chansons" -> {
-                        val groupedSongs = remember(musicList) {
-                            groupByFirstLetter(musicList) { it.name }
-                        }
-                        val sections = remember(groupedSongs) {
-                            buildSectionsFromGroupedMap(groupedSongs)
-                        }
-
-                        RandomPlay(navController, "", "", "")
-
-                        AlphabeticalListWithFastScroller(
-                            sections = sections,
-                            headerContent = { letter ->
-                                Text(
-                                    text = letter,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp, horizontal = 16.dp)
-                                )
-                            },
-                            itemContent = { music ->
-                                val musicReference = metadataByPath[music.uri]?.toMusic() ?: music
-
-                                MusicRow(
-                                    music = musicReference,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp, horizontal = 16.dp),
-                                    onClick = {
-                                        MusicHolder.setCurrentMusic(context, music, null)
-                                        navController.navigate("player")
-                                    },
-                                    onEditClick = { selectedMusic ->
-                                        val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
-                                        navController.navigate("editMusic/${encodedUri}")
-                                    }
-                                )
-                            },
-                            listState = songsListState
-                        )
-                    }
-                    "Artistes" -> {
-                        val groupedArtists = remember(artistMap.keys) {
-                            groupByFirstLetter(artistMap.keys.toList()) { it }
-                        }
-                        val sections = remember(groupedArtists) {
-                            buildSectionsFromGroupedMap(groupedArtists)
-                        }
-
-                        AlphabeticalListWithFastScroller(
-                            sections = sections,
-                            headerContent = { letter ->
-                                Text(
-                                    text = letter,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp, horizontal = 16.dp)
-                                )
-                            },
-                            itemContent = { artist: String ->
-                                val songs = artistMap[artist] ?: emptyList()
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            navController.navigate("artist_detail/${Uri.encode(artist)}")
-                                        }
-                                        .padding(vertical = 12.dp, horizontal = 16.dp)
-                                ) {
-                                    BlandMusicRow(
-                                        artist,
-                                        "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
-                                    )
-                                }
-                            },
-                            listState = artistsListState
-                        )
-                    }
-                    "Albums" -> {
-                        val groupedAlbums = remember(albumMap.keys) {
-                            groupByFirstLetter(albumMap.keys.toList()) { it }
-                        }
-                        val sections = remember(groupedAlbums) {
-                            buildSectionsFromGroupedMap(groupedAlbums)
-                        }
-
-                        AlphabeticalListWithFastScroller(
-                            sections = sections,
-                            headerContent = { letter ->
-                                Text(
-                                    text = letter,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp, horizontal = 16.dp)
-                                )
-                            },
-                            itemContent = { album: String ->
-                                val songs = albumMap[album] ?: emptyList()
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            navController.navigate("album_detail/${Uri.encode(album)}")
-                                        }
-                                        .padding(vertical = 12.dp, horizontal = 16.dp)
-                                ) {
-                                    BlandMusicRow(
-                                        album,
-                                        "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
-                                    )
-                                }
-                            },
-                            listState = albumsListState
-                        )
-                    }
+            // 🧭 Onglets : Chansons / Artistes / Albums
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                tabs.forEach { tab ->
+                    val isSelected = tab == selectedTab
+                    Text(
+                        text = tab,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .clickable { selectedTab = tab }
+                            .padding(vertical = 8.dp)
+                    )
                 }
             }
 
-            if (!appUiVm.isBottomBarEnabled) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)) // léger voile
-                        .clickable(enabled = false) {} // empêche les clics
-                        .padding(bottom = 64.dp), // pour éviter la barre de navigation
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CustomLoader(
-                            color = Color(0xFF51FE70),
-                            modifier = Modifier.size(256.dp)
-                        )
+            // 📄 Liste scrollable avec gestion des tabs
+            when (selectedTab) {
+                "Chansons" -> {
+                    val groupedSongs = remember(musicList) {
+                        groupByFirstLetter(musicList) { it.name }
                     }
+                    val sections = remember(groupedSongs) {
+                        buildSectionsFromGroupedMap(groupedSongs)
+                    }
+
+                    RandomPlay(navController, "", "", "")
+
+                    AlphabeticalListWithFastScroller(
+                        sections = sections,
+                        headerContent = { letter ->
+                            Text(
+                                text = letter,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            )
+                        },
+                        itemContent = { music ->
+                            val musicReference = metadataByPath[music.uri]?.toMusic() ?: music
+
+                            MusicRow(
+                                music = musicReference,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                                onClick = {
+                                    MusicHolder.setCurrentMusic(context, music, null)
+                                    navController.navigate("player")
+                                },
+                                onEditClick = { selectedMusic ->
+                                    val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
+                                    navController.navigate("editMusic/${encodedUri}")
+                                }
+                            )
+                        },
+                        listState = songsListState
+                    )
+                }
+                "Artistes" -> {
+                    val groupedArtists = remember(artistMap.keys) {
+                        groupByFirstLetter(artistMap.keys.toList()) { it }
+                    }
+                    val sections = remember(groupedArtists) {
+                        buildSectionsFromGroupedMap(groupedArtists)
+                    }
+
+                    AlphabeticalListWithFastScroller(
+                        sections = sections,
+                        headerContent = { letter ->
+                            Text(
+                                text = letter,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            )
+                        },
+                        itemContent = { artist: String ->
+                            val songs = artistMap[artist] ?: emptyList()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        navController.navigate("artist_detail/${Uri.encode(artist)}")
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                            ) {
+                                BlandMusicRow(
+                                    artist,
+                                    "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
+                                )
+                            }
+                        },
+                        listState = artistsListState
+                    )
+                }
+                "Albums" -> {
+                    val groupedAlbums = remember(albumMap.keys) {
+                        groupByFirstLetter(albumMap.keys.toList()) { it }
+                    }
+                    val sections = remember(groupedAlbums) {
+                        buildSectionsFromGroupedMap(groupedAlbums)
+                    }
+
+                    AlphabeticalListWithFastScroller(
+                        sections = sections,
+                        headerContent = { letter ->
+                            Text(
+                                text = letter,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                            )
+                        },
+                        itemContent = { album: String ->
+                            val songs = albumMap[album] ?: emptyList()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        navController.navigate("album_detail/${Uri.encode(album)}")
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                            ) {
+                                BlandMusicRow(
+                                    album,
+                                    "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
+                                )
+                            }
+                        },
+                        listState = albumsListState
+                    )
+                }
+            }
+        }
+
+        if (!appUiVm.isBottomBarEnabled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable(enabled = false) {},
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CustomLoader(
+                        color = Color(0xFF51FE70),
+                        modifier = Modifier.size(256.dp)
+                    )
                 }
             }
         }
