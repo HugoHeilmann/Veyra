@@ -68,7 +68,9 @@ object MusicHolder {
         // update notification
         val intent = Intent(context, NotificationService::class.java).apply {
             putExtra("NOTIF_TITLE", music.name)
-            putExtra("NOTIF_TEXT", "${music.artist} - ${music.album}")
+            putExtra("NOTIF_TEXT", "${music.artist ?: "Artiste inconnu"} - ${music.album ?: "Album inconnu"}")
+            putExtra("NOTIF_COVER_PATH", music.coverPath)
+            putExtra("NOTIF_IMAGE_RES", music.image)
         }
         context.startService(intent)
     }
@@ -81,7 +83,9 @@ object MusicHolder {
         // Launch notification
         val intent = Intent(context, NotificationService::class.java).apply {
             putExtra("NOTIF_TITLE", music.name)
-            putExtra("NOTIF_TEXT", "${music.artist} - ${music.album}")
+            putExtra("NOTIF_TEXT", "${music.artist ?: "Artiste inconnu"} - ${music.album ?: "Album inconnu"}")
+            putExtra("NOTIF_COVER_PATH", music.coverPath)
+            putExtra("NOTIF_IMAGE_RES", music.image)
         }
         context.startForegroundService(intent)
     }

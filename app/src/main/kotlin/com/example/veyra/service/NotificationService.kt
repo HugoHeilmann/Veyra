@@ -3,6 +3,9 @@ package com.example.veyra.service
 import android.Manifest
 import android.app.*
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
@@ -10,6 +13,9 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.example.veyra.MainActivity
 import com.example.veyra.R
+import androidx.core.net.toUri
+import androidx.core.graphics.scale
+import java.io.File
 
 class NotificationService : Service() {
 
@@ -45,8 +51,10 @@ class NotificationService : Service() {
 
         val title = intent?.getStringExtra("NOTIF_TITLE") ?: "Veyra"
         val text = intent?.getStringExtra("NOTIF_TEXT") ?: "Unknown artist - Unknown album"
+        val coverPath = intent?.getStringExtra("NOTIF_COVER_PATH")
+        val imageRes = intent?.getIntExtra("NOTIF_IMAGE_RES", R.drawable.default_album_cover) ?: R.drawable.default_album_cover
 
-        startForeground(NOTIF_ID, buildNotification(title, text))
+        startForeground(NOTIF_ID, buildNotification(title, text, coverPath, imageRes))
 
         return START_STICKY
     }
@@ -64,13 +72,30 @@ class NotificationService : Service() {
         }
     }
 
-    private fun buildNotification(title: String, text: String): Notification {
+    private fun buildNotification(title: String, text: String, coverPath: String?, imageRes: Int): Notification {
         // Vérifier permission Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 // Permission non accordée → renvoyer notif vide
                 return NotificationCompat.Builder(this, CHANNEL_ID).build()
             }
+        }
+
+        val largeIcon: Bitmap? = try {
+            when {
+                coverPath != null -> {
+                    val file = File(coverPath)
+                    if (file.exists()) {
+                        BitmapFactory.decodeFile(file.absolutePath)
+                    } else {
+                        BitmapFactory.decodeResource(resources, imageRes)
+                    }
+                }
+                else -> BitmapFactory.decodeResource(resources, imageRes).scale(512, 512, false)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            BitmapFactory.decodeResource(resources, R.drawable.default_album_cover).scale(512, 512, false)
         }
 
         // Créer PendingIntent pour chaque action
@@ -113,6 +138,7 @@ class NotificationService : Service() {
             .setSmallIcon(R.drawable.music_note)
             .setContentTitle(title)
             .setContentText(text)
+            .setLargeIcon(largeIcon)
             .setContentIntent(pendingOpenApp)
             .setOngoing(true)
             .setAutoCancel(false)

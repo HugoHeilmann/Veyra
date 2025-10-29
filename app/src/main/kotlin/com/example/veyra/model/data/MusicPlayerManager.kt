@@ -122,7 +122,11 @@ object MusicPlayerManager {
         currentMusic = music
 
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(context, music.uri.toUri())
+            if (music.uri.startsWith("content://")) {
+                setDataSource(context, music.uri.toUri())
+            } else {
+                setDataSource(music.uri)
+            }
             prepareAsync()
             setOnPreparedListener {
                 requestAudioFocus()
