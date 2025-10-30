@@ -108,6 +108,11 @@ object PlaylistManager {
         return readAll(context).find { it.name == playlistName }
     }
 
+    /** Récupérer tous les noms de playlist */
+    fun getAllNames(context: Context): List<String> {
+        return readAll(context).map{ it.name }
+    }
+
     /** Ajouter un morceau dans une playlist donnée */
     fun addMusicToPlaylist(context: Context, playlistName: String, filePathOrUri: String) {
         val list = readAll(context)

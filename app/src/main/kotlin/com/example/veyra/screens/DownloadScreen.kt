@@ -3,16 +3,20 @@ package com.example.veyra.screens
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.convert.DownloadHolder
+import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.service.DownloadService
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,6 +32,10 @@ fun DownloadScreen(context: Context = LocalContext.current) {
     var restoreArtistSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
     var restoreAlbumSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
 
+    val playlistName = PlaylistManager.getAllNames(context)
+    var expanded by remember { mutableStateOf(false) }
+    val selectedPlaylists = remember { mutableStateListOf<String>() }
+
     // ✅ Vider les inputs en cas de succès
     LaunchedEffect(status) {
         if (status.startsWith("✅") || status.startsWith("OK")) {
@@ -37,6 +45,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             album = ""
             restoreArtistSelector?.invoke()
             restoreAlbumSelector?.invoke()
+
         }
     }
 
@@ -103,6 +112,64 @@ fun DownloadScreen(context: Context = LocalContext.current) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Box {
+                OutlinedButton(
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        if (selectedPlaylists.isEmpty()) {
+                            "Ajouter à une ou plusieurs playlists"
+                        } else {
+                            "Playlists : ${selectedPlaylists.joinToString(", ")}"
+                        }
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .padding(horizontal = 8.dp)
+                ) {
+                    if (playlistName.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("Aucune playlist existante") },
+                            onClick = {}
+                        )
+                    } else {
+                        playlistName.forEach { name ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(name)
+                                        Checkbox(
+                                            checked = selectedPlaylists.contains(name),
+                                            onCheckedChange = { checked ->
+                                                if (checked) selectedPlaylists.add(name)
+                                                else selectedPlaylists.remove(name)
+                                            }
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    val currentlySelected = selectedPlaylists.contains(name)
+                                    if (currentlySelected) selectedPlaylists.remove(name)
+                                    else selectedPlaylists.add(name)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = {
                     DownloadHolder.status.value = "Extraction…"
@@ -112,6 +179,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         putExtra("title", title)
                         putExtra("artist", artist)
                         putExtra("album", album)
+                        putStringArrayListExtra("playlists", ArrayList(selectedPlaylists))
                     }
                     context.startService(intent)
                 },
