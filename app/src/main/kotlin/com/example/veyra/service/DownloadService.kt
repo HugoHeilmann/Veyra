@@ -7,6 +7,7 @@ import android.os.Environment
 import android.os.IBinder
 import android.util.Log
 import com.arthenica.ffmpegkit.FFmpegKit
+import com.example.veyra.components.Playlist
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
@@ -14,6 +15,7 @@ import com.example.veyra.model.metadata.MusicMetadata
 import com.example.veyra.model.convert.DownloadBroadcast
 import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.convert.YoutubeApi
+import com.example.veyra.model.metadata.PlaylistManager
 import kotlinx.coroutines.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -29,11 +31,12 @@ class DownloadService : Service() {
         val title = intent?.getStringExtra("title") ?: ""
         val artist = intent?.getStringExtra("artist") ?: ""
         val album = intent?.getStringExtra("album") ?: ""
+        val playlists = intent?.getStringArrayListExtra("playlists") ?: arrayListOf()
 
         if (url != null) {
             scope.launch {
                 try {
-                    downloadAndConvert(url, title, artist, album)
+                    downloadAndConvert(url, title, artist, album, playlists)
                 } catch (e: Exception) {
                     Log.e("DownloadService", "Erreur pendant le téléchargement", e)
                 } finally {
@@ -64,7 +67,7 @@ class DownloadService : Service() {
         sendBroadcast(intent)
     }
 
-    private suspend fun downloadAndConvert(url: String, title: String, artist: String, album: String) {
+    private suspend fun downloadAndConvert(url: String, title: String, artist: String, album: String, playlists: ArrayList<String>) {
         sendStatus("Extraction...")
 
         val videoId = YoutubeApi.extractVideoId(url) ?: return
@@ -120,6 +123,10 @@ class DownloadService : Service() {
                 outputFile.absolutePath,
             )
         )
+
+        playlists.forEach { name ->
+            PlaylistManager.addMusicToPlaylist(this@DownloadService, name, outputFile.absolutePath)
+        }
 
         val cmd = "-y -i \"${tempFile.absolutePath}\" -vn -ar 44100 -ac 2 -b:a 192k$metaArgs \"${outputFile.absolutePath}\""
 
