@@ -172,6 +172,8 @@ fun PlaylistsScreen(navController: NavController) {
                         Button(onClick = {
                             if (tryCreatePlaylist()) {
                                 showDialog = false
+                                val encoded = playlistName.toUri()
+                                navController.navigate("edit_playlist/$encoded")
                                 playlistName = ""
                             }
                             // Sinon : on reste dans la popup (ne rien faire de plus)
@@ -218,7 +220,7 @@ fun PlaylistsScreen(navController: NavController) {
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = {
+                        OutlinedButton(onClick = {
                             playlistToDelete = null
                             showDeleteDialog = false
                         }) {
