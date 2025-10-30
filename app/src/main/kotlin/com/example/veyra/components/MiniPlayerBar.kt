@@ -19,6 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.FrameLayout
+import androidx.compose.ui.res.colorResource
+import androidx.mediarouter.app.MediaRouteButton
+import com.google.android.gms.cast.framework.CastButtonFactory
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.MusicPlayerManager
 
@@ -71,19 +76,8 @@ fun MiniPlayerBar(navController: NavHostController) {
                     }
                 }
 
-                // 🎛️ Contrôles
-                val isShuffled = MusicHolder.isShuffled
-
-                // Shuffle toggle
-                IconButton(onClick = {
-                    MusicHolder.enableShuffle(!isShuffled)
-                }) {
-                    Icon(
-                        imageVector = if (isShuffled) Icons.Default.Shuffle else Icons.Default.Loop,
-                        contentDescription = if (isShuffled) "Désactiver le mode aléatoire" else "Activer le mode aléatoire",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+                // Chromecast button
+                CastIconButton()
 
                 // Previous
                 IconButton(onClick = {

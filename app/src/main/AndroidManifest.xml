@@ -7,9 +7,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
+        android:name=".VeyraApplication"
         android:label="Veyra"
         android:theme="@style/Theme.Veyra"
         android:icon="@mipmap/veyra_logo">
+
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="com.example.veyra.cast.CastOptionsProvider" />
 
         <service
             android:name=".service.DownloadService"
