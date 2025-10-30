@@ -19,7 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -102,6 +104,8 @@ fun EditPlaylistScreen(
         }
     }
 
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     fun toggleSelection(filePath: String) {
         if (selected.contains(filePath)) selected.remove(filePath) else selected.add(filePath)
     }
@@ -130,27 +134,72 @@ fun EditPlaylistScreen(
                     }
                     Button(
                         modifier = Modifier.weight(1f),
+                        colors = if (selected.isEmpty()) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color.Red,
+                                contentColor = Color.White
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors()
+                        },
                         onClick = {
-                            // Écrire les sélections dans les métadonnées
-                            val all = PlaylistManager.readAll(context).toMutableList()
-                            val idx = all.indexOfFirst { it.name == playlistName }
-                            if (idx >= 0) {
-                                val current = all[idx]
-                                all[idx] = current.copy(musicFiles = selected.toMutableList())
+                            if (selected.isEmpty()) {
+                                showDeleteDialog = true
                             } else {
-                                // Si la playlist n’existait pas encore, on la crée
-                                all.add(
-                                    PlaylistMetadata(
-                                        name = playlistName,
-                                        musicFiles = selected.toMutableList()
+                                // Écrire les sélections dans les métadonnées
+                                val all = PlaylistManager.readAll(context).toMutableList()
+                                val idx = all.indexOfFirst { it.name == playlistName }
+
+                                if (idx >= 0) {
+                                    val current = all[idx]
+                                    all[idx] = current.copy(musicFiles = selected.toMutableList())
+                                } else {
+                                    all.add(
+                                        PlaylistMetadata(
+                                            name = playlistName,
+                                            musicFiles = selected.toMutableList()
+                                        )
                                     )
-                                )
+                                }
+
+                                PlaylistManager.writeAll(context, all)
+                                navController.popBackStack()
                             }
-                            PlaylistManager.writeAll(context, all)
-                            navController.popBackStack()
                         }
                     ) {
-                        Text("Confirmer")
+                        Text(if (selected.isEmpty()) "Supprimer" else "Confirmer")
+                    }
+
+                    if (showDeleteDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDeleteDialog = false },
+                            title = { Text("Supprimer la playlist ?") },
+                            text = { Text("Cette action est irréversible. La playlist \"$playlistName\" sera définitivement supprimée.") },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        val all = PlaylistManager.readAll(context).toMutableList()
+                                        val idx = all.indexOfFirst { it.name == playlistName }
+                                        if (idx >= 0) all.removeAt(idx)
+                                        PlaylistManager.writeAll(context, all)
+                                        showDeleteDialog = false
+                                        navController.popBackStack()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Red,
+                                        contentColor = Color.White
+                                    )
+                                ) {
+                                    Text("Supprimer")
+                                }
+                            },
+                            dismissButton = {
+                                OutlinedButton(onClick = { showDeleteDialog = false }) {
+                                    Text("Annuler")
+                                }
+                            },
+                            containerColor = Color(0xFF2C2C2C)
+                        )
                     }
                 }
             }
