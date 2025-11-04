@@ -28,6 +28,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
     var album by rememberSaveable { mutableStateOf("") }
 
     val status by DownloadHolder.status
+    val progress by DownloadHolder.progress
 
     var restoreArtistSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
     var restoreAlbumSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -45,7 +46,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             album = ""
             restoreArtistSelector?.invoke()
             restoreAlbumSelector?.invoke()
-
         }
     }
 
@@ -200,6 +200,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             if (isLoading) {
                 Spacer(modifier = Modifier.height(16.dp))
                 LinearProgressIndicator(
+                    progress = { progress },
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant

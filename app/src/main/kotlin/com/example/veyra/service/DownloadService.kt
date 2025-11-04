@@ -67,6 +67,24 @@ class DownloadService : Service() {
     private fun sendStatus(message: String) {
         DownloadHolder.status.value = message
 
+        val regex = Regex("""(\d{1,3})%""")
+        val match = regex.find(message)
+
+        if (match != null) {
+            val percent = match.groupValues[1].toInt().coerceIn(0, 100)
+            DownloadHolder.progress.floatValue = percent / 100f
+        } else if (message.startsWith("Extraction")){
+            DownloadHolder.progress.floatValue = 0.05f
+        } else if (message.startsWith("Téléchargement")) {
+            // le download ajuste la barre via les %
+        } else if (message.startsWith("Conversion")) {
+            DownloadHolder.progress.floatValue = 0.95f
+        } else if (message.startsWith("✅")) {
+            DownloadHolder.progress.floatValue = 1f
+        } else if (message.startsWith("❌")) {
+            DownloadHolder.progress.floatValue = 0f
+        }
+
         val intent = Intent(DownloadBroadcast.ACTION_STATUS).apply {
             putExtra(DownloadBroadcast.EXTRA_STATUS, message)
             setPackage(packageName)
@@ -93,13 +111,35 @@ class DownloadService : Service() {
             val client = OkHttpClient()
             val req = Request.Builder().url(audioUrl).build()
             val resp = client.newCall(req).execute()
+
+            val totalBytes = resp.body?.contentLength() ?: -1
+            val input = resp.body?.byteStream() ?: return@withContext null
             val file = File.createTempFile("yt_", ".webm")
-            resp.body?.byteStream()?.use { input ->
-                FileOutputStream(file).use { output ->
-                    input.copyTo(output)
+
+            FileOutputStream(file).use { output ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                var bytesCopied = 0L
+                var lastProgress = 0
+
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    output.write(buffer, 0, read)
+                    bytesCopied += read
+
+                    if (totalBytes > 0) {
+                        val progress = ((bytesCopied * 100) / totalBytes).toInt()
+                        if (progress / 10 > lastProgress / 10) {
+                            lastProgress = progress
+                            sendStatus("Téléchargement... $progress%")
+                        }
+                    }
                 }
             }
             file
+        } ?: run {
+            sendStatus("❌ Échec du téléchargement.")
+            return
         }
 
         sendStatus("Conversion…")
