@@ -44,6 +44,7 @@ import com.example.veyra.utils.loadMusicFromDevice
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -81,10 +82,10 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             appUiVm.updateBottomBarEnabled(false)
 
             launch(Dispatchers.IO) {
-                scanMusicFolder(context)
-                loadMusicFromDevice(context)
+                async { scanMusicFolder(context) }.await()
+                async { loadMusicFromDevice(context) }.await()
 
-                val metadataList = MetadataManager.readAll(context)
+                val metadataList = async { MetadataManager.readAll(context) }.await()
                 val musics = metadataList.map { it.toMusic() }
 
                 withContext(Dispatchers.Main) {
