@@ -33,7 +33,10 @@ class DownloadService : Service() {
         val album = intent?.getStringExtra("album") ?: ""
         val playlists = intent?.getStringArrayListExtra("playlists") ?: arrayListOf()
 
-        if (url != null) {
+        if (url == null || !isUrlFormatted(url)) {
+            sendStatus("❌ URL invalide")
+            stopSelf()
+        } else {
             scope.launch {
                 try {
                     downloadAndConvert(url, title, artist, album, playlists)
@@ -43,8 +46,6 @@ class DownloadService : Service() {
                     stopSelf()
                 }
             }
-        } else {
-            stopSelf()
         }
 
         return START_NOT_STICKY
@@ -56,6 +57,12 @@ class DownloadService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun isUrlFormatted(url: String): Boolean {
+        return url.startsWith("https://youtu.be/")
+                || url.startsWith("https://m.youtube.com/watch?v=")
+                || url.startsWith("https://www.youtube.com/watch?v=")
+    }
 
     private fun sendStatus(message: String) {
         DownloadHolder.status.value = message

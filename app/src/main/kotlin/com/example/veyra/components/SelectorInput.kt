@@ -19,6 +19,7 @@ import androidx.compose.ui.window.PopupProperties
 fun SelectorInput(
     list: List<String>,
     placeholder: String,
+    enabled: Boolean = true,
     onValueChange: (String) -> Unit = {},
     onRefCreated: ((() -> Unit) -> Unit)? = null
 ) {
@@ -40,6 +41,7 @@ fun SelectorInput(
                 text = it
                 onValueChange(it)
             },
+            enabled = enabled,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             placeholder = {
@@ -48,7 +50,10 @@ fun SelectorInput(
                 }
             },
             trailingIcon = {
-                IconButton(onClick = { expanded = !expanded }) {
+                IconButton(
+                    enabled = enabled,
+                    onClick = { expanded = !expanded }
+                ) {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = "Ouvrir la liste")
                 }
             }

@@ -79,6 +79,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
+                enabled = !isLoading,
                 label = { Text("YouTube URL") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -88,6 +89,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
+                enabled = !isLoading,
                 label = { Text("Nom de la musique") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -97,6 +99,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             SelectorInput(
                 list = MusicHolder.getArtistList(),
                 placeholder = "Artiste",
+                enabled = !isLoading,
                 onValueChange = { artist = it },
                 onRefCreated = { restoreArtistSelector = it }
             )
@@ -106,6 +109,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             SelectorInput(
                 list = MusicHolder.getAlbumList(),
                 placeholder = "Album",
+                enabled = !isLoading,
                 onValueChange = { album = it },
                 onRefCreated = { restoreAlbumSelector = it }
             )
@@ -115,6 +119,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             Box {
                 OutlinedButton(
                     onClick = { expanded = !expanded },
+                    enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
