@@ -23,7 +23,7 @@ object MusicPlayerManager {
     private var audioManager: AudioManager? = null
     private var appContext: Context? = null
 
-    private var _isPlaying by mutableStateOf(false)
+    private var _isPlaying by mutableStateOf(true)
 
     private var onCompletionListener: (() ->  Unit)? = null
 
