@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import com.example.veyra.model.Music
+import com.example.veyra.service.NotificationService
 
 object MusicPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
@@ -134,11 +135,23 @@ object MusicPlayerManager {
                 _isPlaying = true
                 MediaSessionManager.updatePlaybackState(true)
                 onPrepared.invoke(duration)
+
+                try {
+                    NotificationService.startOrUpdate(
+                        appContext ?: context
+                    )
+                } catch (_: Exception) {}
             }
             setOnCompletionListener {
                 _isPlaying = false
                 MediaSessionManager.updatePlaybackState(false)
                 onCompletionListener?.invoke()
+
+                try {
+                    NotificationService.startOrUpdate(
+                        appContext ?: context
+                    )
+                } catch (_: Exception) {}
             }
         }
     }
@@ -147,6 +160,12 @@ object MusicPlayerManager {
         pauseMusicInternal()
         MediaSessionManager.updatePlaybackState(false)
         abandonAudioFocus()
+
+        try {
+            NotificationService.startOrUpdate(
+                appContext ?: context
+            )
+        } catch (_: Exception) {}
     }
 
     private fun pauseMusicInternal() {

@@ -19,6 +19,8 @@ class NotificationActionReceiver: BroadcastReceiver() {
                 if (previous != null) {
                     MusicHolder.setPlayedMusic(context, previous)
                 }
+
+                NotificationService.startOrUpdate(context)
             }
             "ACTION_PLAY_PAUSE" -> {
                 if (MusicPlayerManager.isPlaying()) {
@@ -32,6 +34,8 @@ class NotificationActionReceiver: BroadcastReceiver() {
                         MediaSessionManager.updatePlaybackState(true)
                     }
                 }
+
+                NotificationService.startOrUpdate(context)
             }
             "ACTION_SKIP_NEXT" -> {
                 val next = MusicHolder.getNext()
@@ -39,6 +43,8 @@ class NotificationActionReceiver: BroadcastReceiver() {
                 if (next != null) {
                     MusicHolder.setPlayedMusic(context, next)
                 }
+
+                NotificationService.startOrUpdate(context)
             }
             "ACTION_FORWARD_10" -> {
                 MusicPlayerManager.forward10Seconds()
