@@ -128,7 +128,15 @@ fun EditPlaylistScreen(
                 ) {
                     OutlinedButton(
                         modifier = Modifier.weight(1f),
-                        onClick = { navController.popBackStack() }
+                        onClick = {
+                            if (selected.isEmpty()) {
+                                val all = PlaylistManager.readAll(context).toMutableList()
+                                val idx = all.indexOfFirst { it.name == playlistName }
+                                if (idx >= 0) all.removeAt(idx)
+                                PlaylistManager.writeAll(context, all)
+                            }
+                            navController.popBackStack()
+                        }
                     ) {
                         Text("Annuler")
                     }
