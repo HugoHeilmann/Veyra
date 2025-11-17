@@ -18,7 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.example.veyra.components.BottomNavigationBar
 import com.example.veyra.components.MiniPlayerBar
 import com.example.veyra.model.convert.DownloadHolder
@@ -167,6 +169,28 @@ fun VeyraApp() {
             }
             composable("player") { PlayerScreen(navController) }
             composable("playlists") { PlaylistsScreen(navController) }
+            composable(
+                "edit_artist_or_album/{name}/{isArtistCreated}",
+                arguments = listOf(
+                    navArgument("name") {
+                        type = NavType.StringType
+                    },
+                    navArgument("isArtistCreated") {
+                        type = NavType.BoolType
+                    }
+                )
+            ) { backStackEntry ->
+                val name = backStackEntry.arguments?.getString("name")
+                val isArtistCreated = backStackEntry.arguments?.getBoolean("isArtistCreated")
+
+                if (name != null && isArtistCreated != null) {
+                    EditArtistOrAlbumScreen(
+                        name = name,
+                        isArtistCreated = isArtistCreated,
+                        navController = navController
+                    )
+                }
+            }
             composable("edit_playlist/{playlistName}") { backStackEntry ->
                 val playlistName = backStackEntry.arguments?.getString("playlistName")
 
