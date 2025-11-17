@@ -372,7 +372,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CustomLoader(
                         color = Color(0xFF51FE70),
-                        modifier = Modifier.size(256.dp)
+                        modifier = Modifier.size(128.dp)
                     )
                 }
             }

@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.MusicPlayerManager
+import com.example.veyra.service.NotificationService
 import kotlinx.coroutines.delay
 
 @Composable
@@ -215,6 +216,10 @@ fun PlayerScreen(navController: NavController) {
                 } else {
                     MusicPlayerManager.playMusic(context, music)
                 }
+
+                try {
+                    NotificationService.startOrUpdate(context)
+                } catch (_: Exception) {}
             }) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
