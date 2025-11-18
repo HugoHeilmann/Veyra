@@ -5,16 +5,25 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.text.Layout
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,6 +31,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.veyra.components.BottomNavigationBar
+import com.example.veyra.components.CustomLoader
 import com.example.veyra.components.MiniPlayerBar
 import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.data.MediaSessionManager
@@ -131,88 +141,109 @@ fun VeyraApp() {
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = "music_list",
-            modifier = Modifier
-                .padding(innerPadding)
-                .consumeWindowInsets(innerPadding)
-        ) {
-            composable("music_list?selectedTab={selectedTab}") { backStackEntry ->
-                val selectedTab = backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
-                MusicListScreen(navController, selectedTab)
-            }
-            composable("editMusic/{uri}") { backStackEntry ->
-                val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""
-                val decodedUri = URLDecoder.decode(encodedUri, StandardCharsets.UTF_8.toString())
-                val music = MusicHolder.getMusicList().find { it.uri == decodedUri }
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = "music_list",
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
+            ) {
+                composable("music_list?selectedTab={selectedTab}") { backStackEntry ->
+                    val selectedTab =
+                        backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
+                    MusicListScreen(navController, selectedTab)
+                }
+                composable("editMusic/{uri}") { backStackEntry ->
+                    val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""
+                    val decodedUri =
+                        URLDecoder.decode(encodedUri, StandardCharsets.UTF_8.toString())
+                    val music = MusicHolder.getMusicList().find { it.uri == decodedUri }
 
-                music?.let {
-                    EditMusicScreen(
-                        music = it,
-                        onSave = { navController.navigate("music_list?selectedTab=Chansons") },
-                        onCancel = { navController.navigate("music_list?selectedTab=Chansons") }
-                    )
-                }
-            }
-            composable("artist_detail/{artistName}") { backStackEntry ->
-                val artistName = backStackEntry.arguments?.getString("artistName")
-                artistName?.let {
-                    ArtistDetailScreen(artistName = it, navController = navController)
-                }
-            }
-            composable("album_detail/{albumName}") { backStackEntry ->
-                val albumName = backStackEntry.arguments?.getString("albumName")
-                albumName?.let {
-                    AlbumDetailScreen(albumName = it, navController = navController)
-                }
-            }
-            composable("player") { PlayerScreen(navController) }
-            composable("playlists") { PlaylistsScreen(navController) }
-            composable(
-                "edit_artist_or_album/{name}/{isArtistCreated}",
-                arguments = listOf(
-                    navArgument("name") {
-                        type = NavType.StringType
-                    },
-                    navArgument("isArtistCreated") {
-                        type = NavType.BoolType
+                    music?.let {
+                        EditMusicScreen(
+                            music = it,
+                            onSave = { navController.navigate("music_list?selectedTab=Chansons") },
+                            onCancel = { navController.navigate("music_list?selectedTab=Chansons") }
+                        )
                     }
-                )
-            ) { backStackEntry ->
-                val name = backStackEntry.arguments?.getString("name")
-                val isArtistCreated = backStackEntry.arguments?.getBoolean("isArtistCreated")
-
-                if (name != null && isArtistCreated != null) {
-                    EditArtistOrAlbumScreen(
-                        name = name,
-                        isArtistCreated = isArtistCreated,
-                        navController = navController
+                }
+                composable("artist_detail/{artistName}") { backStackEntry ->
+                    val artistName = backStackEntry.arguments?.getString("artistName")
+                    artistName?.let {
+                        ArtistDetailScreen(artistName = it, navController = navController)
+                    }
+                }
+                composable("album_detail/{albumName}") { backStackEntry ->
+                    val albumName = backStackEntry.arguments?.getString("albumName")
+                    albumName?.let {
+                        AlbumDetailScreen(albumName = it, navController = navController)
+                    }
+                }
+                composable("player") { PlayerScreen(navController) }
+                composable("playlists") { PlaylistsScreen(navController) }
+                composable(
+                    "edit_artist_or_album/{name}/{isArtistCreated}",
+                    arguments = listOf(
+                        navArgument("name") {
+                            type = NavType.StringType
+                        },
+                        navArgument("isArtistCreated") {
+                            type = NavType.BoolType
+                        }
                     )
+                ) { backStackEntry ->
+                    val name = backStackEntry.arguments?.getString("name")
+                    val isArtistCreated = backStackEntry.arguments?.getBoolean("isArtistCreated")
+
+                    if (name != null && isArtistCreated != null) {
+                        EditArtistOrAlbumScreen(
+                            name = name,
+                            isArtistCreated = isArtistCreated,
+                            navController = navController
+                        )
+                    }
+                }
+                composable("edit_playlist/{playlistName}") { backStackEntry ->
+                    val playlistName = backStackEntry.arguments?.getString("playlistName")
+
+                    if (playlistName != null) {
+                        EditPlaylistScreen(
+                            playlistName = playlistName,
+                            navController = navController
+                        )
+                    }
+                }
+                composable("playlist_preview/{playlistName}") { backStackEntry ->
+                    val playlistName = backStackEntry.arguments?.getString("playlistName")
+
+                    if (playlistName != null) {
+                        PlaylistPreviewScreen(
+                            playlistName = playlistName,
+                            navController = navController
+                        )
+                    }
+                }
+                composable("download") {
+                    DownloadScreen()
                 }
             }
-            composable("edit_playlist/{playlistName}") { backStackEntry ->
-                val playlistName = backStackEntry.arguments?.getString("playlistName")
 
-                if (playlistName != null) {
-                    EditPlaylistScreen(
-                        playlistName = playlistName,
-                        navController = navController
-                    )
+            if (!appUiVm.isBottomBarEnabled) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.30f))
+                        .clickable(enabled = false) {},
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CustomLoader(
+                            color = Color(0xFF51FE70),
+                            modifier = Modifier.size(128.dp)
+                        )
+                    }
                 }
-            }
-            composable("playlist_preview/{playlistName}") { backStackEntry ->
-                val playlistName = backStackEntry.arguments?.getString("playlistName")
-
-                if (playlistName != null) {
-                    PlaylistPreviewScreen(
-                        playlistName = playlistName,
-                        navController = navController
-                    )
-                }
-            }
-            composable("download") {
-                DownloadScreen()
             }
         }
     }

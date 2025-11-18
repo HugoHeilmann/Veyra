@@ -360,23 +360,6 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                 }
             }
         }
-
-        if (!appUiVm.isBottomBarEnabled) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clickable(enabled = false) {},
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CustomLoader(
-                        color = Color(0xFF51FE70),
-                        modifier = Modifier.size(128.dp)
-                    )
-                }
-            }
-        }
     }
 }
 
