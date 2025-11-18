@@ -2,10 +2,10 @@ package com.example.veyra.service
 
 import android.Manifest
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
@@ -13,8 +13,9 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import com.example.veyra.MainActivity
 import com.example.veyra.R
-import androidx.core.net.toUri
 import androidx.core.graphics.scale
+import com.example.veyra.model.data.MusicHolder
+import com.example.veyra.model.data.MusicPlayerManager
 import java.io.File
 
 class NotificationService : Service() {
@@ -24,6 +25,21 @@ class NotificationService : Service() {
     companion object {
         private const val CHANNEL_ID = "custom_channel"
         private const val NOTIF_ID = 1
+
+        fun startOrUpdate(context: Context) {
+            val intent = Intent(context, NotificationService::class.java).apply {
+                putExtra("NOTIF_TITLE", MusicHolder.getCurrentMusic()?.name)
+                putExtra("NOTIF_TEXT", "${MusicHolder.getCurrentMusic()?.artist ?: "Unknown artist"} - ${MusicHolder.getCurrentMusic()?.album ?: "Unknown album"}")
+                putExtra("NOTIF_COVER_PATH", MusicHolder.getCurrentMusic()?.coverPath)
+                putExtra("NOTIF_IMAGE_RES", R.drawable.default_album_cover)
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
     }
 
     override fun onCreate() {
@@ -133,6 +149,12 @@ class NotificationService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val playPauseIcon = if (MusicPlayerManager.isPlaying()) {
+            R.drawable.ic_pause
+        } else {
+            R.drawable.ic_play
+        }
+
         // Construire notification MediaStyle
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.music_note)
@@ -145,7 +167,7 @@ class NotificationService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .addAction(R.drawable.ic_rewind_10, "Rewind 10", pendingRewind)
             .addAction(R.drawable.ic_previous, "Prev", pendingPrev)
-            .addAction(R.drawable.ic_play_pause, "Play/Pause", pendingPlay)
+            .addAction(playPauseIcon, "Play/Pause", pendingPlay)
             .addAction(R.drawable.ic_next, "Next", pendingNext)
             .addAction(R.drawable.ic_forward_10, "Forward 10", pendingForward)
             .setStyle(

@@ -45,17 +45,23 @@ object MusicHolder {
             musicList
                 .filter { !it.artist.isNullOrBlank() }
                 .groupBy {
-                    it.artist?.split(Regex("(?i) ft\\."))?.get(0)?.trim() ?: "Unknown"
+                    it.artist?.split(Regex("(?i) ft\\."))?.get(0)?.trim() ?: "Unknown Artist"
                 }
-                .mapValues { entry -> entry.value.sortedBy { it.name.lowercase() } }
+                .mapValues { entry -> entry.value
+                    .sortedBy { it.name.lowercase() }
+                    .toMutableList()
+                }
         )
 
         albumMap.clear()
         albumMap.putAll(
             musicList
                 .filter { !it.album.isNullOrBlank() }
-                .groupBy { it.album ?: "Unfinished" }
-                .mapValues { entry -> entry.value.sortedBy { it.name.lowercase() } }
+                .groupBy { it.album ?: "Unknown Album" }
+                .mapValues { entry -> entry.value
+                    .sortedBy { it.name.lowercase() }
+                    .toMutableList()
+                }
         )
 
         playlistMap.clear()
@@ -95,6 +101,14 @@ object MusicHolder {
         updatedList.add(music)
 
         setMusicList(updatedList)
+    }
+
+    fun addArtist(name: String) {
+        artistMap[name] = mutableListOf()
+    }
+
+    fun addAlbum(name: String) {
+        albumMap[name] = mutableListOf()
     }
 
     fun enableShuffle(enabled: Boolean) {
@@ -144,6 +158,38 @@ object MusicHolder {
 
         // Remove empty keys
         artistMap.entries.removeAll { it.value.isEmpty() }
+        albumMap.entries.removeAll { it.value.isEmpty() }
+    }
+
+    fun refreshMapsForMusic(music: Music) {
+        artistMap.forEach { (key, list) ->
+            val mutable = list.toMutableList()
+            mutable.removeAll { it.uri == music.uri }
+            artistMap[key] = mutable
+        }
+
+        val artistKey = music.artist?.split(Regex("(?i) ft\\."))?.getOrNull(0)?.trim()
+        if (!artistKey.isNullOrBlank()) {
+            val mutable = artistMap.getOrPut(artistKey) { mutableListOf() }.toMutableList()
+            mutable.add(music)
+            artistMap[artistKey] = mutable.sortedBy { it.name.lowercase() }
+        }
+
+        artistMap.entries.removeAll { it.value.isEmpty() }
+
+        albumMap.forEach { (key, list) ->
+            val mutable = list.toMutableList()
+            mutable.removeAll { it.uri == music.uri }
+            albumMap[key] = mutable
+        }
+
+        val albumKey = music.album?.trim()
+        if (!albumKey.isNullOrBlank()) {
+            val mutable = albumMap.getOrPut(albumKey) { mutableListOf() }.toMutableList()
+            mutable.add(music)
+            albumMap[albumKey] = mutable.sortedBy { it.name.lowercase() }
+        }
+
         albumMap.entries.removeAll { it.value.isEmpty() }
     }
 

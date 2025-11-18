@@ -36,6 +36,7 @@ import com.example.veyra.AppUIViewModel
 import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.CustomLoader
 import com.example.veyra.components.MusicRow
+import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
@@ -283,6 +284,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         buildSectionsFromGroupedMap(groupedArtists)
                     }
 
+                    NewArtistOrAlbum(navController, context, true)
+
                     AlphabeticalListWithFastScroller(
                         sections = sections,
                         headerContent = { letter ->
@@ -322,6 +325,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         buildSectionsFromGroupedMap(groupedAlbums)
                     }
 
+                    NewArtistOrAlbum(navController, context, false)
+
                     AlphabeticalListWithFastScroller(
                         sections = sections,
                         headerContent = { letter ->
@@ -351,23 +356,6 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                             }
                         },
                         listState = albumsListState
-                    )
-                }
-            }
-        }
-
-        if (!appUiVm.isBottomBarEnabled) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clickable(enabled = false) {},
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CustomLoader(
-                        color = Color(0xFF51FE70),
-                        modifier = Modifier.size(256.dp)
                     )
                 }
             }
