@@ -87,7 +87,8 @@ class DownloadService : Service() {
         val match = regex.find(message)
 
         if (match != null) {
-            val percent = match.groupValues[1].toInt().coerceIn(0, 100)
+            val raw = match.groupValues[1].toInt().coerceIn(0, 100)
+            val percent = 10 + (raw / 100f) * (90 - 10)
             DownloadHolder.progress.floatValue = percent / 100f
         } else if (message.startsWith("Extraction")){
             DownloadHolder.progress.floatValue = 0.05f
