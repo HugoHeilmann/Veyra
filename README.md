@@ -17,6 +17,8 @@ Veyra permet d'organiser et de lire vos fichiers audio (MP3, FLAC), de gérer vo
   - barre de notifications
   - écran verrouillé
   - boutons des écouteurs
+- ⬇️ Téléchargement audio depuis un lien externe
+  - Veyra permet d'extraire l'audio d'un lien fourni par l'utilisateur (ex : vidéos en ligne) et de sauvegarder le fichier dans le dossier `/Music` du téléphone
 - ✏️ **Édition des métadonnées** : titre, artiste, album, pochette
 - 🖼️ **Interface moderne** basée sur **Material You** (Material 3)
 - ⚙️ Accès direct aux fichiers pour un contrôle total sur votre bibliothèque
