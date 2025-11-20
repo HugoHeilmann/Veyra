@@ -1,6 +1,6 @@
-# 🎶 Veyra - Android Music Player (Open-Source, Offline, No Ads)
+# 🎶 Veyra - Android Music Player (Offline, No Ads)
 
-**Veyra** est une application Android open-source de lecture de musique **locale**, développée en **Kotlin** avec **Jetpack Compose**.  
+**Veyra** est une application Android de lecture de musique **locale**, développée en **Kotlin** avec **Jetpack Compose**.  
 Elle offre une expérience simple, moderne et entièrement **sans publicités**.
 
 Veyra permet d'organiser et de lire vos fichiers audio (MP3, FLAC), de gérer vos playlists, et d'éditer les métadonnées de vos morceaux directement depuis l'application.
@@ -19,7 +19,7 @@ Veyra permet d'organiser et de lire vos fichiers audio (MP3, FLAC), de gérer vo
   - boutons des écouteurs
 - ✏️ **Édition des métadonnées** : titre, artiste, album, pochette
 - 🖼️ **Interface moderne** basée sur **Material You** (Material 3)
-- ⚙️ Accès direct aux fichiers pour un contrôl total sur votre bibliothèque
+- ⚙️ Accès direct aux fichiers pour un contrôle total sur votre bibliothèque
 
 ---
 
@@ -39,23 +39,23 @@ Veyra permet d'organiser et de lire vos fichiers audio (MP3, FLAC), de gérer vo
 
 ## 🛠️ Technologies utilisées
 
-- **Langage** : [Kotlin](https://kotlinlang.org/)
-- **UI** : [Jetpack Compose](https://developer.android.com/jetpack/compose)
-- **Lecture audio** : [ExoPlayer](https://exoplayer.dev/) + [MediaSessionCompat](https://developer.android.com/reference/android/support/v4/media/session/MediaSessionCompat)
-- **Architecture** : MVVM (`ViewModel`, `State`)
-- **Stockage** : Accès direct aux fichiers du téléphone
-- **Gestion des métadonnées** : lecture/écriture via un `MetadataManager`
-- **Navigation** : [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
+- **Langage** : Kotlin  
+- **UI** : Jetpack Compose  
+- **Lecture audio** : ExoPlayer + MediaSessionCompat  
+- **Architecture** : MVVM (`ViewModel`, `State`)  
+- **Stockage** : accès direct aux fichiers du téléphone  
+- **Gestion des métadonnées** : lecture/écriture via un `MetadataManager`  
+- **Navigation** : Navigation Compose  
 
 ---
 
 ## 📥 Installation
 
-1. Téléchargez la dernière versuin (APK) depuis la section **Releases** du repo.
-2. Autorisez l'installation d'applications depuis des sources inconnues.
+1. Téléchargez la dernière version (APK) depuis la section **Releases** du repo.  
+2. Autorisez l'installation d'applications depuis des sources inconnues.  
 3. Lancez l'APK et profitez de votre bibliothèque musicale locale.
 
---- 
+---
 
 ## 🧩 Pourquoi Veyra ?
 
@@ -72,7 +72,6 @@ Les suggestions, retours et signalements de bugs sont les bienvenus via les *iss
 Cependant, la réutilisation ou la modification du code source n’est **pas autorisée** (voir licence ci-dessous).
 
 ---
-
 
 ## 📄 Licence
 
