@@ -2,6 +2,7 @@ package com.example.veyra.screens
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
@@ -9,8 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veyra.components.SelectorInput
@@ -36,6 +37,8 @@ fun DownloadScreen(context: Context = LocalContext.current) {
     val playlistName = PlaylistManager.getAllNames(context)
     var expanded by remember { mutableStateOf(false) }
     val selectedPlaylists = remember { mutableStateListOf<String>() }
+
+    var showCancelDialog by remember { mutableStateOf(false) }
 
     // ✅ Vider les inputs en cas de succès
     LaunchedEffect(status) {
@@ -137,6 +140,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     modifier = Modifier
                         .fillMaxWidth(0.95f)
                         .padding(horizontal = 8.dp)
+                        .background(Color(0xFF2C2C2C)),
                 ) {
                     if (playlistName.isEmpty()) {
                         DropdownMenuItem(
@@ -205,6 +209,54 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { showCancelDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Red,
+                        contentColor = Color.White
+                    ),
+                ) {
+                    Text("Arrêter le téléchargement")
+                }
+
+                if (showCancelDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showCancelDialog = false },
+                        title = { Text("Arrêter le téléchargement ?") },
+                        text = { Text("Es-tu sûr de vouloir annuler ce téléchargement en cours ?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showCancelDialog = false
+
+                                    DownloadHolder.status.value = "❌ Téléchargement annulé"
+                                    DownloadHolder.progress.floatValue = 0f
+
+                                    val cancelIntent = Intent(context, DownloadService::class.java).apply {
+                                        action = DownloadService.ACTION_CANCEL
+                                    }
+                                    context.startService(cancelIntent)
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = Color.Red
+                                )
+                            ) {
+                                Text("Oui, arrêter")
+                            }
+                        },
+                        dismissButton = {
+                            Button(
+                                onClick = { showCancelDialog = false },
+                            ) {
+                                Text("Non, continuer")
+                            }
+                        },
+                        containerColor = Color(0xFF2C2C2C)
+                    )
+                }
             }
         }
     }

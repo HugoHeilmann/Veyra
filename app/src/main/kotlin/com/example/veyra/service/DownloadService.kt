@@ -17,6 +17,7 @@ import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.convert.YoutubeApi
 import com.example.veyra.model.metadata.PlaylistManager
 import kotlinx.coroutines.*
+import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -24,9 +25,24 @@ import java.io.FileOutputStream
 
 class DownloadService : Service() {
 
+    companion object {
+        const val ACTION_CANCEL = "com.example.veyra.service.action.CANCEL_DOWNLOAD"
+    }
+
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    @Volatile
+    private var currentCall: Call? = null
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_CANCEL) {
+            sendStatus("❌ Téléchargement annulé")
+            currentCall?.cancel()
+            scope.coroutineContext.cancelChildren()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         val url = intent?.getStringExtra("url")
         val title = intent?.getStringExtra("title") ?: ""
         val artist = intent?.getStringExtra("artist") ?: ""
@@ -71,7 +87,8 @@ class DownloadService : Service() {
         val match = regex.find(message)
 
         if (match != null) {
-            val percent = match.groupValues[1].toInt().coerceIn(0, 100)
+            val raw = match.groupValues[1].toInt().coerceIn(0, 100)
+            val percent = 10 + (raw / 100f) * (90 - 10)
             DownloadHolder.progress.floatValue = percent / 100f
         } else if (message.startsWith("Extraction")){
             DownloadHolder.progress.floatValue = 0.05f
@@ -110,35 +127,46 @@ class DownloadService : Service() {
         val tempFile = withContext(Dispatchers.IO) {
             val client = OkHttpClient()
             val req = Request.Builder().url(audioUrl).build()
-            val resp = client.newCall(req).execute()
 
-            val totalBytes = resp.body?.contentLength() ?: -1
-            val input = resp.body?.byteStream() ?: return@withContext null
-            val file = File.createTempFile("yt_", ".webm")
+            val call = client.newCall(req)
+            currentCall = call
 
-            FileOutputStream(file).use { output ->
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                var bytesCopied = 0L
-                var lastProgress = 0
+            val resp = call.execute()
 
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read <= 0) break
-                    output.write(buffer, 0, read)
-                    bytesCopied += read
+            try {
+                val totalBytes = resp.body?.contentLength() ?: -1
+                val input = resp.body?.byteStream() ?: return@withContext null
+                val file = File.createTempFile("yt_", ".webm")
 
-                    if (totalBytes > 0) {
-                        val progress = ((bytesCopied * 100) / totalBytes).toInt()
-                        if (progress / 10 > lastProgress / 10) {
-                            lastProgress = progress
-                            sendStatus("Téléchargement... $progress%")
+                FileOutputStream(file).use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var bytesCopied = 0L
+                    var lastProgress = 0
+
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read <= 0) break
+                        output.write(buffer, 0, read)
+                        bytesCopied += read
+
+                        if (totalBytes > 0) {
+                            val progress = ((bytesCopied * 100) / totalBytes).toInt()
+                            if (progress > lastProgress) {
+                                lastProgress = progress
+                                sendStatus("Téléchargement... $progress%")
+                            }
                         }
                     }
                 }
+                file
+            } finally {
+                resp.close()
+                currentCall = null
             }
-            file
         } ?: run {
-            sendStatus("❌ Échec du téléchargement.")
+            if (!DownloadHolder.status.value.startsWith("❌ Téléchargement annulé")) {
+                sendStatus("❌ Échec du téléchargement.")
+            }
             return
         }
 

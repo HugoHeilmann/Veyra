@@ -1,45 +1,91 @@
-# 🎶 Veyra
+# 🎶 Veyra - Android Music Player (Offline, No Ads)
 
-Veyra est une application Android de musique **locale, simple et sans pubs**, développée en **Kotlin** avec **Jetpack Compose**.  
-Elle permet de lire vos fichiers audio, de gérer vos playlists et d’éditer les métadonnées de vos morceaux directement depuis l’application.
+**Veyra** est une application Android de lecture de musique **locale**, développée en **Kotlin** avec **Jetpack Compose**.  
+Elle offre une expérience simple, moderne et entièrement **sans publicités**.
+
+Veyra permet d'organiser et de lire vos fichiers audio (MP3, FLAC), de gérer vos playlists, et d'éditer les métadonnées de vos morceaux directement depuis l'application.
 
 ---
 
 ## ✨ Fonctionnalités
 
-- 🎵 Lecture de fichiers audio locaux (MP3, FLAC…)
-- 📂 Navigation par **Chansons**, **Artistes** et **Albums**
-- 🗂️ Création et gestion de playlists personnalisées
-- 🔀 Lecture aléatoire (shuffle) intelligente
-- 🎚️ Contrôles supplémentaires depuis :
-  - la barre de notifications
-  - l’écran verrouillé
-  - les écouteurs
-- ✏️ Modification des métadonnées (titre, artiste, album, photo) sans quitter l’app
-- 🖼️ Interface moderne basée sur **Material You** (Material3)
+- 🎵 **Lecture de fichiers audio locaux** : MP3, FLAC…
+- 📂 **Navigation par catégories** : Chansons, Artistes, Albums
+- 🗂️ **Playlists personnalisées** : création, édition, suppression
+- 🔀 **Shuffle intelligent** (ordre mélangé stable)
+- 📱 **Contrôles audio complets** :
+  - barre de notifications
+  - écran verrouillé
+  - boutons des écouteurs
+- ⬇️ Téléchargement audio depuis un lien externe
+  - Veyra permet d'extraire l'audio d'un lien fourni par l'utilisateur (ex : vidéos en ligne) et de sauvegarder le fichier dans le dossier `/Music` du téléphone
+- ✏️ **Édition des métadonnées** : titre, artiste, album, pochette
+- 🖼️ **Interface moderne** basée sur **Material You** (Material 3)
+- ⚙️ Accès direct aux fichiers pour un contrôle total sur votre bibliothèque
 
 ---
 
 ## 📸 Captures d’écran
 
 <p align="center">
-  <img src="./app/src/main/res/assets/init.jpg" width="250"/>
-  <img src="./app/src/main/res/assets/artist.jpg" width="250"/>
-  <img src="./app/src/main/res/assets/album.jpg" width="250"/>
-  <img src="./app/src/main/res/assets/player.jpg" width="250"/>
-  <img src="./app/src/main/res/assets/playlists.jpg" width="250"/>
-  <img src="./app/src/main/res/assets/playlists_settings.jpg" width="250"/>
-  <img src="./app/src/main/res/assets/notification.jpg" width="250"/>
+  <img src="./assets/init.jpg" width="250"/>
+  <img src="./assets/artist.jpg" width="250"/>
+  <img src="./assets/album.jpg" width="250"/>
+  <img src="./assets/player.jpg" width="250"/>
+  <img src="./assets/playlists.jpg" width="250"/>
+  <img src="./assets/playlists_settings.jpg" width="250"/>
+  <img src="./assets/notification.jpg" width="250"/>
 </p>
 
 ---
 
 ## 🛠️ Technologies utilisées
 
-- **Langage** : [Kotlin](https://kotlinlang.org/)
-- **UI** : [Jetpack Compose](https://developer.android.com/jetpack/compose)
-- **Audio** : [ExoPlayer](https://exoplayer.dev/) + [MediaSessionCompat](https://developer.android.com/reference/android/support/v4/media/session/MediaSessionCompat)
-- **Architecture** : MVVM avec `ViewModel` et `State`
-- **Stockage** : Accès direct aux fichiers du téléphone
-- **Gestion des métadonnées** : lecture/écriture via un `MetadataManager` custom
-- **Navigation** : [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
+- **Langage** : Kotlin  
+- **UI** : Jetpack Compose  
+- **Lecture audio** : ExoPlayer + MediaSessionCompat  
+- **Architecture** : MVVM (`ViewModel`, `State`)  
+- **Stockage** : accès direct aux fichiers du téléphone  
+- **Gestion des métadonnées** : lecture/écriture via un `MetadataManager`  
+- **Navigation** : Navigation Compose  
+
+---
+
+## 📥 Installation
+
+1. Téléchargez la dernière version (APK) depuis la section **Releases** du repo.  
+2. Autorisez l'installation d'applications depuis des sources inconnues.  
+3. Lancez l'APK et profitez de votre bibliothèque musicale locale.
+
+---
+
+## 🧩 Pourquoi Veyra ?
+
+- Aucun compte requis, aucune publicité  
+- Respect total de la vie privée  
+- Lecture entièrement locale  
+- Interface rapide, simple et moderne
+
+---
+
+## 🧑‍💻 Contribution
+
+Les suggestions, retours et signalements de bugs sont les bienvenus via les *issues*.  
+Cependant, la réutilisation ou la modification du code source n’est **pas autorisée** (voir licence ci-dessous).
+
+---
+
+## 📄 Licence
+
+Veyra est distribuée sous licence **CC BY-NC-ND 4.0** (Attribution – Pas d’usage commercial – Pas de modification).
+
+➡️ Vous pouvez **utiliser** et **partager** l’application,  
+❌ mais vous ne pouvez **ni modifier le code**,  
+❌ ni le redistribuer modifié,  
+❌ ni l’utiliser commercialement.
+
+Détails complets : voir le fichier [LICENSE](./LICENSE).
+
+---
+
+**⭐ Si vous aimez Veyra, pensez à star le repo !**
