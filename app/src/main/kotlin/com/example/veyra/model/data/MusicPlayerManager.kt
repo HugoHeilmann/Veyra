@@ -65,9 +65,21 @@ object MusicPlayerManager {
     // Audio focus change listener
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
-            AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pauseMusicInternal()
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                pauseMusicInternal()
+
+                try {
+                    NotificationService.startOrUpdate(appContext!!)
+                } catch (_: Exception) {}
+            }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> mediaPlayer?.setVolume(0.2f, 0.2f)
-            AudioManager.AUDIOFOCUS_GAIN -> mediaPlayer?.setVolume(1f, 1f)
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                mediaPlayer?.setVolume(1f, 1f)
+                try {
+                    NotificationService.startOrUpdate(appContext!!)
+                } catch (_: Exception) {}
+            }
         }
     }
 
@@ -171,6 +183,10 @@ object MusicPlayerManager {
     private fun pauseMusicInternal() {
         mediaPlayer?.pause()
         _isPlaying = false
+
+        try {
+            NotificationService.startOrUpdate(appContext ?: return)
+        } catch (_: Exception) {}
     }
 
     fun stopMusic() {
