@@ -267,7 +267,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     MusicHolder.setCurrentMusic(context, music, null)
                                     navController.navigate("player")
                                 },
-                                onEditClick = { selectedMusic ->
+                                onEditClick = { _ ->
                                     val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
                                     navController.navigate("editMusic/${encodedUri}")
                                 }
