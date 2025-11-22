@@ -143,6 +143,14 @@ object MusicHolder {
         } else null
     }
 
+    /**
+     * Parcours les maps d'artistes et d'albums et supprime les entrees qui n'ont aucune cle
+     */
+    fun sanitizeMaps() {
+        artistMap.entries.removeIf { it.value.isEmpty() }
+        albumMap.entries.removeIf { it.value.isEmpty() }
+    }
+
     fun addElement(
         music: Music,
         artist: String,

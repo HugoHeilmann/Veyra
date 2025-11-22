@@ -137,11 +137,7 @@ fun EditMusicScreen(
                         coverPath = coverPath
                     )
 
-                    MusicHolder.addElement(
-                        music = music,
-                        artist = artist,
-                        album = album
-                    )
+                    MusicHolder.refreshMapsForMusic(music)
 
                     MetadataManager.updateMetadata(
                         context = context,
