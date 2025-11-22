@@ -84,6 +84,8 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                 onValueChange = { url = it },
                 enabled = !isLoading,
                 label = { Text("YouTube URL") },
+                singleLine = true,
+                maxLines = 1,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -94,6 +96,8 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                 onValueChange = { title = it },
                 enabled = !isLoading,
                 label = { Text("Nom de la musique") },
+                singleLine = true,
+                maxLines = 1,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -181,21 +185,36 @@ fun DownloadScreen(context: Context = LocalContext.current) {
 
             Button(
                 onClick = {
-                    DownloadHolder.status.value = "Extraction…"
+                    if (isLoading) {
+                        showCancelDialog = true
+                    } else {
+                        DownloadHolder.status.value = "Extraction…"
 
-                    val intent = Intent(context, DownloadService::class.java).apply {
-                        putExtra("url", url)
-                        putExtra("title", title)
-                        putExtra("artist", artist)
-                        putExtra("album", album)
-                        putStringArrayListExtra("playlists", ArrayList(selectedPlaylists))
+                        val intent = Intent(context, DownloadService::class.java).apply {
+                            putExtra("url", url)
+                            putExtra("title", title)
+                            putExtra("artist", artist)
+                            putExtra("album", album)
+                            putStringArrayListExtra("playlists", ArrayList(selectedPlaylists))
+                        }
+                        context.startService(intent)
                     }
-                    context.startService(intent)
                 },
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth()
+                enabled = url.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = if (isLoading) {
+                    ButtonDefaults.buttonColors(
+                        containerColor = Color.Red,
+                        contentColor = Color.White
+                    )
+                } else {
+                    ButtonDefaults.buttonColors()
+                }
             ) {
-                Text(if (isLoading) "Téléchargement en cours…" else "Télécharger MP3")
+                Text(
+                    if (isLoading) "Arrêter le téléchargement"
+                    else "Télécharger MP3"
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
