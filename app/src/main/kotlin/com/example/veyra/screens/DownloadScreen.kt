@@ -229,18 +229,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { showCancelDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red,
-                        contentColor = Color.White
-                    ),
-                ) {
-                    Text("Arrêter le téléchargement")
-                }
-
                 if (showCancelDialog) {
                     AlertDialog(
                         onDismissRequest = { showCancelDialog = false },
