@@ -30,6 +30,7 @@ fun EditMusicScreen(
     val context = LocalContext.current
 
     var coverPath by remember { mutableStateOf(music.coverPath) }
+    var coverVersion by remember {mutableStateOf(0) }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -51,6 +52,7 @@ fun EditMusicScreen(
 
                 if (copiedPath != null) {
                     coverPath = copiedPath
+                    coverVersion++
                 }
             }
         }
@@ -76,6 +78,8 @@ fun EditMusicScreen(
                 .crossfade(true)
                 .error(music.image)
                 .fallback(music.image)
+                .memoryCacheKey("${coverPath ?: music.image}-$coverVersion")
+                .diskCacheKey("${coverPath ?: music.image}-$coverVersion")
                 .build(),
             contentDescription = "Music cover",
             modifier = Modifier
