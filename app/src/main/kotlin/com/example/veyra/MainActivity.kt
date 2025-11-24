@@ -180,6 +180,7 @@ fun VeyraApp() {
                         AlbumDetailScreen(albumName = it, navController = navController)
                     }
                 }
+                composable("queue") { QueueScreen(navController) }
                 composable("player") { PlayerScreen(navController) }
                 composable("playlists") { PlaylistsScreen(navController) }
                 composable(

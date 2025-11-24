@@ -16,6 +16,7 @@ import com.example.veyra.components.MusicRow
 import com.example.veyra.components.RandomPlay
 import com.example.veyra.components.TopBar
 import com.example.veyra.model.data.MusicHolder
+import com.example.veyra.model.data.QueueManager
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
 import java.net.URLEncoder
@@ -36,9 +37,7 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
             item {
                 RandomPlay(
                     navController = navController,
-                    artist = "",
-                    album = albumName,
-                    playlist = ""
+                    album = albumName
                 )
             }
 
@@ -62,6 +61,9 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                         onEditClick = { _ ->
                             val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
                             navController.navigate("editMusic/${encodedUri}")
+                        },
+                        onAddClick = { _ ->
+                            QueueManager.addToEnd(song)
                         }
                     )
                 }

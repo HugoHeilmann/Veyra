@@ -22,17 +22,19 @@ import com.example.veyra.model.data.MusicHolder
 @Composable
 fun RandomPlay(
     navController: NavHostController,
-    artist: String,
-    album: String,
-    playlist: String
+    artist: String? = "",
+    album: String? = "",
+    playlist: String? = "",
+    list: List<Music> = emptyList()
 ) {
     val context = LocalContext.current
 
     val songs: List<Music> = when {
-        artist.isNotBlank() -> MusicHolder.getArtistSongs(artist)
-        album.isNotBlank() -> MusicHolder.getAlbumSongs(album)
-        playlist.isNotBlank() -> MusicHolder.getPlaylistSongs(playlist)
-        else -> MusicHolder.getMusicList() // fallback
+        !artist.isNullOrBlank() -> MusicHolder.getArtistSongs(artist)
+        !album.isNullOrBlank() -> MusicHolder.getAlbumSongs(album)
+        !playlist.isNullOrBlank() -> MusicHolder.getPlaylistSongs(playlist)
+        list.isNotEmpty() -> list
+        else -> MusicHolder.getMusicList()
     }
 
     Row(

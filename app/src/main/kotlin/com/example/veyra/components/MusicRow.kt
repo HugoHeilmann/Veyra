@@ -25,7 +25,8 @@ fun MusicRow(
     music: Music,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    onEditClick: (Music) -> Unit
+    onEditClick: (Music) -> Unit,
+    onAddClick: (Music) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -61,7 +62,19 @@ fun MusicRow(
         }
 
         Icon(
-           painter = painterResource(id = R.drawable.ic_edit),
+            painter = painterResource(id = R.drawable.ic_add_to_queue),
+            contentDescription = "Add to queue",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .size(36.dp)
+                .padding(end = 12.dp)
+                .clickable {
+                    onAddClick(music)
+                }
+        )
+
+        Icon(
+            painter = painterResource(id = R.drawable.ic_edit),
             contentDescription = "Edit metadata",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier

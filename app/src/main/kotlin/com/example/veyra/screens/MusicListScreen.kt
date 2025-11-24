@@ -41,6 +41,7 @@ import com.example.veyra.components.RandomPlay
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel
+import com.example.veyra.model.data.QueueManager
 import com.example.veyra.utils.loadMusicFromDevice
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
@@ -241,7 +242,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         buildSectionsFromGroupedMap(groupedSongs)
                     }
 
-                    RandomPlay(navController, "", "", "")
+                    RandomPlay(navController)
 
                     AlphabeticalListWithFastScroller(
                         sections = sections,
@@ -270,6 +271,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                 onEditClick = { _ ->
                                     val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
                                     navController.navigate("editMusic/${encodedUri}")
+                                },
+                                onAddClick = { _ ->
+                                    QueueManager.addToEnd(musicReference)
                                 }
                             )
                         },
