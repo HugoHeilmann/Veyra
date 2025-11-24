@@ -20,6 +20,7 @@ import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.utils.FileUtils
+import com.example.veyra.R
 
 @Composable
 fun EditMusicScreen(
@@ -31,6 +32,7 @@ fun EditMusicScreen(
 
     var coverPath by remember { mutableStateOf(music.coverPath) }
     var coverVersion by remember {mutableStateOf(0) }
+    val defaultCover = R.drawable.default_album_cover
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -87,6 +89,15 @@ fun EditMusicScreen(
                 .padding(24.dp)
                 .clickable { imagePicker.launch(arrayOf("image/*")) }
         )
+
+        OutlinedButton(
+            onClick = {
+                coverPath = ""
+            },
+            modifier = Modifier.padding(bottom = 16.dp)
+        ) {
+            Text("Supprimer l'image")
+        }
 
         // title input
         OutlinedTextField(
