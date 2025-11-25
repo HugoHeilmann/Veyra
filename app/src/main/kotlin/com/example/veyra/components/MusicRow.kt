@@ -17,6 +17,7 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.example.veyra.model.Music
 import com.example.veyra.R
+import com.example.veyra.model.data.QueueManager
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
 
@@ -25,12 +26,14 @@ fun MusicRow(
     music: Music,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    onEditClick: (Music) -> Unit
+    onEditClick: (Music) -> Unit,
+    onAddClick: (Music) -> Unit
 ) {
     val context = LocalContext.current
 
     val usable = MetadataManager.getByPath(context, music.uri)
     val musicToUse = usable?.toMusic() ?: music
+    val inQueue = QueueManager.queue.contains(music)
 
     Row(
         modifier = modifier
@@ -61,7 +64,26 @@ fun MusicRow(
         }
 
         Icon(
-           painter = painterResource(id = R.drawable.ic_edit),
+            painter = painterResource(id = R.drawable.ic_add_to_queue),
+            contentDescription = "Add to queue",
+            tint = if (!inQueue) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                Color(0xFF2C2C2C)
+            },
+            modifier = Modifier
+                .size(36.dp)
+                .padding(end = 12.dp)
+                .clickable(
+                    enabled = !inQueue,
+                    onClick = {
+                        onAddClick(music)
+                    }
+                )
+        )
+
+        Icon(
+            painter = painterResource(id = R.drawable.ic_edit),
             contentDescription = "Edit metadata",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier

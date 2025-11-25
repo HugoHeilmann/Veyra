@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -55,8 +56,22 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                 }
             )
             NavigationBarItem(
+                icon = { Icon(Icons.Filled.QueueMusic, contentDescription = "Queue") },
+                label = { Text("Queue") },
+                selected = currentRoute?.startsWith("queue") ?: false,
+                enabled = isEnabled,
+                onClick = {
+                    if (currentRoute != "queue" && isEnabled) {
+                        navController.navigate("queue") {
+                            popUpTo("music_list")
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
+            NavigationBarItem(
                 icon = { Icon(Icons.Filled.Download, contentDescription = "Téléchargement") },
-                label = { Text("Téléchargement") },
+                label = { Text("Télécharger") },
                 selected = currentRoute?.startsWith("download") ?: false,
                 enabled = isEnabled,
                 onClick = {

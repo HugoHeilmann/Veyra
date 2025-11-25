@@ -247,6 +247,14 @@ fun PlayerScreen(navController: NavController) {
                 Icon(Icons.Default.SkipNext, contentDescription = "Suivant")
             }
 
+            // Queue
+            IconButton(onClick = { navController.navigate("queue") }) {
+                Icon(
+                    imageVector = Icons.Default.QueueMusic,
+                    contentDescription = "File de lecture"
+                )
+            }
+
             // Spacer pour equilibrer avec le bouton shuffle
             Spacer(modifier = Modifier.size(48.dp))
         }

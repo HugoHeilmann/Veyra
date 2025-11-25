@@ -34,13 +34,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.veyra.AppUIViewModel
 import com.example.veyra.components.BlandMusicRow
-import com.example.veyra.components.CustomLoader
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
-import com.example.veyra.components.RandomPlay
+import com.example.veyra.components.PlayerButton
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel
+import com.example.veyra.model.data.QueueManager
 import com.example.veyra.utils.loadMusicFromDevice
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
@@ -241,7 +241,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         buildSectionsFromGroupedMap(groupedSongs)
                     }
 
-                    RandomPlay(navController, "", "", "")
+                    PlayerButton(navController)
 
                     AlphabeticalListWithFastScroller(
                         sections = sections,
@@ -264,12 +264,16 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     .fillMaxWidth()
                                     .padding(vertical = 8.dp, horizontal = 16.dp),
                                 onClick = {
+                                    MusicHolder.isShuffled = true
                                     MusicHolder.setCurrentMusic(context, music, null)
                                     navController.navigate("player")
                                 },
                                 onEditClick = { _ ->
                                     val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
                                     navController.navigate("editMusic/${encodedUri}")
+                                },
+                                onAddClick = { _ ->
+                                    QueueManager.addToEnd(musicReference)
                                 }
                             )
                         },

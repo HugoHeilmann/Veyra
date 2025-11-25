@@ -24,12 +24,14 @@ object MusicPlayerManager {
     private var appContext: Context? = null
 
     private var _isPlaying by mutableStateOf(true)
+    private var _isQueuePlaying by mutableStateOf(false)
 
-    private var onCompletionListener: (() ->  Unit)? = null
+    // Callback externe éventuel (UI) quand un morceau se termine
+    private var onCompletionListener: (() -> Unit)? = null
 
     private var receiversRegistered = false
 
-    private val audioNoisyReceiver = object: BroadcastReceiver() {
+    private val audioNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == intent?.action) {
                 pauseMusicInternal()
@@ -39,19 +41,19 @@ object MusicPlayerManager {
         }
     }
 
-    private val bluetoothReceiver = object: BroadcastReceiver() {
+    private val bluetoothReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED,
-                    BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED -> {
-                        val state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1)
+                BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED -> {
+                    val state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1)
 
-                        if (state == BluetoothProfile.STATE_DISCONNECTED) {
-                            pauseMusicInternal()
-                            MediaSessionManager.updatePlaybackState(false)
-                            abandonAudioFocus()
-                        }
+                    if (state == BluetoothProfile.STATE_DISCONNECTED) {
+                        pauseMusicInternal()
+                        MediaSessionManager.updatePlaybackState(false)
+                        abandonAudioFocus()
                     }
+                }
 
                 BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
                     pauseMusicInternal()
@@ -71,14 +73,17 @@ object MusicPlayerManager {
 
                 try {
                     NotificationService.startOrUpdate(appContext!!)
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             }
+
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> mediaPlayer?.setVolume(0.2f, 0.2f)
             AudioManager.AUDIOFOCUS_GAIN -> {
                 mediaPlayer?.setVolume(1f, 1f)
                 try {
                     NotificationService.startOrUpdate(appContext!!)
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             }
         }
     }
@@ -113,14 +118,55 @@ object MusicPlayerManager {
     private fun unregisterReceivers() {
         if (!receiversRegistered) return
         val ctx = appContext ?: return
-        try { ctx.unregisterReceiver(audioNoisyReceiver) } catch (_: Exception) {}
-        try { ctx.unregisterReceiver(bluetoothReceiver) } catch (_: Exception) {}
+        try {
+            ctx.unregisterReceiver(audioNoisyReceiver)
+        } catch (_: Exception) {
+        }
+        try {
+            ctx.unregisterReceiver(bluetoothReceiver)
+        } catch (_: Exception) {
+        }
         receiversRegistered = false
     }
 
+    /**
+     * API historique : joue une musique.
+     * Maintenant, cela crée une file de lecture de taille 1
+     * et passe par la logique de queue.
+     */
     fun playMusic(context: Context, music: Music, onPrepared: (Int) -> Unit = {}) {
+        // S'assure d'avoir un contexte appli
         if (appContext == null) init(context)
 
+        // On joue le morceau via la logique commune
+        playInternal(music, context, onPrepared)
+    }
+
+    /**
+     * Joue un élément de la file à un index donné.
+     * Utilisé par l'écran de file de lecture quand l'utilisateur clique sur un morceau.
+     */
+    fun playFromQueueIndex(context: Context, index: Int) {
+        if (appContext == null) init(context)
+        val ctx = appContext ?: context
+
+        val music = QueueManager.playFromIndex(index) ?: return
+        playInternal(music, ctx)
+    }
+
+    /**
+     * Fonction interne centrale qui gère réellement la lecture d'un Music
+     * (création/prepare du MediaPlayer, audio focus, notification, etc.)
+     */
+    private fun playInternal(
+        music: Music,
+        context: Context,
+        onPrepared: (Int) -> Unit = {}
+    ) {
+        if (appContext == null) init(context)
+        val ctx = appContext ?: context
+
+        // Si on rejoue le même morceau déjà chargé, on reprend simplement
         if (mediaPlayer != null && currentMusic?.uri == music.uri) {
             if (mediaPlayer?.isPlaying == false) {
                 requestAudioFocus()
@@ -131,12 +177,13 @@ object MusicPlayerManager {
             return
         }
 
-        stopMusic() // libère l'ancien player
+        // Libère l'ancien player
+        stopMusicInternal()
         currentMusic = music
 
         mediaPlayer = MediaPlayer().apply {
             if (music.uri.startsWith("content://")) {
-                setDataSource(context, music.uri.toUri())
+                setDataSource(ctx, music.uri.toUri())
             } else {
                 setDataSource(music.uri)
             }
@@ -149,21 +196,31 @@ object MusicPlayerManager {
                 onPrepared.invoke(duration)
 
                 try {
-                    NotificationService.startOrUpdate(
-                        appContext ?: context
-                    )
-                } catch (_: Exception) {}
+                    NotificationService.startOrUpdate(ctx)
+                } catch (_: Exception) {
+                }
             }
             setOnCompletionListener {
                 _isPlaying = false
                 MediaSessionManager.updatePlaybackState(false)
-                onCompletionListener?.invoke()
 
-                try {
-                    NotificationService.startOrUpdate(
-                        appContext ?: context
-                    )
-                } catch (_: Exception) {}
+                val appCtx = appContext ?: ctx
+
+                // On tente de passer automatiquement au morceau suivant dans la file
+                val next = QueueManager.getNext()
+                if (next != null) {
+                    // Lecture du morceau suivant via la même logique interne
+                    playInternal(next, appCtx)
+                } else {
+                    // Pas de morceau suivant : on met simplement à jour la notif
+                    try {
+                        NotificationService.startOrUpdate(appCtx)
+                    } catch (_: Exception) {
+                    }
+                }
+
+                // Callback externe éventuel (UI)
+                onCompletionListener?.invoke()
             }
         }
     }
@@ -177,7 +234,8 @@ object MusicPlayerManager {
             NotificationService.startOrUpdate(
                 appContext ?: context
             )
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
     private fun pauseMusicInternal() {
@@ -186,7 +244,8 @@ object MusicPlayerManager {
 
         try {
             NotificationService.startOrUpdate(appContext ?: return)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 
     fun stopMusic() {

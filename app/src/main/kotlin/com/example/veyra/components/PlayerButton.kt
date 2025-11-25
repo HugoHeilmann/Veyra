@@ -20,20 +20,26 @@ import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 
 @Composable
-fun RandomPlay(
+fun PlayerButton(
     navController: NavHostController,
-    artist: String,
-    album: String,
-    playlist: String
+    artist: String? = "",
+    album: String? = "",
+    playlist: String? = "",
+    list: List<Music> = emptyList(),
+    random: Boolean = true,
+    onClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
     val songs: List<Music> = when {
-        artist.isNotBlank() -> MusicHolder.getArtistSongs(artist)
-        album.isNotBlank() -> MusicHolder.getAlbumSongs(album)
-        playlist.isNotBlank() -> MusicHolder.getPlaylistSongs(playlist)
-        else -> MusicHolder.getMusicList() // fallback
+        !artist.isNullOrBlank() -> MusicHolder.getArtistSongs(artist)
+        !album.isNullOrBlank() -> MusicHolder.getAlbumSongs(album)
+        !playlist.isNullOrBlank() -> MusicHolder.getPlaylistSongs(playlist)
+        list.isNotEmpty() -> list
+        else -> MusicHolder.getMusicList()
     }
+
+    val useProvidedOrder = list.isNotEmpty()
 
     Row(
         modifier = Modifier
@@ -43,15 +49,31 @@ fun RandomPlay(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "Lecture aléatoire",
+            text = if (random) {
+                "Lecture aléatoire"
+            } else {
+                "Lecture ordonnée"
+            },
             style = MaterialTheme.typography.titleMedium
         )
 
         Button(
             onClick = {
+                onClick()
+
                 if (songs.isNotEmpty()) {
-                    val track = songs.random()
-                    MusicHolder.setCurrentMusic(context, track, songs)
+                    val track = if (random) {
+                        songs.random()
+                    } else {
+                        songs[0]
+                    }
+                    MusicHolder.isShuffled = random
+                    MusicHolder.setCurrentMusic(
+                        context = context,
+                        music = track,
+                        contextList = songs,
+                        keepOrder = useProvidedOrder
+                    )
                     navController.navigate("player")
                 }
             },
