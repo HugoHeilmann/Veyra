@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.veyra.components.MusicRow
-import com.example.veyra.components.RandomPlay
+import com.example.veyra.components.PlayerButton
 import com.example.veyra.components.TopBar
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.QueueManager
@@ -35,7 +35,7 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
             item {
-                RandomPlay(
+                PlayerButton(
                     navController = navController,
                     artist = artistName
                 )
@@ -55,6 +55,7 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                             .fillMaxWidth()
                             .padding(vertical = 8.dp, horizontal = 16.dp),
                         onClick = {
+                            MusicHolder.isShuffled = true
                             MusicHolder.setCurrentMusic(context, song, songs)
                             navController.navigate("player")
                         },

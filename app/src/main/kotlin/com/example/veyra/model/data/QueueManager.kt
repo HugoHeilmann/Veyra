@@ -5,7 +5,7 @@ import com.example.veyra.model.Music
 
 object QueueManager {
 
-    private val _queue = mutableListOf<Music>()
+    private val _queue = mutableStateListOf<Music>()
     val queue: List<Music>
         get() = _queue
 
@@ -15,6 +15,8 @@ object QueueManager {
 
     val hasCurrent: Boolean
         get() = _currentIndex in queue.indices
+
+    var isLaunched by mutableStateOf(false)
 
     /**
      * Remplace entierement la file de lecture

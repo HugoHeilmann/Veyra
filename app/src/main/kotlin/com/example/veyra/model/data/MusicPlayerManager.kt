@@ -24,6 +24,7 @@ object MusicPlayerManager {
     private var appContext: Context? = null
 
     private var _isPlaying by mutableStateOf(true)
+    private var _isQueuePlaying by mutableStateOf(false)
 
     // Callback externe éventuel (UI) quand un morceau se termine
     private var onCompletionListener: (() -> Unit)? = null
@@ -137,68 +138,8 @@ object MusicPlayerManager {
         // S'assure d'avoir un contexte appli
         if (appContext == null) init(context)
 
-        // La file devient uniquement ce morceau
-        QueueManager.setQueue(listOf(music), startIndex = 0)
-
         // On joue le morceau via la logique commune
         playInternal(music, context, onPrepared)
-    }
-
-    /**
-     * Joue une seule musique en recréant une file de lecture de taille 1.
-     * (Alias plus explicite de playMusic)
-     */
-    fun playSingle(music: Music, context: Context, onPrepared: (Int) -> Unit = {}) {
-        if (appContext == null) init(context)
-
-        QueueManager.setQueue(listOf(music), startIndex = 0)
-        playInternal(music, context, onPrepared)
-    }
-
-    /**
-     * Lance la lecture d'une liste de musiques (playlist, album, etc.)
-     */
-    fun playFromList(
-        musics: List<Music>,
-        startIndex: Int,
-        context: Context,
-        onPrepared: (Int) -> Unit = {}
-    ) {
-        if (musics.isEmpty()) return
-        if (appContext == null) init(context)
-
-        QueueManager.setQueue(musics, startIndex)
-        val current = QueueManager.getCurrent() ?: return
-        playInternal(current, context, onPrepared)
-    }
-
-    /**
-     * Passe au morceau suivant dans la file de lecture.
-     */
-    fun playNextInQueue(context: Context) {
-        if (appContext == null) init(context)
-        val ctx = appContext ?: context
-
-        val next = QueueManager.getNext()
-        if (next != null) {
-            playInternal(next, ctx)
-        } else {
-            // Fin de file : on met en pause / stop
-            pauseMusic(ctx)
-        }
-    }
-
-    /**
-     * Passe au morceau précédent dans la file de lecture.
-     */
-    fun playPreviousInQueue(context: Context) {
-        if (appContext == null) init(context)
-        val ctx = appContext ?: context
-
-        val prev = QueueManager.getPrevious()
-        if (prev != null) {
-            playInternal(prev, ctx)
-        }
     }
 
     /**
@@ -211,14 +152,6 @@ object MusicPlayerManager {
 
         val music = QueueManager.playFromIndex(index) ?: return
         playInternal(music, ctx)
-    }
-
-    /**
-     * Joue le morceau courant de la file (si existant).
-     */
-    private fun playCurrentFromQueue(context: Context, onPrepared: (Int) -> Unit = {}) {
-        val current = QueueManager.getCurrent() ?: return
-        playInternal(current, context, onPrepared)
     }
 
     /**

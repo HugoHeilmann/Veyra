@@ -21,7 +21,6 @@ object MusicHolder {
     private val playlistMap = mutableMapOf<String, List<Music>>()
 
     var isShuffled by mutableStateOf(true)
-        private set
 
     fun buildPlaylistMap(context: Context, allMusic: List<Music>) {
         playlistMap.clear()
@@ -81,9 +80,19 @@ object MusicHolder {
         context.startService(intent)
     }
 
-    fun setCurrentMusic(context: Context, music: Music, contextList: List<Music>? = null) {
+    fun setCurrentMusic(
+        context: Context,
+        music: Music,
+        contextList: List<Music>? = null,
+        keepOrder: Boolean = false
+    ) {
         currentMusic = music
-        originalContextList = (contextList ?: musicList).sortedBy { it.name.lowercase() }
+
+        originalContextList = when {
+            contextList != null && keepOrder -> contextList
+            contextList != null && !keepOrder -> contextList.sortedBy { it.name.lowercase() }
+            else -> musicList.sortedBy { it.name.lowercase() }
+        }
         shuffledContextList = originalContextList.shuffled()
 
         // Launch notification

@@ -34,10 +34,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.veyra.AppUIViewModel
 import com.example.veyra.components.BlandMusicRow
-import com.example.veyra.components.CustomLoader
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
-import com.example.veyra.components.RandomPlay
+import com.example.veyra.components.PlayerButton
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel
@@ -242,7 +241,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         buildSectionsFromGroupedMap(groupedSongs)
                     }
 
-                    RandomPlay(navController)
+                    PlayerButton(navController)
 
                     AlphabeticalListWithFastScroller(
                         sections = sections,
@@ -265,6 +264,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     .fillMaxWidth()
                                     .padding(vertical = 8.dp, horizontal = 16.dp),
                                 onClick = {
+                                    MusicHolder.isShuffled = true
                                     MusicHolder.setCurrentMusic(context, music, null)
                                     navController.navigate("player")
                                 },
