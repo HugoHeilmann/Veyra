@@ -23,7 +23,11 @@ import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.model.metadata.PlaylistMetadata
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.res.painterResource
 import com.example.veyra.model.data.MusicHolder
+import com.example.veyra.R
 
 @SuppressLint("MutableCollectionMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,17 +42,17 @@ fun PlaylistsScreen(navController: NavController) {
 
     LaunchedEffect(Unit) {
         val storedPlaylists = PlaylistManager.readAll(context = navController.context)
-        playlists = storedPlaylists.map { Playlist(it.name, it.musicFiles.size) }.toMutableList()
+        playlists = storedPlaylists
+            .map { Playlist(it.name, it.musicFiles.size) }
+            .toMutableList()
     }
 
     var playlistToDelete by remember { mutableStateOf<Playlist?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Focus requester pour le champ de la popup
     val nameFocusRequester = remember { FocusRequester() }
     LaunchedEffect(showDialog) {
         if (showDialog) {
-            // Donne le focus quand la popup apparaît
             nameFocusRequester.requestFocus()
         }
     }
@@ -66,7 +70,6 @@ fun PlaylistsScreen(navController: NavController) {
             return false
         }
 
-        // OK : on ajoute et on persiste
         playlists = (playlists + Playlist(name, 0)).toMutableList()
         PlaylistManager.addIfNotExists(
             navController.context,
@@ -77,106 +80,147 @@ fun PlaylistsScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(text = "Playlist")
-                    }
+                    Text(
+                        text = "Playlists",
+                        style = MaterialTheme.typography.titleLarge
+                    )
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Nouvelle playlist"
+                )
+            }
         }
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            contentAlignment = Alignment.TopCenter
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxSize()
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                ) {
-                    items(playlists) { playlist ->
-                        PlaylistItem(
-                            playlist = playlist,
-                            onClick = {
-                                navController.navigate("playlist_preview/${playlist.name}")
-                            },
-                            onPlayClick = {
-                                MusicHolder.buildPlaylistMap(context, MusicHolder.getMusicList())
-                                val songs = MusicHolder.getPlaylistSongs(playlist.name)
+                // Petit texte d’intro
+                Text(
+                    text = "Organise tes musiques en playlists.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
-                                if (songs.isNotEmpty()) {
-                                    MusicHolder.setCurrentMusic(context, songs.random(), songs)
-                                    navController.navigate("player")
-                                } else {
-                                    // Tu peux afficher un Toast, un Snackbar ou ignorer
-                                    Toast.makeText(context, "La playlist est vide", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            onEditClick = {
-                                val encoded = playlist.name.toUri()
-                                navController.navigate("edit_playlist/$encoded")
-                            },
-                            onDeleteClick = {
-                                playlistToDelete = playlist
-                                showDeleteDialog = true
-                            }
+                if (playlists.isEmpty()) {
+                    // État vide sympa
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 48.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_playlist), // à adapter
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Aucune playlist pour le moment",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "Crée ta première playlist pour commencer.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(onClick = { showDialog = true }) {
+                            Text("Créer une playlist")
+                        }
                     }
-                }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(playlists) { playlist ->
+                            PlaylistItem(
+                                playlist = playlist,
+                                onClick = {
+                                    navController.navigate("playlist_preview/${playlist.name}")
+                                },
+                                onPlayClick = {
+                                    MusicHolder.buildPlaylistMap(context, MusicHolder.getMusicList())
+                                    val songs = MusicHolder.getPlaylistSongs(playlist.name)
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(onClick = { showDialog = true }) {
-                    Text(text = "Créer une nouvelle playlist")
+                                    if (songs.isNotEmpty()) {
+                                        MusicHolder.setCurrentMusic(context, songs.random(), songs)
+                                        navController.navigate("player")
+                                    } else {
+                                        Toast.makeText(context, "La playlist est vide", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onEditClick = {
+                                    val encoded = playlist.name.toUri()
+                                    navController.navigate("edit_playlist/$encoded")
+                                },
+                                onDeleteClick = {
+                                    playlistToDelete = playlist
+                                    showDeleteDialog = true
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
+            // Dialog création
             if (showDialog) {
                 AlertDialog(
                     onDismissRequest = {
                         showDialog = false
                         playlistName = ""
                     },
-                    title = { Text(text = "Nouvelle Playlist") },
+                    title = { Text(text = "Nouvelle playlist") },
                     text = {
-                        Column {
-                            OutlinedTextField(
-                                value = playlistName,
-                                onValueChange = { playlistName = it },
-                                label = { Text("Nom de la playlist") },
-                                singleLine = true,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(nameFocusRequester),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(
-                                    onDone = {
-                                        if (tryCreatePlaylist()) {
-                                            showDialog = false
-                                            playlistName = ""
-                                        }
+                        OutlinedTextField(
+                            value = playlistName,
+                            onValueChange = { playlistName = it },
+                            label = { Text("Nom de la playlist") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(nameFocusRequester),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (tryCreatePlaylist()) {
+                                        val encoded = playlistName.toUri()
+                                        showDialog = false
+                                        navController.navigate("edit_playlist/$encoded")
+                                        playlistName = ""
                                     }
-                                )
+                                }
                             )
-                        }
+                        )
                     },
                     confirmButton = {
                         Button(onClick = {
                             if (tryCreatePlaylist()) {
-                                showDialog = false
                                 val encoded = playlistName.toUri()
+                                showDialog = false
                                 navController.navigate("edit_playlist/$encoded")
                                 playlistName = ""
                             }
-                            // Sinon : on reste dans la popup (ne rien faire de plus)
                         }) {
                             Text("Enregistrer")
                         }
@@ -188,21 +232,21 @@ fun PlaylistsScreen(navController: NavController) {
                                 playlistName = ""
                             }
                         ) {
-                            Text(
-                                "Annuler",
-                                color = Color.Red
-                            )
+                            Text("Annuler", color = Color.Red)
                         }
                     },
                     containerColor = Color(0xFF2C2C2C)
                 )
             }
 
+            // Dialog suppression
             if (showDeleteDialog && playlistToDelete != null) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
                     title = { Text("Supprimer la playlist ?") },
-                    text = { Text("Voulez-vous vraiment supprimer \"${playlistToDelete!!.name}\" ?") },
+                    text = {
+                        Text("Voulez-vous vraiment supprimer \"${playlistToDelete!!.name}\" ?")
+                    },
                     confirmButton = {
                         TextButton(
                             colors = ButtonDefaults.textButtonColors(
@@ -210,11 +254,14 @@ fun PlaylistsScreen(navController: NavController) {
                             ),
                             onClick = {
                                 playlists = playlists.filter { it != playlistToDelete }.toMutableList()
-                                PlaylistManager.remove(context = navController.context, playlistToDelete!!.name)
+                                PlaylistManager.remove(
+                                    context = navController.context,
+                                    playlistName = playlistToDelete!!.name
+                                )
                                 playlistToDelete = null
                                 showDeleteDialog = false
-                            })
-                        {
+                            }
+                        ) {
                             Text("Confirmer")
                         }
                     },
