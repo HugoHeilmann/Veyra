@@ -45,7 +45,6 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
                 ) {
                     val musicReference = MetadataManager.getByPath(context, song.uri)?.toMusic() ?: song
 
