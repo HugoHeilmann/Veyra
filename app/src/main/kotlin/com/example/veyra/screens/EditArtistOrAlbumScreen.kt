@@ -1,6 +1,5 @@
 package com.example.veyra.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,14 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.veyra.components.TopBar
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
-import com.example.veyra.model.metadata.MusicMetadata
-import org.schabi.newpipe.extractor.timeago.patterns.fil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,21 +32,38 @@ fun EditArtistOrAlbumScreen(
 ) {
     val context = LocalContext.current
 
+    var searchText by remember { mutableStateOf("") }
     val allMusics = MusicHolder.getMusicList()
 
-    Log.d("TEST", "all " + allMusics.size)
-
-    val musics = if (isArtistCreated) {
-        MusicHolder.getMusicList().filter {
-            it.artist.isNullOrBlank() || it.artist == "Unknown Artist" || it.artist == "Unknown"
-        }
-    } else {
-        MusicHolder.getMusicList().filter {
-            it.album.isNullOrBlank() || it.album == "Unknown Album"
+    val baseMusics = remember(allMusics) {
+        if (isArtistCreated) {
+            allMusics.filter {
+                it.artist.isNullOrBlank() ||
+                        it.artist == "Unknown Artist" ||
+                        it.artist == "Unknown"
+            }
+        } else {
+            allMusics.filter {
+                it.album.isNullOrBlank() || it.album == "Unknown Album"
+            }
         }
     }
 
-    Log.d("TEST", "filtered " + musics.size)
+    val musics by remember(baseMusics, searchText) {
+        derivedStateOf {
+            if (searchText.isBlank()) {
+                baseMusics
+            } else {
+                val q = searchText.lowercase().trim()
+
+                baseMusics.filter { music ->
+                    music.name.lowercase().contains(q) ||
+                            (music.artist?.lowercase()?.contains(q) == true) ||
+                            (music.album?.lowercase()?.contains(q) == true)
+                }
+            }
+        }
+    }
 
     // Sélection
     val selected = remember { mutableStateListOf<String>() }
@@ -72,6 +88,14 @@ fun EditArtistOrAlbumScreen(
                     ) { Text("Annuler") }
 
                     Button(
+                        colors = if (selected.isEmpty()) {
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color.Red,
+                                contentColor = Color.White
+                            )
+                        } else {
+                            ButtonDefaults.buttonColors()
+                        },
                         modifier = Modifier.weight(1f),
                         onClick = {
                             if (selected.isNotEmpty()) {
@@ -106,7 +130,15 @@ fun EditArtistOrAlbumScreen(
                             }
                             navController.popBackStack()
                         }
-                    ) { Text("Appliquer (${selected.size})") }
+                    ) {
+                        Text(
+                            text = if (selected.isEmpty()) {
+                                "Supprimer"
+                            } else {
+                                "Appliquer (${selected.size})"
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -117,6 +149,23 @@ fun EditArtistOrAlbumScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
+            BasicTextField(
+                value = searchText,
+                onValueChange = { searchText = it },
+                singleLine = true,
+                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
+                    .padding(12.dp),
+                decorationBox = { innerTextField ->
+                    if (searchText.isEmpty()) {
+                        Text("Rechercher...", color = Color.Gray)
+                    }
+                    innerTextField()
+                }
+            )
+
             Spacer(Modifier.height(12.dp))
 
             LazyColumn(
