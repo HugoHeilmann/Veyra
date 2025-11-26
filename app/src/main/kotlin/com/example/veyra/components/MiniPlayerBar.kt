@@ -31,7 +31,7 @@ fun MiniPlayerBar(navController: NavHostController) {
     currentMusic?.let { music ->
         Surface(
             tonalElevation = 4.dp,
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
             shadowElevation = 4.dp,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
@@ -51,11 +51,7 @@ fun MiniPlayerBar(navController: NavHostController) {
                         .clickable { navController.navigate("player") },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.MusicNote,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    WaveBars(MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Column {

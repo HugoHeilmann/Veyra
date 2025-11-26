@@ -65,6 +65,9 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                         },
                         onAddClick = { _ ->
                             QueueManager.addToEnd(song)
+                        },
+                        onRemoveClick = { _ ->
+                            QueueManager.remove(song)
                         }
                     )
                 }

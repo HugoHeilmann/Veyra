@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -14,22 +15,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.veyra.AppUIViewModel
@@ -37,6 +40,7 @@ import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.PlayerButton
+import com.example.veyra.components.WaveBars
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel
@@ -167,17 +171,19 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         horizontalArrangement = Arrangement.Center,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = "Icon",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        WaveBars(MaterialTheme.colorScheme.primary)
+
                         Spacer(modifier = Modifier.width(8.dp))
+
                         Text(
                             text = "Veyra",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.titleLarge
                         )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        WaveBars(MaterialTheme.colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -202,7 +208,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
                     .padding(12.dp),
                 decorationBox = { innerTextField ->
                     if (searchText.isEmpty()) {
@@ -221,13 +227,34 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             ) {
                 tabs.forEach { tab ->
                     val isSelected = tab == selectedTab
-                    Text(
-                        text = tab,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier
-                            .clickable { selectedTab = tab }
-                            .padding(vertical = 8.dp)
+
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (isSelected)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else
+                            Color.Transparent
                     )
+                    val textColor by animateColorAsState(
+                        targetValue = if (isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onBackground
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .clickable { selectedTab = tab }
+                            .background(backgroundColor)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = tab,
+                            color = textColor,
+                            fontWeight = SemiBold,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                 }
             }
 
@@ -261,7 +288,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                             MusicRow(
                                 music = musicReference,
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxSize()
                                     .padding(vertical = 8.dp, horizontal = 16.dp),
                                 onClick = {
                                     MusicHolder.isShuffled = true
@@ -274,6 +301,9 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                 },
                                 onAddClick = { _ ->
                                     QueueManager.addToEnd(musicReference)
+                                },
+                                onRemoveClick = { _ ->
+                                    QueueManager.remove(musicReference)
                                 }
                             )
                         },
@@ -310,7 +340,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     .clickable {
                                         navController.navigate("artist_detail/${Uri.encode(artist)}")
                                     }
-                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                                    .padding(vertical = 8.dp)
                             ) {
                                 BlandMusicRow(
                                     artist,
@@ -351,7 +381,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                                     .clickable {
                                         navController.navigate("album_detail/${Uri.encode(album)}")
                                     }
-                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                                    .padding(vertical = 8.dp)
                             ) {
                                 BlandMusicRow(
                                     album,
@@ -436,6 +466,7 @@ private fun <T> AlphabeticalListWithFastScroller(
     var scrollerHeightPx by remember { mutableStateOf(0) }
     var isDragging by remember { mutableStateOf(false) }
     var previewLabel by remember { mutableStateOf<String?>(null) }
+    var previewCenterY by remember { mutableStateOf(0f) }
 
     // 4) Affichage compressé des labels
     val displayLabels = remember(allLabels, scrollerHeightPx) {
@@ -532,6 +563,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                             change.consume()
                             if (scrollerHeightPx <= 0 || displayLabels.isEmpty()) return@detectDragGestures
                             val y = change.position.y.coerceIn(0f, scrollerHeightPx.toFloat())
+                            previewCenterY = y
                             val idx = ((y / scrollerHeightPx) * displayLabels.size)
                                 .toInt().coerceIn(0, displayLabels.lastIndex)
                             val realIdx = displayToRealIndex[idx]
@@ -539,7 +571,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                                 lastTargetSection = realIdx
                                 previewLabel = allLabels[realIdx]
                                 val listIndex = headerStartIndices[realIdx]
-                                launchScroll(listIndex, animated = false) // 🔥 instantané pendant drag
+                                launchScroll(listIndex, animated = false)
                             }
                         }
                     },
@@ -553,7 +585,7 @@ private fun <T> AlphabeticalListWithFastScroller(
                     displayLabels.forEach { lbl ->
                         Text(
                             text = lbl,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1
                         )
@@ -563,11 +595,16 @@ private fun <T> AlphabeticalListWithFastScroller(
         }
 
         // Bulle d’aperçu
-        if (isDragging && previewLabel != null) {
+        if (isDragging && previewLabel != null && scrollerHeightPx > 0) {
+            val offsetY = with(density) {
+                (previewCenterY - scrollerHeightPx / 2f).toDp()
+            }
+
             Box(
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(64.dp)
+                    .align(Alignment.CenterEnd)
+                    .offset(x = (-56).dp, y = offsetY)
+                    .size(56.dp)
                     .background(
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                         shape = MaterialTheme.shapes.large
@@ -591,7 +628,7 @@ private fun calculateDisplayLabels(
     density: Density
 ): List<String> {
     if (scrollerHeightPx <= 0) return allLabels
-    val minSlotPx = with(density) { 16.dp.toPx() } // attention, à adapter avec LocalDensity si nécessaire
+    val minSlotPx = with(density) { 12.dp.toPx() } // attention, à adapter avec LocalDensity si nécessaire
     val maxVisible = max(1, floor(scrollerHeightPx / minSlotPx).toInt())
     if (allLabels.size <= maxVisible) return allLabels
     val step = ceil(allLabels.size / maxVisible.toFloat()).toInt().coerceAtLeast(1)
