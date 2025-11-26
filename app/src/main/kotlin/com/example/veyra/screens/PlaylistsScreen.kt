@@ -204,10 +204,9 @@ fun PlaylistsScreen(navController: NavController) {
                     title = { Text("Supprimer la playlist ?") },
                     text = { Text("Voulez-vous vraiment supprimer \"${playlistToDelete!!.name}\" ?") },
                     confirmButton = {
-                        Button(
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Red,
-                                contentColor = Color.White
+                        TextButton(
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = Color.Red
                             ),
                             onClick = {
                                 playlists = playlists.filter { it != playlistToDelete }.toMutableList()
@@ -220,7 +219,7 @@ fun PlaylistsScreen(navController: NavController) {
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = {
+                        Button(onClick = {
                             playlistToDelete = null
                             showDeleteDialog = false
                         }) {

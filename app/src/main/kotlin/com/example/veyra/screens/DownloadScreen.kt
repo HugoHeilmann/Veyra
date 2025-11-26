@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,7 +39,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
 
     var showCancelDialog by remember { mutableStateOf(false) }
 
-    // ✅ Vider les inputs en cas de succès
+    // Vider les inputs en cas de succès
     LaunchedEffect(status) {
         if (status.startsWith("✅") || status.startsWith("OK")) {
             url = ""
@@ -55,8 +54,8 @@ fun DownloadScreen(context: Context = LocalContext.current) {
     val isLoading by remember {
         derivedStateOf {
             status.startsWith("Extraction") ||
-            status.startsWith("Téléchargement") ||
-            status.startsWith("Conversion")
+                    status.startsWith("Téléchargement") ||
+                    status.startsWith("Conversion")
         }
     }
 
@@ -76,194 +75,240 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Top
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            OutlinedTextField(
-                value = url,
-                onValueChange = { url = it },
-                enabled = !isLoading,
-                label = { Text("YouTube URL") },
-                singleLine = true,
-                maxLines = 1,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                enabled = !isLoading,
-                label = { Text("Nom de la musique") },
-                singleLine = true,
-                maxLines = 1,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SelectorInput(
-                list = MusicHolder.getArtistList(),
-                placeholder = "Artiste",
-                enabled = !isLoading,
-                onValueChange = { artist = it },
-                onRefCreated = { restoreArtistSelector = it }
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SelectorInput(
-                list = MusicHolder.getAlbumList(),
-                placeholder = "Album",
-                enabled = !isLoading,
-                onValueChange = { album = it },
-                onRefCreated = { restoreAlbumSelector = it }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box {
-                OutlinedButton(
-                    onClick = { expanded = !expanded },
-                    enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth()
+            // Bloc unique : URL + métadonnées + playlists
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        if (selectedPlaylists.isEmpty()) {
-                            "Ajouter à une ou plusieurs playlists"
-                        } else {
-                            "Playlists : ${selectedPlaylists.joinToString(", ")}"
-                        }
+                        text = "Informations du morceau",
+                        style = MaterialTheme.typography.titleMedium
                     )
-                }
 
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    modifier = Modifier
-                        .fillMaxWidth(0.95f)
-                        .padding(horizontal = 8.dp)
-                        .background(Color(0xFF2C2C2C)),
-                ) {
-                    if (playlistName.isEmpty()) {
-                        DropdownMenuItem(
-                            text = { Text("Aucune playlist existante") },
-                            onClick = {}
-                        )
-                    } else {
-                        playlistName.forEach { name ->
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(name)
-                                        Checkbox(
-                                            checked = selectedPlaylists.contains(name),
-                                            onCheckedChange = { checked ->
-                                                if (checked) selectedPlaylists.add(name)
-                                                else selectedPlaylists.remove(name)
-                                            }
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    val currentlySelected = selectedPlaylists.contains(name)
-                                    if (currentlySelected) selectedPlaylists.remove(name)
-                                    else selectedPlaylists.add(name)
+                    // URL YouTube
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        enabled = !isLoading,
+                        label = { Text("URL YouTube") },
+                        placeholder = { Text("https://youtu.be/...") },
+                        singleLine = true,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Titre
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        enabled = !isLoading,
+                        label = { Text("Titre") },
+                        singleLine = true,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Artiste
+                    SelectorInput(
+                        list = MusicHolder.getArtistList(),
+                        placeholder = "Artiste",
+                        enabled = !isLoading,
+                        onValueChange = { artist = it },
+                        onRefCreated = { restoreArtistSelector = it }
+                    )
+
+                    // Album
+                    SelectorInput(
+                        list = MusicHolder.getAlbumList(),
+                        placeholder = "Album",
+                        enabled = !isLoading,
+                        onValueChange = { album = it },
+                        onRefCreated = { restoreAlbumSelector = it }
+                    )
+
+                    // Playlists (compact)
+                    Text(
+                        text = "Playlists (optionnel)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Box {
+                        OutlinedButton(
+                            onClick = { expanded = !expanded },
+                            enabled = !isLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                if (selectedPlaylists.isEmpty()) {
+                                    "Ajouter à une ou plusieurs playlists"
+                                } else {
+                                    "Playlists : ${selectedPlaylists.joinToString(", ")}"
                                 }
                             )
                         }
-                    }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    if (isLoading) {
-                        showCancelDialog = true
-                    } else {
-                        DownloadHolder.status.value = "Extraction…"
-
-                        val intent = Intent(context, DownloadService::class.java).apply {
-                            putExtra("url", url)
-                            putExtra("title", title)
-                            putExtra("artist", artist)
-                            putExtra("album", album)
-                            putStringArrayListExtra("playlists", ArrayList(selectedPlaylists))
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier
+                                .fillMaxWidth(0.95f)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                        ) {
+                            if (playlistName.isEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text("Aucune playlist existante") },
+                                    onClick = {}
+                                )
+                            } else {
+                                playlistName.forEach { name ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(name)
+                                                Checkbox(
+                                                    checked = selectedPlaylists.contains(name),
+                                                    onCheckedChange = { checked ->
+                                                        if (checked) selectedPlaylists.add(name)
+                                                        else selectedPlaylists.remove(name)
+                                                    }
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            val selected = selectedPlaylists.contains(name)
+                                            if (selected) selectedPlaylists.remove(name)
+                                            else selectedPlaylists.add(name)
+                                        }
+                                    )
+                                }
+                            }
                         }
-                        context.startService(intent)
                     }
-                },
-                enabled = url.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-                colors = if (isLoading) {
-                    ButtonDefaults.buttonColors(
-                        containerColor = Color.Red,
-                        contentColor = Color.White
-                    )
-                } else {
-                    ButtonDefaults.buttonColors()
                 }
-            ) {
-                Text(
-                    if (isLoading) "Arrêter le téléchargement"
-                    else "Télécharger MP3"
-                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("Status: $status")
+            // Bloc 2 : Action + statut
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = {
+                        if (isLoading) {
+                            showCancelDialog = true
+                        } else {
+                            DownloadHolder.status.value = "Extraction…"
 
-            if (isLoading) {
-                Spacer(modifier = Modifier.height(16.dp))
-                LinearProgressIndicator(
-                    progress = { progress },
+                            val intent = Intent(context, DownloadService::class.java).apply {
+                                putExtra("url", url)
+                                putExtra("title", title)
+                                putExtra("artist", artist)
+                                putExtra("album", album)
+                                putStringArrayListExtra(
+                                    "playlists",
+                                    ArrayList(selectedPlaylists)
+                                )
+                            }
+                            context.startService(intent)
+                        }
+                    },
+                    enabled = url.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    colors = if (isLoading) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = Color.Red,
+                            contentColor = Color.White
+                        )
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    }
+                ) {
+                    Text(
+                        if (isLoading) "Arrêter le téléchargement"
+                        else "Télécharger en MP3"
+                    )
+                }
 
-                if (showCancelDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showCancelDialog = false },
-                        title = { Text("Arrêter le téléchargement ?") },
-                        text = { Text("Es-tu sûr de vouloir annuler ce téléchargement en cours ?") },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    showCancelDialog = false
+                // Capsule de statut (compacte)
+                if (status.isNotBlank()) {
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = when {
+                            status.startsWith("✅") ->
+                                MaterialTheme.colorScheme.primary
 
-                                    DownloadHolder.status.value = "❌ Téléchargement annulé"
-                                    DownloadHolder.progress.floatValue = 0f
+                            status.startsWith("❌") ->
+                                MaterialTheme.colorScheme.errorContainer
 
-                                    val cancelIntent = Intent(context, DownloadService::class.java).apply {
+                            else ->
+                                MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = status,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2
+                        )
+                    }
+                }
+
+                if (isLoading) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // Dialog d'annulation
+            if (showCancelDialog && isLoading) {
+                AlertDialog(
+                    onDismissRequest = { showCancelDialog = false },
+                    title = { Text("Arrêter le téléchargement ?") },
+                    text = { Text("Es-tu sûr de vouloir annuler ce téléchargement en cours ?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showCancelDialog = false
+
+                                DownloadHolder.status.value = "❌ Téléchargement annulé"
+                                DownloadHolder.progress.floatValue = 0f
+
+                                val cancelIntent =
+                                    Intent(context, DownloadService::class.java).apply {
                                         action = DownloadService.ACTION_CANCEL
                                     }
-                                    context.startService(cancelIntent)
-                                },
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = Color.Red
-                                )
-                            ) {
-                                Text("Oui, arrêter")
-                            }
-                        },
-                        dismissButton = {
-                            Button(
-                                onClick = { showCancelDialog = false },
-                            ) {
-                                Text("Non, continuer")
-                            }
-                        },
-                        containerColor = Color(0xFF2C2C2C)
-                    )
-                }
+                                context.startService(cancelIntent)
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = Color.Red
+                            )
+                        ) {
+                            Text("Oui, arrêter")
+                        }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showCancelDialog = false }) {
+                            Text("Non, continuer")
+                        }
+                    },
+                    containerColor = Color(0xFF2C2C2C)
+                )
             }
         }
     }
