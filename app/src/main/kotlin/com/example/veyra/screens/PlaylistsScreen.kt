@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.res.painterResource
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.R
+import com.example.veyra.components.animations.AnimatedPlaylistIcon
 
 @SuppressLint("MutableCollectionMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,10 +83,25 @@ fun PlaylistsScreen(navController: NavController) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "Playlists",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AnimatedPlaylistIcon(direction = -1f)
+
+                        Spacer(Modifier.width(8.dp))
+
+                        Text(
+                            text = "Playlists",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        AnimatedPlaylistIcon(direction = 1f)
+                    }
                 }
             )
         },

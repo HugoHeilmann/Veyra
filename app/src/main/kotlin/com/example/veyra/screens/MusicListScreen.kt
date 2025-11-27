@@ -40,7 +40,7 @@ import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.PlayerButton
-import com.example.veyra.components.WaveBars
+import com.example.veyra.components.animations.WaveBars
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel

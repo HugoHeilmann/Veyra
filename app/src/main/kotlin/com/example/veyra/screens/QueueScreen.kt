@@ -1,6 +1,7 @@
 package com.example.veyra.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -21,6 +22,7 @@ import com.example.veyra.components.QueueItemRow
 import com.example.veyra.model.data.MusicPlayerManager
 import com.example.veyra.model.data.QueueManager
 import com.example.veyra.R
+import com.example.veyra.components.animations.AnimatedQueueIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,10 +48,25 @@ fun QueueScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "File de lecture",
-                        style = MaterialTheme.typography.titleLarge
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AnimatedQueueIcon()
+
+                        Spacer(Modifier.width(8.dp))
+
+                        Text(
+                            text = "File de lecture",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        AnimatedQueueIcon()
+                    }
                 }
             )
         }

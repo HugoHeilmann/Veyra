@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.veyra.components.animations.AnimatedDownloadIcon
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.convert.DownloadHolder
@@ -63,10 +65,25 @@ fun DownloadScreen(context: Context = LocalContext.current) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "Téléchargement",
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AnimatedDownloadIcon()
+
+                        Spacer(Modifier.width(8.dp))
+
+                        Text(
+                            text = "Téléchargement",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp)
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        AnimatedDownloadIcon()
+                    }
                 }
             )
         }

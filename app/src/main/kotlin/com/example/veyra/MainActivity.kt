@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.text.Layout
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,7 +30,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.veyra.components.BottomNavigationBar
-import com.example.veyra.components.CustomLoader
+import com.example.veyra.components.animations.CustomLoader
 import com.example.veyra.components.MiniPlayerBar
 import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.data.MediaSessionManager
@@ -48,7 +47,6 @@ import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.localization.Localization
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 

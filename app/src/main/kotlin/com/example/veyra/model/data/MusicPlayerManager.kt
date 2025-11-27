@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
 import com.example.veyra.model.Music
+import com.example.veyra.model.controllers.WaveBarsController
 import com.example.veyra.service.NotificationService
 
 object MusicPlayerManager {
@@ -140,6 +141,7 @@ object MusicPlayerManager {
 
         // On joue le morceau via la logique commune
         playInternal(music, context, onPrepared)
+        WaveBarsController.start()
     }
 
     /**
@@ -152,6 +154,7 @@ object MusicPlayerManager {
 
         val music = QueueManager.playFromIndex(index) ?: return
         playInternal(music, ctx)
+        WaveBarsController.start()
     }
 
     /**
@@ -165,6 +168,7 @@ object MusicPlayerManager {
     ) {
         if (appContext == null) init(context)
         val ctx = appContext ?: context
+
 
         // Si on rejoue le même morceau déjà chargé, on reprend simplement
         if (mediaPlayer != null && currentMusic?.uri == music.uri) {
@@ -239,13 +243,13 @@ object MusicPlayerManager {
     }
 
     private fun pauseMusicInternal() {
+        WaveBarsController.stop()
         mediaPlayer?.pause()
         _isPlaying = false
 
         try {
             NotificationService.startOrUpdate(appContext ?: return)
-        } catch (_: Exception) {
-        }
+        } catch (_: Exception) {}
     }
 
     fun stopMusic() {
@@ -255,6 +259,7 @@ object MusicPlayerManager {
     }
 
     private fun stopMusicInternal() {
+        WaveBarsController.stop()
         mediaPlayer?.release()
         mediaPlayer = null
         currentMusic = null

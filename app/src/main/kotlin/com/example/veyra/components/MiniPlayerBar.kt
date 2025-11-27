@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.veyra.components.animations.WaveBars
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.MusicPlayerManager
 
