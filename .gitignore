@@ -1,4 +1,6 @@
-# ========== Android/IntelliJ/Gradle ignores ==========
+# ============================================
+# =============== ANDROID ====================
+# ============================================
 
 # Built application files
 *.apk
@@ -18,23 +20,20 @@ local.properties
 *.iws
 *.ipr
 
-# Mac system files
-.DS_Store
-
-# Log files
-*.log
-
 # Kotlin/Java compile output
 out/
 
 # Android Studio Navigation editor temp files
 .navigation/
 
-# Auto-generated files
+# Jetpack Compose previews cache
+.idea/compose-preview/
+
+# Android auto-generated folders
 captures/
 outputs/
 
-# Android Studio 2020.3+ (Chipmunk) cache folder
+# Android Studio/IntelliJ cache
 .idea/caches/
 .idea/libraries/
 .idea/modules.xml
@@ -43,10 +42,7 @@ outputs/
 .idea/assetWizardSettings.xml
 .idea/gradle.xml
 
-# Jetpack Compose previews cache
-.idea/compose-preview/
-
-# Misc
+# Keystore
 *.keystore
 *.jks
 
@@ -58,14 +54,87 @@ crashlytics.properties
 google-services.json
 firebase-debug.log
 
-# Virtual device files
+# Virtual devices
 *.avd
 *.avd.lock
 
-# IntelliJ run configurations
-.idea/runConfigurations/
+# ============================================
+# ================ iOS/XCODE =================
+# ============================================
 
-# OS
+# Build products
+build/
+DerivedData/
+
+# Xcode workspace & settings
+*.xcworkspace/
+xcuserdata/
+xcshareddata/
+*.xcuserstate
+
+# SwiftPM
+.build/
+Package.resolved
+
+# CocoaPods
+Pods/
+Podfile.lock
+*.xcworkspace
+
+# Carthage
+Carthage/
+Carthage/Build/
+
+# Swift & Xcode artifacts
+*.swiftpm
+.swiftpm/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# iOS app archives
+*.ipa
+*.xcarchive
+
+# Provisioning profiles and certificates
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.p12
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# Screenshots
+*.png
+*.jpg
+
+# ============================================
+# =============== OS FILES ====================
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
 Thumbs.db
 ehthumbs.db
 desktop.ini
+
+# ============================================
+# =============== MISC ========================
+# ============================================
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
