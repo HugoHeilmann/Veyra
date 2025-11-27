@@ -153,12 +153,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     )
 
                     // Playlists (compact)
-                    Text(
-                        text = "Playlists (optionnel)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
                     Box {
                         OutlinedButton(
                             onClick = { expanded = !expanded },

@@ -1,6 +1,7 @@
 package com.example.veyra.components.animations
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,10 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import com.example.veyra.model.controllers.WaveBarsController
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun WaveBars(color: Color) {
     val minHeight = 4f
+    val maxHeight = 18f
+
     val bars = listOf(
         remember { Animatable(minHeight) },
         remember { Animatable(minHeight) },
@@ -31,19 +36,38 @@ fun WaveBars(color: Color) {
 
     LaunchedEffect(isPlaying) {
         if (isPlaying) {
-            while (true) {
-                bars.forEach { bar ->
-                    bar.animateTo((6..16).random().toFloat(), tween(360))
+            bars.forEachIndexed { index, bar ->
+                launch {
+                    delay(index * 70L)
+
+                    while (WaveBarsController.isPlaying) {
+                        val target = (minHeight.toInt()..maxHeight.toInt()).random().toFloat()
+                        val duration = (180..260).random()
+
+                        bar.animateTo(
+                            target,
+                            animationSpec = tween(
+                                durationMillis = duration,
+                                easing = LinearOutSlowInEasing
+                            )
+                        )
+                    }
                 }
             }
         } else {
             bars.forEach { bar ->
-                bar.animateTo(minHeight, tween(250))
+                bar.animateTo(
+                    minHeight,
+                    animationSpec = tween(
+                        durationMillis = 200,
+                        easing = LinearOutSlowInEasing
+                    )
+                )
             }
         }
     }
 
-    Row(verticalAlignment = Alignment.Bottom) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         bars.forEachIndexed { index, bar ->
             Box(
                 Modifier

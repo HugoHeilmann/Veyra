@@ -9,11 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -23,19 +19,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight.Companion.SemiBold
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.veyra.AppUIViewModel
+import com.example.veyra.components.AlphabeticalListWithFastScroller
 import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
@@ -44,6 +37,7 @@ import com.example.veyra.components.animations.WaveBars
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.MusicListViewModel
+import com.example.veyra.model.Section
 import com.example.veyra.model.data.QueueManager
 import com.example.veyra.utils.loadMusicFromDevice
 import com.example.veyra.model.metadata.MetadataManager
@@ -55,9 +49,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +67,6 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
     }
 
     val viewModel: MusicListViewModel = viewModel()
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { appUiVm.updateBottomBarEnabled(false) }
 
@@ -427,229 +417,7 @@ fun <T> groupByFirstLetter(list: List<T>, keySelector: (T) -> String?): Map<Char
         .toSortedMap()
 }
 
-// Modèle section
-private data class Section<T>(
-    val label: String,
-    val items: List<T>
-)
 
-/**
- * Liste + index alphabétique à DROITE (côte à côte, pas d’overlay).
- * Si l’écran est trop petit, on sous-échantillonne l’index (A, C, E, …, Z)
- * et le mapping des clics/drag suit exactement les lettres AFFICHÉES.
- */
-@Composable
-private fun <T> AlphabeticalListWithFastScroller(
-    sections: List<Section<T>>,
-    itemContent: @Composable (T) -> Unit,
-    headerContent: @Composable (String) -> Unit,
-    listState: LazyListState
-) {
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-
-    // 1) Indices de début de section (O(n))
-    val headerStartIndices = remember(sections) {
-        val out = ArrayList<Int>(sections.size)
-        var acc = 0
-        sections.forEach { s ->
-            out += acc
-            acc += 1 + s.items.size // 1 header + N items
-        }
-        out
-    }
-
-    // 2) Labels
-    val allLabels = remember(sections) { sections.map { it.label } }
-
-    // 3) État scroller
-    var scrollerHeightPx by remember { mutableStateOf(0) }
-    var isDragging by remember { mutableStateOf(false) }
-    var previewLabel by remember { mutableStateOf<String?>(null) }
-    var previewCenterY by remember { mutableStateOf(0f) }
-
-    // 4) Affichage compressé des labels
-    val displayLabels = remember(allLabels, scrollerHeightPx) {
-        calculateDisplayLabels(allLabels, scrollerHeightPx, density)
-    }
-    val displayToRealIndex = remember(allLabels, displayLabels) {
-        calculateDisplayToRealIndex(allLabels, displayLabels)
-    }
-
-    // 5) Throttle: ne scroller que si la cible change
-    var lastTargetSection by remember { mutableStateOf(-1) }
-
-    // 6) Un seul job de scroll à la fois
-    var scrollJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
-    fun launchScroll(toIndex: Int, animated: Boolean) {
-        if (toIndex < 0) return
-        scrollJob?.cancel()
-        scrollJob = scope.launch {
-            if (animated) listState.animateScrollToItem(toIndex)
-            else listState.scrollToItem(toIndex)
-        }
-    }
-
-    Box(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxSize()) {
-            // --- Liste ---
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                userScrollEnabled = !isDragging // évite les conflits pendant le drag
-            ) {
-                sections.forEachIndexed { secIdx, section ->
-                    item(
-                        key = "header_${section.label}",
-                        contentType = "header"
-                    ) {
-                        headerContent(section.label)
-                    }
-                    items(
-                        count = section.items.size,
-                        key = { i -> "item_${section.label}_$i" },
-                        contentType = { "item" }
-                    ) { i ->
-                        itemContent(section.items[i])
-                    }
-                }
-            }
-
-            // --- Index alphabétique ---
-            Box(
-                modifier = Modifier
-                    .width(28.dp)
-                    .fillMaxHeight()
-                    .padding(end = 6.dp)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                        shape = MaterialTheme.shapes.small
-                    )
-                    .onGloballyPositioned { scrollerHeightPx = it.size.height }
-                    // TAP: une seule animation
-                    .pointerInput(displayLabels) {
-                        detectTapGestures { offset ->
-                            if (scrollerHeightPx <= 0 || displayLabels.isEmpty()) return@detectTapGestures
-                            val idx = ((offset.y / scrollerHeightPx) * displayLabels.size)
-                                .toInt().coerceIn(0, displayLabels.lastIndex)
-                            val realIdx = displayToRealIndex[idx]
-                            previewLabel = allLabels[realIdx]
-                            isDragging = false
-                            lastTargetSection = -1
-                            val listIndex = headerStartIndices[realIdx]
-                            launchScroll(listIndex, animated = false)
-                        }
-                    }
-                    // DRAG: scrollToItem instantané + throttle
-                    .pointerInput(displayLabels) {
-                        detectDragGestures(
-                            onDragStart = {
-                                isDragging = true
-                                lastTargetSection = -1
-                            },
-                            onDragEnd = {
-                                isDragging = false
-                                previewLabel = null
-                                lastTargetSection = -1
-                            },
-                            onDragCancel = {
-                                isDragging = false
-                                previewLabel = null
-                                lastTargetSection = -1
-                            }
-                        ) { change, _ ->
-                            change.consume()
-                            if (scrollerHeightPx <= 0 || displayLabels.isEmpty()) return@detectDragGestures
-                            val y = change.position.y.coerceIn(0f, scrollerHeightPx.toFloat())
-                            previewCenterY = y
-                            val idx = ((y / scrollerHeightPx) * displayLabels.size)
-                                .toInt().coerceIn(0, displayLabels.lastIndex)
-                            val realIdx = displayToRealIndex[idx]
-                            if (realIdx != lastTargetSection) {
-                                lastTargetSection = realIdx
-                                previewLabel = allLabels[realIdx]
-                                val listIndex = headerStartIndices[realIdx]
-                                launchScroll(listIndex, animated = false)
-                            }
-                        }
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.SpaceEvenly,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxHeight()
-                ) {
-                    displayLabels.forEach { lbl ->
-                        Text(
-                            text = lbl,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1
-                        )
-                    }
-                }
-            }
-        }
-
-        // Bulle d’aperçu
-        if (isDragging && previewLabel != null && scrollerHeightPx > 0) {
-            val offsetY = with(density) {
-                (previewCenterY - scrollerHeightPx / 2f).toDp()
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .offset(x = (-56).dp, y = offsetY)
-                    .size(56.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                        shape = MaterialTheme.shapes.large
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = previewLabel!!,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    }
-}
-
-
-private fun calculateDisplayLabels(
-    allLabels: List<String>,
-    scrollerHeightPx: Int,
-    density: Density
-): List<String> {
-    if (scrollerHeightPx <= 0) return allLabels
-    val minSlotPx = with(density) { 12.dp.toPx() } // attention, à adapter avec LocalDensity si nécessaire
-    val maxVisible = max(1, floor(scrollerHeightPx / minSlotPx).toInt())
-    if (allLabels.size <= maxVisible) return allLabels
-    val step = ceil(allLabels.size / maxVisible.toFloat()).toInt().coerceAtLeast(1)
-    val disp = mutableListOf<String>()
-    var i = 0
-    while (i < allLabels.size) {
-        disp += allLabels[i]
-        i += step
-    }
-    if (disp.last() != allLabels.last()) disp[disp.lastIndex] = allLabels.last()
-    return disp
-}
-
-private fun calculateDisplayToRealIndex(allLabels: List<String>, displayLabels: List<String>): List<Int> {
-    return if (displayLabels.size == allLabels.size) allLabels.indices.toList()
-    else {
-        val maxVisible = displayLabels.size
-        val step = allLabels.lastIndex.toFloat() / (maxVisible - 1).coerceAtLeast(1)
-        List(maxVisible) { i -> (i * step).toInt().coerceIn(0, allLabels.lastIndex) }
-    }
-}
 
 private fun <T> buildSectionsFromGroupedMap(grouped: Map<Char, List<T>>): List<Section<T>> {
     val keys = grouped.keys.toList().sortedWith(compareBy(

@@ -24,7 +24,7 @@ fun BlandMusicRow(
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
             .shadow(2.dp)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF1A1A1A)
         )
