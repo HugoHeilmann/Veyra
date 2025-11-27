@@ -1,5 +1,6 @@
 package com.example.veyra.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,11 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,7 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.veyra.components.BlandMusicRow
@@ -83,26 +88,25 @@ fun PlaylistPreviewScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
+            Spacer(Modifier.height(12.dp))
+
             // --- 🔎 Barre de recherche ---
-            OutlinedTextField(
+            BasicTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
-                modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Rechercher une musique") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Rechercher") },
-                trailingIcon = {
-                    if (searchText.isNotBlank()) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Effacer",
-                            modifier = Modifier
-                                .clickable { searchText = "" }
-                                .padding(4.dp)
-                        )
+                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+                    .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
+                    .padding(12.dp),
+                decorationBox = { innerTextField ->
+                    if (searchText.isEmpty()) {
+                        Text("Rechercher...", color = Color.Gray)
                     }
+                    innerTextField()
                 }
             )
 
@@ -125,7 +129,6 @@ fun PlaylistPreviewScreen(
                                 MusicHolder.setCurrentMusic(context, music, playlistSongs)
                                 navController.navigate("player")
                             }
-                            .padding(16.dp)
                     ) {
                         BlandMusicRow(
                             music.name,

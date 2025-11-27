@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -25,14 +27,17 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -45,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -83,7 +89,7 @@ fun EditPlaylistScreen(
 
     // --- 🔎 Recherche ---
     var searchText by remember { mutableStateOf("") }
-    // Liste filtrée (nom, artiste, album)
+
     val filteredSongs by remember(allSongs, searchText, selected, showSelectedOnly) {
         derivedStateOf {
             val base = if (showSelectedOnly) {
@@ -114,75 +120,98 @@ fun EditPlaylistScreen(
         topBar = {
             TopBar(playlistName, "playlists", navController)
         },
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Surface(
                 tonalElevation = 3.dp,
                 color = Color.Transparent
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            if (selected.isEmpty()) {
-                                val all = PlaylistManager.readAll(context).toMutableList()
-                                val idx = all.indexOfFirst { it.name == playlistName }
-                                if (idx >= 0) all.removeAt(idx)
-                                PlaylistManager.writeAll(context, all)
-                            }
-                            navController.popBackStack()
-                        }
+                    // Petite ligne récap en haut de la bottom bar
+                    Text(
+                        text = if (selected.isEmpty())
+                            "Aucune musique sélectionnée"
+                        else if (selected.size == 1)
+                            "${selected.size} morceau dans la playlist"
+                        else
+                            "${selected.size} morceaux dans la playlist",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Annuler")
-                    }
-                    Button(
-                        modifier = Modifier.weight(1f),
-                        colors = if (selected.isEmpty()) {
-                            ButtonDefaults.buttonColors(
-                                containerColor = Color.Red,
-                                contentColor = Color.White
-                            )
-                        } else {
-                            ButtonDefaults.buttonColors()
-                        },
-                        onClick = {
-                            if (selected.isEmpty()) {
-                                showDeleteDialog = true
-                            } else {
-                                // Écrire les sélections dans les métadonnées
-                                val all = PlaylistManager.readAll(context).toMutableList()
-                                val idx = all.indexOfFirst { it.name == playlistName }
-
-                                if (idx >= 0) {
-                                    val current = all[idx]
-                                    all[idx] = current.copy(musicFiles = selected.toMutableList())
-                                } else {
-                                    all.add(
-                                        PlaylistMetadata(
-                                            name = playlistName,
-                                            musicFiles = selected.toMutableList()
-                                        )
-                                    )
+                        OutlinedButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                if (selected.isEmpty()) {
+                                    val all = PlaylistManager.readAll(context).toMutableList()
+                                    val idx = all.indexOfFirst { it.name == playlistName }
+                                    if (idx >= 0) all.removeAt(idx)
+                                    PlaylistManager.writeAll(context, all)
                                 }
-
-                                PlaylistManager.writeAll(context, all)
                                 navController.popBackStack()
                             }
+                        ) {
+                            Text("Annuler")
                         }
-                    ) {
-                        Text(if (selected.isEmpty()) "Supprimer" else "Confirmer")
+
+                        Button(
+                            modifier = Modifier.weight(1f),
+                            colors = if (selected.isEmpty()) {
+                                ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red,
+                                    contentColor = Color.White
+                                )
+                            } else {
+                                ButtonDefaults.buttonColors()
+                            },
+                            onClick = {
+                                if (selected.isEmpty()) {
+                                    showDeleteDialog = true
+                                } else {
+                                    val all = PlaylistManager.readAll(context).toMutableList()
+                                    val idx = all.indexOfFirst { it.name == playlistName }
+
+                                    if (idx >= 0) {
+                                        val current = all[idx]
+                                        all[idx] = current.copy(musicFiles = selected.toMutableList())
+                                    } else {
+                                        all.add(
+                                            PlaylistMetadata(
+                                                name = playlistName,
+                                                musicFiles = selected.toMutableList()
+                                            )
+                                        )
+                                    }
+
+                                    PlaylistManager.writeAll(context, all)
+                                    navController.popBackStack()
+                                }
+                            }
+                        ) {
+                            Text(if (selected.isEmpty()) "Supprimer" else "Confirmer")
+                        }
                     }
 
                     if (showDeleteDialog) {
                         AlertDialog(
                             onDismissRequest = { showDeleteDialog = false },
                             title = { Text("Supprimer la playlist ?") },
-                            text = { Text("Cette action est irréversible. La playlist \"$playlistName\" sera définitivement supprimée.") },
+                            text = {
+                                Text(
+                                    "Cette action est irréversible. La playlist \"$playlistName\" sera définitivement supprimée."
+                                )
+                            },
                             confirmButton = {
                                 Button(
                                     onClick = {
@@ -206,7 +235,7 @@ fun EditPlaylistScreen(
                                     Text("Annuler")
                                 }
                             },
-                            containerColor = Color(0xFF2C2C2C)
+                            containerColor = Color(0xFF1A1A1A)
                         )
                     }
                 }
@@ -220,79 +249,86 @@ fun EditPlaylistScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // --- 🔎 Barre de recherche ---
-            OutlinedTextField(
+            // --- 🔎 Barre de recherche en "pill" ---
+            BasicTextField(
                 value = searchText,
                 onValueChange = { searchText = it },
-                modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                placeholder = { Text("Rechercher une musique") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (searchText.isNotBlank()) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Effacer",
-                            modifier = Modifier
-                                .clickable { searchText = "" }
-                                .padding(4.dp)
-                        )
+                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
+                    .padding(12.dp),
+                decorationBox = { innerTextField ->
+                    if (searchText.isEmpty()) {
+                        Text("Rechercher...", color = Color.Gray)
                     }
+                    innerTextField()
                 }
             )
 
+            Spacer(Modifier.height(8.dp))
+
+            // Ligne filtre + compteur
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { showSelectedOnly = !showSelectedOnly }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Checkbox(
-                        checked = showSelectedOnly,
-                        onCheckedChange = { showSelectedOnly = it }
-                    )
-                    Text("Afficher seulement la sélection (${selected.size})")
-                }
+                // Chip "seulement sélection"
+                FilterChip(
+                    selected = showSelectedOnly,
+                    onClick = { showSelectedOnly = !showSelectedOnly },
+                    label = {
+                        Text("Seulement la sélection (${selected.size})")
+                    },
+                    leadingIcon = if (showSelectedOnly) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null
+                            )
+                        }
+                    } else null,
+                    shape = RoundedCornerShape(999.dp)
+                )
+
+                Text(
+                    text = "${filteredSongs.size} / ${allSongs.size} morceaux",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(Modifier.height(12.dp))
 
             // --- Liste des morceaux filtrés ---
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    bottom = 80.dp // pour ne pas être caché par la bottom bar
+                )
             ) {
                 items(
                     items = filteredSongs,
-                    key = { it.uri } // clé stable
+                    key = { it.uri }
                 ) { music ->
                     val isSelected = selected.contains(music.uri)
-                    val bg = if (isSelected)
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    else
-                        MaterialTheme.colorScheme.surface
 
                     ListItem(
                         modifier = Modifier
+                            .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .border(
-                                width = 2.dp,
-                                color = bg,
-                                shape = RoundedCornerShape(12.dp)
+                            .then(
+                                if (isSelected) Modifier.border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(12.dp)
+                                ) else Modifier
                             )
-                            .background(MaterialTheme.colorScheme.surface)
-                            .clickable { toggleSelection(music.uri) }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-
+                            .clickable { toggleSelection(music.uri) },
                         headlineContent = {
                             Text(
                                 text = music.name,
@@ -304,14 +340,22 @@ fun EditPlaylistScreen(
                             val artist = music.artist ?: "Artiste inconnu"
                             val album = music.album
                             val line = if (!album.isNullOrBlank()) "$artist • $album" else artist
-                            Text(line, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                text = line,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         },
                         trailingContent = {
                             Checkbox(
                                 checked = isSelected,
                                 onCheckedChange = { toggleSelection(music.uri) }
                             )
-                        }
+                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = Color(0xFF1A1A1A)
+                        )
                     )
                 }
 
@@ -324,10 +368,12 @@ fun EditPlaylistScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                if (searchText.isBlank())
+                                text = if (searchText.isBlank())
                                     "Aucune musique trouvée"
                                 else
-                                    "Aucun résultat pour “$searchText”"
+                                    "Aucun résultat pour “$searchText”",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }

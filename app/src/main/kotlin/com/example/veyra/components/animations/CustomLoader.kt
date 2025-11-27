@@ -1,4 +1,4 @@
-package com.example.veyra.components
+package com.example.veyra.components.animations
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas

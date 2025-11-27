@@ -112,6 +112,10 @@ object QueueManager {
         _queue.add(insertIndex, music)
     }
 
+    fun remove(music: Music) {
+        _queue.remove(music)
+    }
+
     /**
      * Supprime un element a un index donne
      */

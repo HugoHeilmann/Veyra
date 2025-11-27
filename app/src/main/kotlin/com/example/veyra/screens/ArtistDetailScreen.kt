@@ -45,7 +45,6 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
                 ) {
                     val musicReference = MetadataManager.getByPath(context, song.uri)?.toMusic() ?: song
 
@@ -65,6 +64,9 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                         },
                         onAddClick = { _ ->
                             QueueManager.addToEnd(song)
+                        },
+                        onRemoveClick = { _ ->
+                            QueueManager.remove(song)
                         }
                     )
                 }
