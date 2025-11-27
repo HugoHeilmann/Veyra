@@ -2,6 +2,7 @@ package com.example.veyra.screens
 
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -172,7 +173,8 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                             expanded = expanded,
                             onDismissRequest = { expanded = false },
                             modifier = Modifier
-                                .fillMaxWidth(0.95f)
+                                .fillMaxWidth()
+                                .heightIn(max = 250.dp)
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                         ) {
                             if (playlistName.isEmpty()) {
@@ -221,6 +223,17 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         if (isLoading) {
                             showCancelDialog = true
                         } else {
+                            val alreadyExists = MusicHolder.getMusicList().any { music ->
+                                music.name.equals(title.trim(), ignoreCase = true)
+                            }
+                            if (alreadyExists) {
+                                Toast.makeText(
+                                    context,
+                                    "Une musique avec ce titre existe déjà.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button
+                            }
                             DownloadHolder.status.value = "Extraction…"
 
                             val intent = Intent(context, DownloadService::class.java).apply {
