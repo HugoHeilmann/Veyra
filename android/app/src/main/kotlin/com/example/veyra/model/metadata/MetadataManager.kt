@@ -28,12 +28,21 @@ object MetadataManager {
     }
 
     private fun writeTextAtomic(target: File, content: String) {
-        val tmp = File(target.parentFile, target.name + TMP_SUFFIX)
+        val dir = target.parentFile
+        if (dir != null && !dir.exists()) {
+            dir.mkdirs()
+        }
+
+        val tmp = File(dir, target.name + TMP_SUFFIX)
+
         tmp.writeText(content)
 
         if (!tmp.renameTo(target)) {
-            target.writeText(tmp.readText())
-            tmp.delete()
+            target.writeText(content)
+
+            if (tmp.exists()) {
+                tmp.delete()
+            }
         }
     }
 
