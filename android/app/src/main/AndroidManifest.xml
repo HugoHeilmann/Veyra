@@ -1,15 +1,24 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"
+        tools:ignore="SelectedPhotoAccess" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:ignore="SelectedPhotoAccess" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"
+        tools:ignore="PhotoAndVideoPolicy" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
         android:label="Veyra"
         android:theme="@style/Theme.Veyra"
-        android:icon="@mipmap/veyra_logo">
+        android:icon="@mipmap/veyra_logo"
+        android:requestLegacyExternalStorage="true" >
 
         <service
             android:name=".service.DownloadService"
