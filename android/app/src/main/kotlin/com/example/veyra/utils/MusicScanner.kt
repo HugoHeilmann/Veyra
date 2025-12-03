@@ -8,46 +8,81 @@ import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.MusicMetadata
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 
+private val SUPPORTED_EXTENSIONS = listOf(
+    ".mp3",
+    ".flac",
+    ".aac",
+    ".wav",
+    ".ogg",
+    ".oga",
+    ".m4a",
+    ".opus"
+)
+
+@OptIn(ExperimentalCoroutinesApi::class)
 suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope {
-    val contentResolver = context.contentResolver
-    val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+    withContext(Dispatchers.IO) {
+        val contentResolver = context.contentResolver
+        val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
-    val projection = arrayOf(
-        MediaStore.Audio.Media._ID,
-        MediaStore.Audio.Media.TITLE,
-        MediaStore.Audio.Media.ARTIST,
-        MediaStore.Audio.Media.ALBUM,
-        MediaStore.Audio.Media.DATA
-    )
+        val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.DATA
+        )
 
-    val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
-    val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
+        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
-    val cursor = contentResolver.query(
-        uri,
-        projection,
-        selection,
-        null,
-        sortOrder
-    )
+        val cursor = contentResolver.query(
+            uri,
+            projection,
+            selection,
+            null,
+            sortOrder
+        ) ?: return@withContext emptyList<Music>()
 
-    val tempList = mutableListOf<Music>()
-    cursor?.use { it ->
-        val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-        val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+        data class Row(val path: String, val rawTitle: String)
+        val rows = mutableListOf<Row>()
 
-        val deferredList = mutableListOf<Deferred<Music?>>()
+        cursor.use { it ->
+            val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+            val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
 
-        while (it.moveToNext()) {
-            val data = it.getString(dataColumn)
-            val rawTitle = it.getString(titleColumn)
+            while (it.moveToNext()) {
+                val data = it.getString(dataColumn) ?: continue
+                val rawTitle = it.getString(titleColumn) ?: ""
 
-            deferredList += async(Dispatchers.Default) {
-                if (data.endsWith(".mp3", ignoreCase = true) && data.contains("/Music/")) {
+                val isSupportedExtension = SUPPORTED_EXTENSIONS.any { ext ->
+                    data.endsWith(ext, ignoreCase = true)
+                }
+
+                val isInMusicFolder = data.contains("/Music/", ignoreCase = true)
+
+                if (isSupportedExtension && isInMusicFolder) {
+                    rows += Row(data, rawTitle)
+                }
+            }
+        }
+
+        if (rows.isEmpty()) return@withContext emptyList<Music>()
+
+        coroutineScope {
+            val workerDispatcher = Dispatchers.Default.limitedParallelism(8)
+
+            val deferredList = rows.map { row ->
+                async(workerDispatcher) {
+                    val data = row.path
+                    val rawTitle = row.rawTitle
+
                     val parts = rawTitle.split(" - ")
 
                     val filename = data.substringAfterLast("/")
@@ -75,12 +110,10 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
                         image = if (coverPath != null) 0 else R.drawable.default_album_cover,
                         uri = data
                     )
-                } else null
+                }
             }
+
+            deferredList.awaitAll()
         }
-
-        tempList.addAll(deferredList.awaitAll().filterNotNull())
     }
-
-    return@coroutineScope tempList
 }
