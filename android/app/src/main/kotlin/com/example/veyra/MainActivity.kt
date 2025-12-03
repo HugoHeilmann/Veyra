@@ -41,7 +41,7 @@ import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.screens.*
 import com.example.veyra.service.DownloadService
-import com.example.veyra.service.NotificationService
+import com.example.veyra.service.notifications.NotificationService
 import com.example.veyra.ui.theme.VeyraTheme
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.localization.Localization

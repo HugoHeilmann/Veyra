@@ -25,7 +25,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.MusicPlayerManager
-import com.example.veyra.service.NotificationService
+import com.example.veyra.service.notifications.NotificationService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

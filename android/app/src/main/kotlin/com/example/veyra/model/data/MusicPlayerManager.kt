@@ -14,9 +14,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import com.example.veyra.model.Music
 import com.example.veyra.model.controllers.WaveBarsController
-import com.example.veyra.service.NotificationService
+import com.example.veyra.service.notifications.NotificationService
+import com.example.veyra.service.widget.Widget
+import com.example.veyra.service.widget.WidgetPrefsKeys
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 object MusicPlayerManager {
     private var mediaPlayer: MediaPlayer? = null
@@ -24,13 +33,16 @@ object MusicPlayerManager {
     private var audioManager: AudioManager? = null
     private var appContext: Context? = null
 
-    private var _isPlaying by mutableStateOf(true)
+    private var _isPlaying by mutableStateOf(false)
     private var _isQueuePlaying by mutableStateOf(false)
 
     // Callback externe éventuel (UI) quand un morceau se termine
     private var onCompletionListener: (() -> Unit)? = null
 
     private var receiversRegistered = false
+
+    // scope pour updateAll() du widget
+    private val widgetScope = CoroutineScope(Dispatchers.Default)
 
     private val audioNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -71,20 +83,19 @@ object MusicPlayerManager {
             AudioManager.AUDIOFOCUS_LOSS,
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 pauseMusicInternal()
-
                 try {
-                    NotificationService.startOrUpdate(appContext!!)
-                } catch (_: Exception) {
-                }
+                    NotificationService.startOrUpdate(appContext ?: return@OnAudioFocusChangeListener)
+                    saveWidgetState(currentMusic, false)
+                } catch (_: Exception) {}
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> mediaPlayer?.setVolume(0.2f, 0.2f)
             AudioManager.AUDIOFOCUS_GAIN -> {
                 mediaPlayer?.setVolume(1f, 1f)
                 try {
-                    NotificationService.startOrUpdate(appContext!!)
-                } catch (_: Exception) {
-                }
+                    NotificationService.startOrUpdate(appContext ?: return@OnAudioFocusChangeListener)
+                    saveWidgetState(currentMusic, _isPlaying)
+                } catch (_: Exception) {}
             }
         }
     }
@@ -119,35 +130,44 @@ object MusicPlayerManager {
     private fun unregisterReceivers() {
         if (!receiversRegistered) return
         val ctx = appContext ?: return
-        try {
-            ctx.unregisterReceiver(audioNoisyReceiver)
-        } catch (_: Exception) {
-        }
-        try {
-            ctx.unregisterReceiver(bluetoothReceiver)
-        } catch (_: Exception) {
-        }
+        try { ctx.unregisterReceiver(audioNoisyReceiver) } catch (_: Exception) {}
+        try { ctx.unregisterReceiver(bluetoothReceiver) } catch (_: Exception) {}
         receiversRegistered = false
+    }
+
+    private fun saveWidgetState(music: Music?, isPlaying: Boolean) {
+        val ctx = appContext ?: return
+
+        widgetScope.launch {
+            try {
+                val manager = GlanceAppWidgetManager(ctx)
+                val ids = manager.getGlanceIds(Widget::class.java)
+
+                ids.forEach { glanceId ->
+                    updateAppWidgetState(ctx, glanceId) { prefs ->
+                        prefs[WidgetPrefsKeys.TITLE] = music?.name ?: "No music"
+                        prefs[WidgetPrefsKeys.ARTIST] = music?.artist ?: "Unknown artist"
+                        prefs[WidgetPrefsKeys.ALBUM] = music?.album ?: "Unknown album"
+                        prefs[WidgetPrefsKeys.IS_PLAYING] = isPlaying
+                    }
+                }
+
+                // Redessine tous les widgets Veyra
+                Widget().updateAll(ctx)
+            } catch (_: Exception) { }
+        }
     }
 
     /**
      * API historique : joue une musique.
-     * Maintenant, cela crée une file de lecture de taille 1
-     * et passe par la logique de queue.
      */
     fun playMusic(context: Context, music: Music, onPrepared: (Int) -> Unit = {}) {
-        // S'assure d'avoir un contexte appli
         if (appContext == null) init(context)
 
-        // On joue le morceau via la logique commune
         playInternal(music, context, onPrepared)
         WaveBarsController.start()
     }
 
-    /**
-     * Joue un élément de la file à un index donné.
-     * Utilisé par l'écran de file de lecture quand l'utilisateur clique sur un morceau.
-     */
     fun playFromQueueIndex(context: Context, index: Int) {
         if (appContext == null) init(context)
         val ctx = appContext ?: context
@@ -157,10 +177,6 @@ object MusicPlayerManager {
         WaveBarsController.start()
     }
 
-    /**
-     * Fonction interne centrale qui gère réellement la lecture d'un Music
-     * (création/prepare du MediaPlayer, audio focus, notification, etc.)
-     */
     private fun playInternal(
         music: Music,
         context: Context,
@@ -169,19 +185,23 @@ object MusicPlayerManager {
         if (appContext == null) init(context)
         val ctx = appContext ?: context
 
-
-        // Si on rejoue le même morceau déjà chargé, on reprend simplement
+        // même morceau déjà chargé → reprendre
         if (mediaPlayer != null && currentMusic?.uri == music.uri) {
             if (mediaPlayer?.isPlaying == false) {
                 requestAudioFocus()
                 mediaPlayer?.start()
                 _isPlaying = true
                 MediaSessionManager.updatePlaybackState(true)
+
+                try {
+                    NotificationService.startOrUpdate(ctx)
+                    saveWidgetState(currentMusic, true)
+                } catch (_: Exception) {}
             }
             return
         }
 
-        // Libère l'ancien player
+        // nouveau morceau
         stopMusicInternal()
         currentMusic = music
 
@@ -201,8 +221,8 @@ object MusicPlayerManager {
 
                 try {
                     NotificationService.startOrUpdate(ctx)
-                } catch (_: Exception) {
-                }
+                    saveWidgetState(music, true)
+                } catch (_: Exception) {}
             }
             setOnCompletionListener {
                 _isPlaying = false
@@ -210,20 +230,18 @@ object MusicPlayerManager {
 
                 val appCtx = appContext ?: ctx
 
-                // On tente de passer automatiquement au morceau suivant dans la file
                 val next = QueueManager.getNext()
                 if (next != null) {
-                    // Lecture du morceau suivant via la même logique interne
+                    // enchaîne sur le suivant
                     playInternal(next, appCtx)
                 } else {
-                    // Pas de morceau suivant : on met simplement à jour la notif
+                    // plus rien → efface
                     try {
                         NotificationService.startOrUpdate(appCtx)
-                    } catch (_: Exception) {
-                    }
+                        saveWidgetState(null, false)
+                    } catch (_: Exception) {}
                 }
 
-                // Callback externe éventuel (UI)
                 onCompletionListener?.invoke()
             }
         }
@@ -235,11 +253,9 @@ object MusicPlayerManager {
         abandonAudioFocus()
 
         try {
-            NotificationService.startOrUpdate(
-                appContext ?: context
-            )
-        } catch (_: Exception) {
-        }
+            NotificationService.startOrUpdate(appContext ?: context)
+            saveWidgetState(currentMusic, false)
+        } catch (_: Exception) {}
     }
 
     private fun pauseMusicInternal() {
@@ -249,6 +265,7 @@ object MusicPlayerManager {
 
         try {
             NotificationService.startOrUpdate(appContext ?: return)
+            saveWidgetState(currentMusic, false)
         } catch (_: Exception) {}
     }
 
@@ -256,6 +273,11 @@ object MusicPlayerManager {
         stopMusicInternal()
         abandonAudioFocus()
         MediaSessionManager.updatePlaybackState(false)
+
+        try {
+            NotificationService.startOrUpdate(appContext ?: return)
+            saveWidgetState(null, false)
+        } catch (_: Exception) {}
     }
 
     private fun stopMusicInternal() {
@@ -284,7 +306,6 @@ object MusicPlayerManager {
             it.seekTo(newPos)
             return newPos / 1000f
         }
-
         return 0f
     }
 
@@ -294,7 +315,6 @@ object MusicPlayerManager {
             it.seekTo(newPos)
             return newPos / 1000f
         }
-
         return 0f
     }
 
@@ -308,18 +328,15 @@ object MusicPlayerManager {
         onCompletionListener = listener
     }
 
-    // Ask for audio focus
     private fun requestAudioFocus(): Boolean {
         val result = audioManager?.requestAudioFocus(
             audioFocusChangeListener,
             AudioManager.STREAM_MUSIC,
             AudioManager.AUDIOFOCUS_GAIN
         )
-
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
 
-    // Release audio focus
     private fun abandonAudioFocus() {
         audioManager?.abandonAudioFocus(audioFocusChangeListener)
     }

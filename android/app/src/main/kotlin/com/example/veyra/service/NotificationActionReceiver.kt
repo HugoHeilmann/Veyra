@@ -6,6 +6,7 @@ import android.content.Intent
 import com.example.veyra.model.data.MediaSessionManager
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.MusicPlayerManager
+import com.example.veyra.service.notifications.NotificationService
 
 class NotificationActionReceiver: BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {

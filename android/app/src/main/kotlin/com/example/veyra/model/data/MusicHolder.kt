@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.PlaylistManager
-import com.example.veyra.service.NotificationService
+import com.example.veyra.service.notifications.NotificationService
 
 object MusicHolder {
     private var currentMusic: Music? = null

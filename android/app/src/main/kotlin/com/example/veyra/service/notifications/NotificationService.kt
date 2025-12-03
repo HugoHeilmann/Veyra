@@ -1,21 +1,26 @@
-package com.example.veyra.service
+package com.example.veyra.service.notifications
 
 import android.Manifest
-import android.app.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.core.app.NotificationCompat
-import androidx.media.app.NotificationCompat.MediaStyle
+import androidx.core.graphics.scale
 import com.example.veyra.MainActivity
 import com.example.veyra.R
-import androidx.core.graphics.scale
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.MusicPlayerManager
+import com.example.veyra.service.NotificationActionReceiver
 import java.io.File
 
 class NotificationService : Service() {
@@ -84,14 +89,15 @@ class NotificationService : Service() {
                 "Lecteur musique",
                 NotificationManager.IMPORTANCE_HIGH
             )
-            getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 
     private fun buildNotification(title: String, text: String, coverPath: String?, imageRes: Int): Notification {
         // Vérifier permission Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 // Permission non accordée → renvoyer notif vide
                 return NotificationCompat.Builder(this, CHANNEL_ID).build()
             }
@@ -171,7 +177,7 @@ class NotificationService : Service() {
             .addAction(R.drawable.ic_next, "Next", pendingNext)
             .addAction(R.drawable.ic_forward_10, "Forward 10", pendingForward)
             .setStyle(
-                MediaStyle()
+                androidx.media.app.NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView()
                     .setMediaSession(mediaSession.sessionToken)
             )
