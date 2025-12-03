@@ -26,13 +26,21 @@
             android:exported="false" />
 
         <service
-            android:name=".service.NotificationService"
+            android:name=".service.notifications.NotificationService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
 
         <receiver
             android:name=".service.NotificationActionReceiver"
-            android:exported="false" />
+            android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_REWIND_10" />
+                <action android:name="ACTION_SKIP_PREV" />
+                <action android:name="ACTION_PLAY_PAUSE" />
+                <action android:name="ACTION_SKIP_NEXT" />
+                <action android:name="ACTION_FORWARD_10" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name="androidx.media.session.MediaButtonReceiver"
@@ -42,11 +50,23 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".service.widget.WidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/veyra_widget_info" />
+        </receiver>
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
