@@ -1,13 +1,11 @@
 package com.example.veyra.model.data
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.PlaylistManager
-import com.example.veyra.service.notifications.NotificationService
 
 object MusicHolder {
     private var currentMusic: Music? = null
@@ -34,11 +32,9 @@ object MusicHolder {
         }
     }
 
-
     fun setMusicList(list: List<Music>) {
         musicList = list.sortedBy { it.name.lowercase() }
 
-        // Mise à jour des maps artistes et albums
         artistMap.clear()
         artistMap.putAll(
             musicList
@@ -46,9 +42,10 @@ object MusicHolder {
                 .groupBy {
                     it.artist?.split(Regex("(?i) ft\\."))?.get(0)?.trim() ?: "Unknown Artist"
                 }
-                .mapValues { entry -> entry.value
-                    .sortedBy { it.name.lowercase() }
-                    .toMutableList()
+                .mapValues { entry ->
+                    entry.value
+                        .sortedBy { it.name.lowercase() }
+                        .toMutableList()
                 }
         )
 
@@ -57,9 +54,10 @@ object MusicHolder {
             musicList
                 .filter { !it.album.isNullOrBlank() }
                 .groupBy { it.album ?: "Unknown Album" }
-                .mapValues { entry -> entry.value
-                    .sortedBy { it.name.lowercase() }
-                    .toMutableList()
+                .mapValues { entry ->
+                    entry.value
+                        .sortedBy { it.name.lowercase() }
+                        .toMutableList()
                 }
         )
 
@@ -68,16 +66,8 @@ object MusicHolder {
 
     fun setPlayedMusic(context: Context, music: Music) {
         currentMusic = music
+        // La lecture déclenche la mise à jour de la notif via MusicPlayerManager
         MusicPlayerManager.playMusic(context, music)
-
-        // update notification
-        val intent = Intent(context, NotificationService::class.java).apply {
-            putExtra("NOTIF_TITLE", music.name)
-            putExtra("NOTIF_TEXT", "${music.artist ?: "Artiste inconnu"} - ${music.album ?: "Album inconnu"}")
-            putExtra("NOTIF_COVER_PATH", music.coverPath)
-            putExtra("NOTIF_IMAGE_RES", music.image)
-        }
-        context.startService(intent)
     }
 
     fun setCurrentMusic(
@@ -95,20 +85,13 @@ object MusicHolder {
         }
         shuffledContextList = originalContextList.shuffled()
 
-        // Launch notification
-        val intent = Intent(context, NotificationService::class.java).apply {
-            putExtra("NOTIF_TITLE", music.name)
-            putExtra("NOTIF_TEXT", "${music.artist ?: "Artiste inconnu"} - ${music.album ?: "Album inconnu"}")
-            putExtra("NOTIF_COVER_PATH", music.coverPath)
-            putExtra("NOTIF_IMAGE_RES", music.image)
-        }
-        context.startForegroundService(intent)
+        // On ne démarre plus directement le service de notif ici.
+        // La notif sera gérée quand la musique sera effectivement lancée.
     }
 
     fun addMusic(music: Music) {
         val updatedList = musicList.toMutableList()
         updatedList.add(music)
-
         setMusicList(updatedList)
     }
 
@@ -125,9 +108,13 @@ object MusicHolder {
     }
 
     fun getMusicList(): List<Music> = musicList
-    fun getArtistList(): List<String> = artistMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
+    fun getArtistList(): List<String> =
+        artistMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
+
     fun getArtistSongs(artist: String): List<Music> = artistMap[artist] ?: emptyList()
-    fun getAlbumList(): List<String> = albumMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
+    fun getAlbumList(): List<String> =
+        albumMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
+
     fun getAlbumSongs(album: String): List<Music> = albumMap[album] ?: emptyList()
     fun getPlaylistSongs(playlist: String): List<Music> = playlistMap[playlist] ?: emptyList()
     fun getCurrentMusic(): Music? = currentMusic
@@ -152,9 +139,6 @@ object MusicHolder {
         } else null
     }
 
-    /**
-     * Parcours les maps d'artistes et d'albums et supprime les entrees qui n'ont aucune cle
-     */
     fun sanitizeMaps() {
         artistMap.entries.removeIf { it.value.isEmpty() }
         albumMap.entries.removeIf { it.value.isEmpty() }
@@ -217,6 +201,7 @@ object MusicHolder {
         shuffledContextList = emptyList()
         artistMap.clear()
         albumMap.clear()
+        playlistMap.clear()
         isShuffled = false
     }
 

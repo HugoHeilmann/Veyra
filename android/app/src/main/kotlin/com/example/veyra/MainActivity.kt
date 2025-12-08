@@ -92,11 +92,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        stopService(Intent(this, NotificationService::class.java))
-        stopService(Intent(this, DownloadService::class.java))
         MusicHolder.reset()
         MusicPlayerManager.stopMusic()
         MusicPlayerManager.release()
+        stopService(Intent(this, NotificationService::class.java))
+        stopService(Intent(this, DownloadService::class.java))
         DownloadHolder.reset()
         MetadataManager.cleanup(this)
     }
