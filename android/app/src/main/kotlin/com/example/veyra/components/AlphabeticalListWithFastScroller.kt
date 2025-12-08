@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -78,11 +79,8 @@ fun <T> AlphabeticalListWithFastScroller(
     var previewCenterY by remember { mutableFloatStateOf(0f) }
 
     // 4) Affichage compressé des labels
-    val displayLabels = remember(allLabels, scrollerHeightPx) {
-        calculateDisplayLabels(allLabels, scrollerHeightPx, density)
-    }
-    val displayToRealIndex = remember(allLabels, displayLabels) {
-        calculateDisplayToRealIndex(allLabels, displayLabels)
+    val (displayLabels, displayToRealIndex) = remember(allLabels, scrollerHeightPx) {
+        calculateDisplayLabelsAndMapping(allLabels, scrollerHeightPx, density)
     }
 
     // 5) Throttle: ne scroller que si la cible change
@@ -186,17 +184,24 @@ fun <T> AlphabeticalListWithFastScroller(
                 contentAlignment = Alignment.Center
             ) {
                 Column(
-                    verticalArrangement = Arrangement.SpaceEvenly,
+                    verticalArrangement = Arrangement.Top,
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxHeight()
                 ) {
                     displayLabels.forEach { lbl ->
-                        Text(
-                            text = lbl,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1
-                        )
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = lbl,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -229,31 +234,39 @@ fun <T> AlphabeticalListWithFastScroller(
     }
 }
 
-private fun calculateDisplayLabels(
+private fun calculateDisplayLabelsAndMapping(
     allLabels: List<String>,
     scrollerHeightPx: Int,
     density: Density
-): List<String> {
-    if (scrollerHeightPx <= 0) return allLabels
-    val minSlotPx = with(density) { 12.dp.toPx() } // attention, à adapter avec LocalDensity si nécessaire
+): Pair<List<String>, List<Int>> {
+    // Cas trivial : pas de taille / pas de labels -> identité
+    if (scrollerHeightPx <= 0 || allLabels.isEmpty()) {
+        return allLabels to allLabels.indices.toList()
+    }
+
+    val minSlotPx = with(density) { 12.dp.toPx() }
     val maxVisible = max(1, floor(scrollerHeightPx / minSlotPx).toInt())
-    if (allLabels.size <= maxVisible) return allLabels
+
+    // Si tout tient, on affiche tout, mapping 1:1
+    if (allLabels.size <= maxVisible) {
+        return allLabels to allLabels.indices.toList()
+    }
+
+    // Sinon, on sous-échantillonne en sautant régulièrement des labels
     val step = ceil(allLabels.size / maxVisible.toFloat()).toInt().coerceAtLeast(1)
-    val disp = mutableListOf<String>()
+
+    val indices = mutableListOf<Int>()
     var i = 0
     while (i < allLabels.size) {
-        disp += allLabels[i]
+        indices += i
         i += step
     }
-    if (disp.last() != allLabels.last()) disp[disp.lastIndex] = allLabels.last()
-    return disp
-}
 
-private fun calculateDisplayToRealIndex(allLabels: List<String>, displayLabels: List<String>): List<Int> {
-    return if (displayLabels.size == allLabels.size) allLabels.indices.toList()
-    else {
-        val maxVisible = displayLabels.size
-        val step = allLabels.lastIndex.toFloat() / (maxVisible - 1).coerceAtLeast(1)
-        List(maxVisible) { i -> (i * step).toInt().coerceIn(0, allLabels.lastIndex) }
+    // On force le dernier point à mapper sur le dernier label réel
+    if (indices.last() != allLabels.lastIndex) {
+        indices[indices.lastIndex] = allLabels.lastIndex
     }
+
+    val labels = indices.map { allLabels[it] }
+    return labels to indices
 }
