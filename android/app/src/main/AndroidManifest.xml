@@ -20,6 +20,10 @@
         android:icon="@mipmap/veyra_logo"
         android:requestLegacyExternalStorage="true" >
 
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <service
             android:name=".service.DownloadService"
             android:enabled="true"
@@ -29,6 +33,21 @@
             android:name=".service.notifications.NotificationService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
+
+        <service
+            android:name=".service.VeyraMediaService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.media.session"
+                android:value="true" />
+        </service>
 
         <receiver
             android:name=".service.NotificationActionReceiver"
