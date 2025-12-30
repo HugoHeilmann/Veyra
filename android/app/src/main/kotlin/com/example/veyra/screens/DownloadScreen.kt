@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.veyra.components.ArtistSelectorInput
 import com.example.veyra.components.animations.AnimatedDownloadIcon
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.data.MusicHolder
@@ -28,6 +29,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
     var url by rememberSaveable { mutableStateOf("") }
     var title by rememberSaveable { mutableStateOf("") }
     var artist by rememberSaveable { mutableStateOf("") }
+    val feats = remember { mutableStateListOf<String>() }
     var album by rememberSaveable { mutableStateOf("") }
 
     val status by DownloadHolder.status
@@ -49,8 +51,10 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             title = ""
             artist = ""
             album = ""
+            feats.clear()
             restoreArtistSelector?.invoke()
             restoreAlbumSelector?.invoke()
+            selectedPlaylists.clear()
         }
     }
 
@@ -59,6 +63,26 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             status.startsWith("Extraction") ||
                     status.startsWith("Téléchargement") ||
                     status.startsWith("Conversion")
+        }
+    }
+
+    // ✅ Construit une string "Main ft. A & B" propre, utilisée pour l’envoi au service
+    val finalArtistForService by remember(artist, feats) {
+        derivedStateOf {
+            val main = artist.trim()
+            val cleanedFeats = feats
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinctBy { it.lowercase() }
+
+            if (main.isBlank()) {
+                // si pas d'artiste principal, on n'ajoute rien
+                ""
+            } else if (cleanedFeats.isEmpty()) {
+                main
+            } else {
+                "$main ft. ${cleanedFeats.joinToString(" & ")}"
+            }
         }
     }
 
@@ -135,12 +159,16 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Artiste
-                    SelectorInput(
-                        list = MusicHolder.getArtistList(),
-                        placeholder = "Artiste",
+                    ArtistSelectorInput(
+                        artists = MusicHolder.getArtistList(),
                         enabled = !isLoading,
-                        onValueChange = { artist = it },
+                        initialArtist = artist,
+                        initialFeats = feats.toList(),
+                        onArtistChange = { artist = it },
+                        onFeatsChange = { newFeats ->
+                            feats.clear()
+                            feats.addAll(newFeats)
+                        },
                         onRefCreated = { restoreArtistSelector = it }
                     )
 
@@ -153,7 +181,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         onRefCreated = { restoreAlbumSelector = it }
                     )
 
-                    // Playlists (compact)
+                    // Playlists
                     Box {
                         OutlinedButton(
                             onClick = { expanded = !expanded },
@@ -239,7 +267,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                             val intent = Intent(context, DownloadService::class.java).apply {
                                 putExtra("url", url)
                                 putExtra("title", title)
-                                putExtra("artist", artist)
+                                putExtra("artist", finalArtistForService)
                                 putExtra("album", album)
                                 putStringArrayListExtra(
                                     "playlists",
@@ -266,7 +294,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     )
                 }
 
-                // Capsule de statut (compacte)
+                // Capsule de statut
                 if (status.isNotBlank()) {
                     Surface(
                         shape = MaterialTheme.shapes.small,

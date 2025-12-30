@@ -17,6 +17,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import com.example.veyra.R
+import com.example.veyra.components.ArtistSelectorInput
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
@@ -33,7 +34,7 @@ fun EditMusicScreen(
     val context = LocalContext.current
 
     var coverPath by remember { mutableStateOf(music.coverPath) }
-    var coverVersion by remember { mutableStateOf(0) }
+    var coverVersion by remember { mutableIntStateOf(0) }
     val defaultCover = R.drawable.default_album_cover
 
     val imagePicker = rememberLauncherForActivityResult(
@@ -63,8 +64,63 @@ fun EditMusicScreen(
     )
 
     var title by remember { mutableStateOf(music.name) }
-    var artist by remember { mutableStateOf(music.artist ?: "Unknown") }
     var album by remember { mutableStateOf(music.album ?: "Unknown") }
+
+    // ============================
+    // ✅ Parse artiste principal + feats depuis music.artist
+    // ============================
+    fun parseArtistAndFeats(raw: String?): Pair<String, List<String>> {
+        val s = raw?.trim().orEmpty()
+        if (s.isBlank()) return "" to emptyList()
+
+        // split autour des tokens de feat
+        val featRegex = Regex("""\s*(?:ft\.?|feat\.?|featuring)\s*""", RegexOption.IGNORE_CASE)
+        val parts = featRegex.split(s, limit = 2)
+
+        val main = parts.getOrNull(0)?.trim().orEmpty()
+
+        if (parts.size < 2) return main to emptyList()
+
+        val featPart = parts[1]
+
+        // séparateurs possibles entre feats
+        val splitRegex = Regex("""\s*(?:&|,| and )\s*""", RegexOption.IGNORE_CASE)
+
+        val feats = featPart
+            .split(splitRegex)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+
+        return main to feats
+    }
+
+    // init states depuis music.artist PARSÉ
+    val (initialMainArtist, initialFeats) = remember(music.artist) {
+        parseArtistAndFeats(music.artist)
+    }
+
+    var mainArtist by remember { mutableStateOf(if (initialMainArtist.isBlank()) (music.artist ?: "Unknown") else initialMainArtist) }
+    val feats = remember { mutableStateListOf<String>().apply { addAll(initialFeats) } }
+
+    // ============================
+    // ✅ Recompose la string finale artiste
+    // ============================
+    fun buildArtistString(main: String, featList: List<String>): String {
+        val m = main.trim()
+        val f = featList.map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+
+        if (m.isBlank()) return ""
+        if (f.isEmpty()) return m
+        return "$m ft. ${f.joinToString(" & ")}"
+    }
+
+    // (optionnel) string finale toujours à jour
+    val artistFinal by remember(mainArtist, feats) {
+        derivedStateOf { buildArtistString(mainArtist, feats) }
+    }
 
     Scaffold(
         topBar = {
@@ -109,10 +165,7 @@ fun EditMusicScreen(
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(
-                                when {
-                                    !coverPath.isNullOrBlank() -> coverPath
-                                    else -> music.image
-                                }
+                                coverPath ?: music.image
                             )
                             .size(Size.ORIGINAL)
                             .crossfade(true)
@@ -145,8 +198,7 @@ fun EditMusicScreen(
 
                         OutlinedButton(
                             onClick = {
-                                // On repasse sur l'image par défaut (gérée plus haut)
-                                coverPath = ""
+                                coverPath = null
                                 coverVersion++
                             },
                             modifier = Modifier.weight(1f)
@@ -165,11 +217,17 @@ fun EditMusicScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Artiste
-                    SelectorInput(
-                        list = MusicHolder.getArtistList(),
-                        placeholder = music.artist ?: "Artiste",
-                        onValueChange = { artist = it }
+                    // Artiste + feats
+                    ArtistSelectorInput(
+                        artists = MusicHolder.getArtistList(),
+                        enabled = true,
+                        initialArtist = mainArtist,
+                        initialFeats = feats.toList(),
+                        onArtistChange = { mainArtist = it },
+                        onFeatsChange = { newFeats ->
+                            feats.clear()
+                            feats.addAll(newFeats)
+                        }
                     )
 
                     // Album
@@ -196,13 +254,14 @@ fun EditMusicScreen(
                 Button(
                     onClick = {
                         title = title.trim()
-                        artist = artist.trim()
                         album = album.trim()
+
+                        val artistToSave = artistFinal.trim()
 
                         MusicHolder.updateMusic(
                             filePath = music.uri,
                             title = title,
-                            artist = artist,
+                            artist = artistToSave,
                             album = album,
                             coverPath = coverPath
                         )
@@ -213,7 +272,7 @@ fun EditMusicScreen(
                             context = context,
                             filePath = music.uri,
                             title = title,
-                            artist = artist,
+                            artist = artistToSave,
                             album = album,
                             coverPath = coverPath
                         )
