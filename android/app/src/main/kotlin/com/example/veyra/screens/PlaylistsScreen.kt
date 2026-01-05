@@ -3,6 +3,7 @@ package com.example.veyra.screens
 import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -126,21 +127,13 @@ fun PlaylistsScreen(navController: NavController) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Petit texte d’intro
-                Text(
-                    text = "Organise tes musiques en playlists.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
                 if (playlists.isEmpty()) {
                     // État vide sympa
                     Column(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_playlist), // à adapter
@@ -158,10 +151,6 @@ fun PlaylistsScreen(navController: NavController) {
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(onClick = { showDialog = true }) {
-                            Text("Créer une playlist")
-                        }
                     }
                 } else {
                     LazyColumn(
