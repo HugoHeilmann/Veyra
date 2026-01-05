@@ -1,7 +1,12 @@
 package com.example.veyra.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,15 +16,22 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.veyra.R
 import com.example.veyra.model.Music
+import com.example.veyra.model.data.QueueManager
 
 @Composable
 fun QueueItemRow(
@@ -28,35 +40,71 @@ fun QueueItemRow(
     isDragging: Boolean,
     dragOffset: Float,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit,
     onDragStart: () -> Unit,
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit
 ) {
+    // ===== Wave animation (comme MusicRow) =====
+    val infiniteTransition = rememberInfiniteTransition(label = "queueWaveTransition")
+    val waveProgress by infiniteTransition.animateFloat(
+        initialValue = -0.3f,
+        targetValue = 1.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "queueWaveProgress"
+    )
+
+    val baseColor = Color(0xFF2B2B2B)
+    val accent = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+
+    val removeEnabled = !isCurrent
+    val removeTint = if (removeEnabled) Color.Red else Color(0xFF7A7A7A)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
             .graphicsLayer {
-                if (isDragging) {
-                    translationY = dragOffset
-                    alpha = 0.7f
-                } else {
-                    translationY = 0f
-                    alpha = 1f
+                translationY = if (isDragging) dragOffset else 0f
+                alpha = if (isDragging) 0.7f else 1f
+            }
+            .drawBehind {
+                // Fond de base
+                drawRect(color = baseColor)
+
+                if (isCurrent) {
+                    val p = waveProgress
+
+                    val startStop = (p - 0.18f).coerceIn(0f, 1f)
+                    val midStop = p.coerceIn(0f, 1f)
+                    val endStop = (p + 0.18f).coerceIn(0f, 1f)
+
+                    val colorStops = sortedMapOf<Float, Color>().apply {
+                        this[0f] = baseColor
+                        this[startStop] = baseColor
+                        this[midStop] = accent
+                        this[endStop] = baseColor
+                        this[1f] = baseColor
+                    }
+
+                    val brush = Brush.linearGradient(
+                        colorStops = colorStops.toSortedMap()
+                            .map { it.key to it.value }
+                            .toTypedArray(),
+                        start = Offset(0f, size.height),
+                        end = Offset(size.width, 0f)
+                    )
+
+                    drawRect(brush = brush)
                 }
             }
-            .background(
-                color = Color(0xFF2B2B2B),
-                shape = MaterialTheme.shapes.medium
-            )
-            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            modifier = Modifier
-                .weight(1f)
+            modifier = Modifier.weight(1f)
         ) {
             Text(
                 text = music.name,
@@ -81,23 +129,31 @@ fun QueueItemRow(
             )
         }
 
+        // Remove music (désactivé si current)
+        IconButton(
+            onClick = { QueueManager.remove(music) },
+            enabled = removeEnabled,
+            modifier = Modifier
+                .size(36.dp)
+                .padding(end = 12.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_remove_from_queue),
+                contentDescription = if (removeEnabled) "Retirer de la file"
+                else "Impossible de retirer le morceau en cours",
+                tint = removeTint
+            )
+        }
+
         // Handle de drag (burger)
         IconButton(
             onClick = {},
             modifier = Modifier.pointerInput(music.uri) {
                 detectDragGestures(
-                    onDragStart = {
-                        onDragStart()
-                    },
-                    onDrag = { _, dragAmount ->
-                        onDrag(dragAmount)
-                    },
-                    onDragEnd = {
-                        onDragEnd()
-                    },
-                    onDragCancel = {
-                        onDragEnd()
-                    }
+                    onDragStart = { onDragStart() },
+                    onDrag = { _, dragAmount -> onDrag(dragAmount) },
+                    onDragEnd = { onDragEnd() },
+                    onDragCancel = { onDragEnd() }
                 )
             }
         ) {

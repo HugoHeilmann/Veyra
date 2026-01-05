@@ -19,10 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.veyra.components.PlayerButton
 import com.example.veyra.components.QueueItemRow
-import com.example.veyra.model.data.MusicPlayerManager
 import com.example.veyra.model.data.QueueManager
 import com.example.veyra.R
 import com.example.veyra.components.animations.AnimatedQueueIcon
+import com.example.veyra.model.data.MusicHolder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,15 +166,13 @@ fun QueueScreen(
                                 key = { _, music -> music.uri }
                             ) { index, music ->
                                 val isDragging = draggedMusicUri == music.uri
+                                val currentUri = MusicHolder.getCurrent()?.uri
 
                                 QueueItemRow(
                                     music = music,
-                                    isCurrent = index == currentIndex,
+                                    isCurrent = QueueManager.isLaunched && currentUri == music.uri,
                                     isDragging = isDragging,
                                     dragOffset = if (isDragging) draggedOffsetY else 0f,
-                                    onClick = {
-                                        MusicPlayerManager.playFromQueueIndex(context, index)
-                                    },
                                     onDragStart = {
                                         draggedMusicUri = music.uri
                                         draggedOffsetY = 0f

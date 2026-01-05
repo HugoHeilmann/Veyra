@@ -1,15 +1,16 @@
 package com.example.veyra.model.data
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.example.veyra.model.Music
 
 object QueueManager {
 
     private val _queue = mutableStateListOf<Music>()
-    val queue: List<Music>
+    val queue: SnapshotStateList<Music>
         get() = _queue
 
-    private var _currentIndex by mutableStateOf(-1)
+    private var _currentIndex by mutableIntStateOf(-1)
     val currentIndex: Int
         get() = _currentIndex
 
@@ -96,20 +97,6 @@ object QueueManager {
         if (_currentIndex == -1) {
             _currentIndex = 0
         }
-    }
-
-    /**
-     * Ajoute le morceau juste apres le courant
-     */
-    fun insertNext(music: Music) {
-        if (_queue.isEmpty() || _currentIndex !in _queue.indices) {
-            _queue.add(music)
-            _currentIndex = 0
-            return
-        }
-
-        val insertIndex = (_currentIndex + 1).coerceAtMost(_queue.size)
-        _queue.add(insertIndex, music)
     }
 
     fun remove(music: Music) {

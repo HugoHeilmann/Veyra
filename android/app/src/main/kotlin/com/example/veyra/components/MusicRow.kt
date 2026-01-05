@@ -54,7 +54,7 @@ fun MusicRow(
     val inQueue = QueueManager.queue.contains(music)
 
     // Est-ce la musique en cours de lecture ?
-    val isCurrent = MusicHolder.getCurrentMusic()?.uri == musicToUse.uri
+    val isCurrent = MusicHolder.getCurrent()?.uri == musicToUse.uri
 
     // Animation d'onde : une bande qui glisse du coin bas-gauche vers haut-droit
     val infiniteTransition = rememberInfiniteTransition(label = "waveTransition")

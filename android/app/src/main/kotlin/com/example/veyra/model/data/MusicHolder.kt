@@ -8,7 +8,7 @@ import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.PlaylistManager
 
 object MusicHolder {
-    private var currentMusic: Music? = null
+    private var currentMusic by mutableStateOf<Music?>(null)
     private var musicList: List<Music> = emptyList()
 
     private var originalContextList: List<Music> = emptyList()
@@ -117,7 +117,7 @@ object MusicHolder {
 
     fun getAlbumSongs(album: String): List<Music> = albumMap[album] ?: emptyList()
     fun getPlaylistSongs(playlist: String): List<Music> = playlistMap[playlist] ?: emptyList()
-    fun getCurrentMusic(): Music? = currentMusic
+    fun getCurrent(): Music? = currentMusic
 
     private fun getActiveList(): List<Music> {
         return if (isShuffled) shuffledContextList else originalContextList
