@@ -140,4 +140,12 @@ object PlaylistManager {
             writeAll(context, list)
         }
     }
+
+    /** Recuperer toutes les playlists d'une musique */
+    fun getPlaylistsContaining(context: Context, filePathOrUri: String): List<String> {
+        val key = stableKey(filePathOrUri)
+        return readAll(context)
+            .filter { pl -> pl.musicFiles.any { stableKey(it) == key } }
+            .map { it.name }
+    }
 }

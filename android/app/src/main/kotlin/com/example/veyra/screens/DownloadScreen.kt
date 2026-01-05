@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veyra.components.ArtistSelectorInput
+import com.example.veyra.components.PlaylistSelector
 import com.example.veyra.components.animations.AnimatedDownloadIcon
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.data.MusicHolder
@@ -182,63 +183,15 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     )
 
                     // Playlists
-                    Box {
-                        OutlinedButton(
-                            onClick = { expanded = !expanded },
-                            enabled = !isLoading,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                if (selectedPlaylists.isEmpty()) {
-                                    "Ajouter à une ou plusieurs playlists"
-                                } else {
-                                    "Playlists : ${selectedPlaylists.joinToString(", ")}"
-                                }
-                            )
+                    PlaylistSelector(
+                        playlists = playlistName,
+                        selectedPlaylists = selectedPlaylists,
+                        enabled = !isLoading && !playlistName.isEmpty(),
+                        onSelectionChange = { newList ->
+                            selectedPlaylists.clear()
+                            selectedPlaylists.addAll(newList)
                         }
-
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 250.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                        ) {
-                            if (playlistName.isEmpty()) {
-                                DropdownMenuItem(
-                                    text = { Text("Aucune playlist existante") },
-                                    onClick = {}
-                                )
-                            } else {
-                                playlistName.forEach { name ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Text(name)
-                                                Checkbox(
-                                                    checked = selectedPlaylists.contains(name),
-                                                    onCheckedChange = { checked ->
-                                                        if (checked) selectedPlaylists.add(name)
-                                                        else selectedPlaylists.remove(name)
-                                                    }
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            val selected = selectedPlaylists.contains(name)
-                                            if (selected) selectedPlaylists.remove(name)
-                                            else selectedPlaylists.add(name)
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
             }
 
