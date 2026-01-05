@@ -1,7 +1,6 @@
 package com.example.veyra.screens
 
 import android.content.Intent
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -18,10 +17,12 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.example.veyra.R
 import com.example.veyra.components.ArtistSelectorInput
+import com.example.veyra.components.PlaylistSelector
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
+import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.utils.FileUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,8 +42,6 @@ fun EditMusicScreen(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             uri?.let {
-                Log.d("EditMusicScreen", "Image sélectionnée : $it")
-
                 context.contentResolver.takePersistableUriPermission(
                     it,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -53,7 +52,6 @@ fun EditMusicScreen(
                     uri = it,
                     musicId = music.uri
                 )
-                Log.d("EditMusicScreen", "Copie terminée : $copiedPath")
 
                 if (copiedPath != null) {
                     coverPath = copiedPath
@@ -65,6 +63,16 @@ fun EditMusicScreen(
 
     var title by remember { mutableStateOf(music.name) }
     var album by remember { mutableStateOf(music.album ?: "Unknown") }
+
+    val playlistName = PlaylistManager.getAllNames(context)
+    val selectedPlaylists = remember { mutableStateListOf<String>() }
+
+    LaunchedEffect(music.uri) {
+        selectedPlaylists.clear()
+        selectedPlaylists.addAll(
+            PlaylistManager.getPlaylistsContaining(context, music.uri)
+        )
+    }
 
     // ============================
     // ✅ Parse artiste principal + feats depuis music.artist
@@ -154,13 +162,6 @@ fun EditMusicScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Pochette & informations",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    Log.d("EditMusicScreen", "Chemin affiché : $coverPath")
-
                     // Pochette
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -236,6 +237,17 @@ fun EditMusicScreen(
                         placeholder = music.album ?: "Album",
                         onValueChange = { album = it }
                     )
+
+                    // Playlists
+                    PlaylistSelector(
+                        playlists = playlistName,
+                        selectedPlaylists = selectedPlaylists,
+                        enabled = !playlistName.isEmpty(),
+                        onSelectionChange = { newList ->
+                            selectedPlaylists.clear()
+                            selectedPlaylists.addAll(newList)
+                        }
+                    )
                 }
             }
             
@@ -276,6 +288,14 @@ fun EditMusicScreen(
                             album = album,
                             coverPath = coverPath
                         )
+
+                        selectedPlaylists.forEach { playlistName ->
+                            PlaylistManager.addMusicToPlaylist(
+                                context = context,
+                                playlistName = playlistName,
+                                filePathOrUri = music.uri
+                            )
+                        }
 
                         music.coverPath = coverPath
 
