@@ -23,6 +23,7 @@ import com.example.veyra.model.data.MusicPlayerManager
 import com.example.veyra.model.data.QueueManager
 import com.example.veyra.R
 import com.example.veyra.components.animations.AnimatedQueueIcon
+import com.example.veyra.model.Music
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
