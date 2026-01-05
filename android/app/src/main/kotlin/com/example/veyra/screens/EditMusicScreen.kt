@@ -289,6 +289,16 @@ fun EditMusicScreen(
                             coverPath = coverPath
                         )
 
+                        // Retirer la musique de toutes les playlists
+                        playlistName.forEach { playlistName ->
+                            PlaylistManager.removeMusicFromPlaylist(
+                                context = context,
+                                playlistName = playlistName,
+                                filePathOrUri = music.uri
+                            )
+                        }
+
+                        // Ajouter la musique a toutes les playlists selectionnees
                         selectedPlaylists.forEach { playlistName ->
                             PlaylistManager.addMusicToPlaylist(
                                 context = context,

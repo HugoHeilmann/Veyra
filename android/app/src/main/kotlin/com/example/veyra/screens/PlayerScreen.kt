@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PlayerScreen(navController: NavController) {
     val context = LocalContext.current
-    val currentMusic by rememberUpdatedState(MusicHolder.getCurrentMusic())
+    val currentMusic by rememberUpdatedState(MusicHolder.getCurrent())
     val music = currentMusic
 
     if (music == null) {

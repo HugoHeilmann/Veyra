@@ -26,7 +26,7 @@ import com.example.veyra.model.data.MusicPlayerManager
 @Composable
 fun MiniPlayerBar(navController: NavHostController) {
     val context = LocalContext.current
-    val currentMusic by rememberUpdatedState(MusicHolder.getCurrentMusic())
+    val currentMusic by rememberUpdatedState(MusicHolder.getCurrent())
     val isPlaying = MusicPlayerManager.isPlaying()
 
     currentMusic?.let { music ->
