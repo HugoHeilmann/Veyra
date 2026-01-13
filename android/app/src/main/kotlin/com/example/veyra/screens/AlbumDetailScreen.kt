@@ -30,7 +30,7 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
 
     Scaffold(
         topBar = {
-            TopBar(albumName, "music_list?selectedTab=Albums", navController)
+            TopBar(albumName, navController)
         }
     ){ innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {

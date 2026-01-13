@@ -72,7 +72,7 @@ fun EditArtistOrAlbumScreen(
     }
 
     Scaffold(
-        topBar = { TopBar(name, "music_list", navController) },
+        topBar = { TopBar(name, navController) },
         bottomBar = {
             Surface(tonalElevation = 3.dp, color = Color.Transparent) {
                 Row(
