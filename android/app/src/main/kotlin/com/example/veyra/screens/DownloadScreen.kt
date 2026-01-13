@@ -44,6 +44,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
     val selectedPlaylists = remember { mutableStateListOf<String>() }
 
     var showCancelDialog by remember { mutableStateOf(false) }
+    var showVerificationDialog by remember { mutableStateOf(false) }
 
     // Vider les inputs en cas de succès
     LaunchedEffect(status) {
@@ -85,6 +86,32 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                 "$main ft. ${cleanedFeats.joinToString(" & ")}"
             }
         }
+    }
+
+    fun extractMainArtist(rawArtist: String?): String? {
+        if (rawArtist.isNullOrBlank()) return null
+
+        return rawArtist
+            .split(
+                Regex(
+                    "\\s+(?i)(ft\\.?|feat\\.?|featuring|with|&|,|\\(|\\[)"
+                )
+            )
+            .first()
+            .trim()
+    }
+
+    fun startDownload() {
+        DownloadHolder.status.value = "Extraction…"
+
+        val intent = Intent(context, DownloadService::class.java).apply {
+            putExtra("url", url)
+            putExtra("title", title)
+            putExtra("artist", finalArtistForService)
+            putExtra("album", album)
+            putStringArrayListExtra("playlists", ArrayList(selectedPlaylists))
+        }
+        context.startService(intent)
     }
 
     Scaffold(
@@ -206,28 +233,13 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         } else {
                             val alreadyExists = MusicHolder.getMusicList().any { music ->
                                 music.name.equals(title.trim(), ignoreCase = true)
+                                && extractMainArtist(music.artist)?.equals(artist, ignoreCase = true) == true
                             }
                             if (alreadyExists) {
-                                Toast.makeText(
-                                    context,
-                                    "Une musique avec ce titre existe déjà.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                return@Button
+                                showVerificationDialog = true
+                            } else {
+                                startDownload()
                             }
-                            DownloadHolder.status.value = "Extraction…"
-
-                            val intent = Intent(context, DownloadService::class.java).apply {
-                                putExtra("url", url)
-                                putExtra("title", title)
-                                putExtra("artist", finalArtistForService)
-                                putExtra("album", album)
-                                putStringArrayListExtra(
-                                    "playlists",
-                                    ArrayList(selectedPlaylists)
-                                )
-                            }
-                            context.startService(intent)
                         }
                     },
                     enabled = url.isNotBlank(),
@@ -278,6 +290,33 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+            }
+            // Dialog de verification
+            if (showVerificationDialog) {
+                AlertDialog(
+                    onDismissRequest = { showVerificationDialog = false },
+                    title = { Text("Lancer le téléchargement ?") },
+                    text = { Text("Une musique de ce titre et de cet artiste existe deja. \nEs-tu sûr de vouloir lancer le téléchargement ?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showVerificationDialog = false
+                                startDownload()
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = Color.Red
+                            )
+                        ) {
+                            Text("Oui, continuer")
+                        }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showVerificationDialog = false }) {
+                            Text("Non, arrêter")
+                        }
+                    },
+                    containerColor = Color(0xFF2C2C2C)
+                )
             }
 
             // Dialog d'annulation
