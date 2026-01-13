@@ -118,7 +118,7 @@ fun EditPlaylistScreen(
 
     Scaffold(
         topBar = {
-            TopBar(playlistName, "playlists", navController)
+            TopBar(playlistName, navController)
         },
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {

@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
@@ -50,9 +51,19 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
             modifier = Modifier
                 .padding(horizontal = 12.dp, vertical = 6.dp)
                 .height(120.dp)
-                .then(Modifier)
                 .clip(RoundedCornerShape(24.dp))
         ) {
+            // --- Helper: bottom-nav navigation that preserves state ---
+            fun navigateBottom(route: String) {
+                navController.navigate(route) {
+                    launchSingleTop = true
+                    restoreState = true
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                }
+            }
+
             // Ma musique
             val isMusicSelected = currentRoute?.startsWith("music_list") ?: false
             val musicScale by animateFloatAsState(
@@ -72,21 +83,14 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                         )
                     )
                 },
-                label = {
-                    Text(
-                        "Ma musique",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                },
+                label = { Text("Ma musique", style = MaterialTheme.typography.labelSmall) },
                 selected = isMusicSelected,
                 enabled = isEnabled,
                 colors = itemColors,
                 onClick = {
-                    if (currentRoute != "music_list" && isEnabled) {
-                        navController.navigate("music_list") {
-                            popUpTo("music_list") { inclusive = true }
-                            launchSingleTop = true
-                        }
+                    if (!isMusicSelected && isEnabled) {
+                        // Use the same route format as your NavHost definition
+                        navigateBottom("music_list?selectedTab=Chansons")
                     }
                 }
             )
@@ -110,21 +114,13 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                         )
                     )
                 },
-                label = {
-                    Text(
-                        "Playlists",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                },
+                label = { Text("Playlists", style = MaterialTheme.typography.labelSmall) },
                 selected = isPlaylistsSelected,
                 enabled = isEnabled,
                 colors = itemColors,
                 onClick = {
-                    if (currentRoute != "playlists" && isEnabled) {
-                        navController.navigate("playlists") {
-                            popUpTo("music_list")
-                            launchSingleTop = true
-                        }
+                    if (!isPlaylistsSelected && isEnabled) {
+                        navigateBottom("playlists")
                     }
                 }
             )
@@ -148,21 +144,13 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                         )
                     )
                 },
-                label = {
-                    Text(
-                        "Queue",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                },
+                label = { Text("Queue", style = MaterialTheme.typography.labelSmall) },
                 selected = isQueueSelected,
                 enabled = isEnabled,
                 colors = itemColors,
                 onClick = {
-                    if (currentRoute != "queue" && isEnabled) {
-                        navController.navigate("queue") {
-                            popUpTo("music_list")
-                            launchSingleTop = true
-                        }
+                    if (!isQueueSelected && isEnabled) {
+                        navigateBottom("queue")
                     }
                 }
             )
@@ -186,21 +174,13 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                         )
                     )
                 },
-                label = {
-                    Text(
-                        "Télécharger",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                },
+                label = { Text("Télécharger", style = MaterialTheme.typography.labelSmall) },
                 selected = isDownloadSelected,
                 enabled = isEnabled,
                 colors = itemColors,
                 onClick = {
-                    if (currentRoute != "download" && isEnabled) {
-                        navController.navigate("download") {
-                            popUpTo("download")
-                            launchSingleTop = true
-                        }
+                    if (!isDownloadSelected && isEnabled) {
+                        navigateBottom("download")
                     }
                 }
             )

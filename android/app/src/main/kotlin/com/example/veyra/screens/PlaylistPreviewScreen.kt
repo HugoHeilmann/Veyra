@@ -107,7 +107,7 @@ fun PlaylistPreviewScreen(
 
     Scaffold(
         topBar = {
-            TopBar(playlistName, "playlists", navController)
+            TopBar(playlistName, navController)
         }
     ) { paddingValues ->
         Column(

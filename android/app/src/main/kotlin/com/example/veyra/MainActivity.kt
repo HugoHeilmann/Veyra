@@ -147,9 +147,16 @@ fun VeyraApp() {
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding)
             ) {
-                composable("music_list?selectedTab={selectedTab}") { backStackEntry ->
-                    val selectedTab =
-                        backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
+                composable(
+                    route = "music_list?selectedTab={selectedTab}",
+                    arguments = listOf(
+                        navArgument("selectedTab") {
+                            type = NavType.StringType
+                            defaultValue = "Chansons"
+                        }
+                    )
+                ) { backStackEntry ->
+                    val selectedTab = backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
                     MusicListScreen(navController, selectedTab)
                 }
                 composable("editMusic/{uri}") { backStackEntry ->
@@ -161,8 +168,8 @@ fun VeyraApp() {
                     music?.let {
                         EditMusicScreen(
                             music = it,
-                            onSave = { navController.navigate("music_list?selectedTab=Chansons") },
-                            onCancel = { navController.navigate("music_list?selectedTab=Chansons") }
+                            onSave = { navController.popBackStack() },
+                            onCancel = { navController.popBackStack() }
                         )
                     }
                 }

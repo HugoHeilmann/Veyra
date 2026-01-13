@@ -10,6 +10,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -36,7 +37,6 @@ import com.example.veyra.components.PlayerButton
 import com.example.veyra.components.animations.WaveBars
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
-import com.example.veyra.model.MusicListViewModel
 import com.example.veyra.model.Section
 import com.example.veyra.model.data.QueueManager
 import com.example.veyra.utils.loadMusicFromDevice
@@ -67,8 +67,6 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             MetadataManager.readAll(context).associateBy { it.filePath }
         )
     }
-
-    val viewModel: MusicListViewModel = viewModel()
 
     LaunchedEffect(Unit) { appUiVm.updateBottomBarEnabled(false) }
 
@@ -130,26 +128,10 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
         }
     }
 
-    // Remember scroll
-    val songsListState = rememberLazyListState()
-    val artistsListState = rememberLazyListState()
-    val albumsListState = rememberLazyListState()
-
-    LaunchedEffect(allMusic) {
-        if (allMusic.isNotEmpty()) {
-            songsListState.scrollToItem(viewModel.songsScroll.first, viewModel.songsScroll.second)
-            artistsListState.scrollToItem(viewModel.artistsScroll.first, viewModel.artistsScroll.second)
-            albumsListState.scrollToItem(viewModel.albumsScroll.first, viewModel.albumsScroll.second)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.songsScroll = songsListState.firstVisibleItemIndex to songsListState.firstVisibleItemScrollOffset
-            viewModel.artistsScroll = artistsListState.firstVisibleItemIndex to artistsListState.firstVisibleItemScrollOffset
-            viewModel.albumsScroll = albumsListState.firstVisibleItemIndex to albumsListState.firstVisibleItemScrollOffset
-        }
-    }
+    // Remember scroll (save/restored automatically)
+    val songsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val artistsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val albumsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     // Tabs
     val tabs = listOf("Chansons", "Artistes", "Albums")

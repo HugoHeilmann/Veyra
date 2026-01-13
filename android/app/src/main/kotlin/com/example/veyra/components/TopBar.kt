@@ -18,8 +18,8 @@ import androidx.navigation.NavHostController
 @Composable
 fun TopBar(
     text: String,
-    path: String,
-    navController: NavHostController
+    navController: NavHostController,
+    onBack: (() -> Unit)? = null
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -35,8 +35,10 @@ fun TopBar(
                 contentDescription = "Retour",
                 modifier = Modifier
                     .clickable {
-                        navController.navigate(path) {
-                            popUpTo(path) { inclusive = true }
+                        if (onBack != null) {
+                            onBack()
+                        } else {
+                            navController.popBackStack()
                         }
                     }
                     .padding(8.dp)
