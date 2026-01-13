@@ -49,6 +49,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.text.Normalizer
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -417,22 +419,30 @@ fun <T> groupByFirstLetter(list: List<T>, keySelector: (T) -> String?): Map<Char
         .toSortedMap()
 }
 
+private fun normalizeHeader(ch: Char): Char {
+    if (!ch.isLetter()) return '#'
 
+    val base = Normalizer.normalize(ch.toString(), Normalizer.Form.NFD)
+        .replace("\\p{Mn}+".toRegex(), "") // supprime les accents
+        .uppercase(Locale.ROOT)
+
+    val c = base.firstOrNull() ?: return '#'
+    return if (c.isLetter()) c else '#'
+}
 
 private fun <T> buildSectionsFromGroupedMap(grouped: Map<Char, List<T>>): List<Section<T>> {
-    val keys = grouped.keys.toList().sortedWith(compareBy(
-        { ch ->
-            when {
-                ch in '0'..'9' -> 0
-                ch.isLetter() -> 1
-                ch == '#' -> 3
-                else -> 2
-            }
-        },
-        { ch -> ch.uppercaseChar() }
-    ))
+    val normalizedGrouped: Map<Char, List<T>> =
+        grouped.entries
+            .groupBy({ normalizeHeader(it.key) }, { it.value })
+            .mapValues { (_, lists) -> lists.flatten() }
+
+    val keys = normalizedGrouped.keys
+        .sortedWith(compareBy(
+            { ch -> if (ch == '#') 0 else 1 },
+            { ch -> ch }
+        ))
 
     return keys.map { ch ->
-        Section(ch.toString(), grouped[ch].orEmpty())
+        Section(ch.toString(), normalizedGrouped[ch].orEmpty())
     }
 }
