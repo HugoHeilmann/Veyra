@@ -11,7 +11,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -20,7 +19,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -31,6 +29,7 @@ import androidx.navigation.NavHostController
 import com.example.veyra.AppUIViewModel
 import com.example.veyra.components.AlphabeticalListWithFastScroller
 import com.example.veyra.components.BlandMusicRow
+import com.example.veyra.components.FullColorPickerDialog
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.PlayerButton
@@ -54,7 +53,11 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chansons") {
+fun MusicListScreen(
+    navController: NavHostController,
+    onColorSelected: (Color) -> Unit,
+    defaultTab: String = "Chansons"
+) {
     val context = LocalContext.current
     val appUiVm: AppUIViewModel = viewModel(context as ComponentActivity)
 
@@ -67,6 +70,8 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
             MetadataManager.readAll(context).associateBy { it.filePath }
         )
     }
+
+    var showColorDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { appUiVm.updateBottomBarEnabled(false) }
 
@@ -143,7 +148,7 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         WaveBars(MaterialTheme.colorScheme.primary)
 
@@ -152,7 +157,10 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                         Text(
                             text = "Veyra",
                             color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleLarge
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.clickable {
+                                showColorDialog = true
+                            }
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -367,6 +375,15 @@ fun MusicListScreen(navController: NavHostController, defaultTab: String = "Chan
                     )
                 }
             }
+
+            FullColorPickerDialog(
+                show = showColorDialog,
+                onDismiss = { showColorDialog = false },
+                onConfirm = { color ->
+                    onColorSelected(color)
+                    showColorDialog = false
+                }
+            )
         }
     }
 }
