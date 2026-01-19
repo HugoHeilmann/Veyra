@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,6 +43,7 @@ import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.screens.*
 import com.example.veyra.service.DownloadService
 import com.example.veyra.service.notifications.NotificationService
+import com.example.veyra.ui.theme.ThemeViewModel
 import com.example.veyra.ui.theme.VeyraTheme
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.localization.Localization
@@ -84,7 +86,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            VeyraTheme {
+            val themeVm: ThemeViewModel = viewModel()
+            val primaryColor = themeVm.primaryColor.collectAsState().value
+
+            VeyraTheme(primaryColor = primaryColor) {
                 VeyraApp()
             }
         }
@@ -139,6 +144,8 @@ fun VeyraApp() {
             }
         }
     ) { innerPadding ->
+        val themeVm: ThemeViewModel = viewModel()
+
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = navController,
@@ -157,7 +164,12 @@ fun VeyraApp() {
                     )
                 ) { backStackEntry ->
                     val selectedTab = backStackEntry.arguments?.getString("selectedTab") ?: "Chansons"
-                    MusicListScreen(navController, selectedTab)
+                    MusicListScreen(
+                        navController,
+                        onColorSelected = { color ->
+                            themeVm.setPrimaryColor(color)
+                        },
+                        selectedTab)
                 }
                 composable("editMusic/{uri}") { backStackEntry ->
                     val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""
@@ -245,7 +257,7 @@ fun VeyraApp() {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CustomLoader(
-                            color = Color(0xFF51FE70),
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(128.dp)
                         )
                     }
