@@ -7,14 +7,13 @@ import android.os.Environment
 import android.os.IBinder
 import android.util.Log
 import com.arthenica.ffmpegkit.FFmpegKit
-import com.example.veyra.components.Playlist
 import com.example.veyra.model.Music
+import com.example.veyra.model.convert.DownloadBroadcast
+import com.example.veyra.model.convert.DownloadHolder
+import com.example.veyra.model.convert.NewPipeResolver
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.MusicMetadata
-import com.example.veyra.model.convert.DownloadBroadcast
-import com.example.veyra.model.convert.DownloadHolder
-import com.example.veyra.model.convert.YoutubeApi
 import com.example.veyra.model.metadata.PlaylistManager
 import kotlinx.coroutines.*
 import okhttp3.Call
@@ -22,14 +21,18 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 
 class DownloadService : Service() {
 
     companion object {
         const val ACTION_CANCEL = "com.example.veyra.service.action.CANCEL_DOWNLOAD"
+        private const val TAG = "DownloadService"
     }
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val httpClient by lazy { OkHttpClient() }
 
     @Volatile
     private var currentCall: Call? = null
@@ -52,15 +55,21 @@ class DownloadService : Service() {
         if (url == null || !isUrlFormatted(url)) {
             sendStatus("❌ URL invalide")
             stopSelf()
-        } else {
-            scope.launch {
-                try {
-                    downloadAndConvert(url, title, artist, album, playlists)
-                } catch (e: Exception) {
-                    Log.e("DownloadService", "Erreur pendant le téléchargement", e)
-                } finally {
-                    stopSelf()
+            return START_NOT_STICKY
+        }
+
+        scope.launch {
+            try {
+                downloadAndConvert(url, title, artist, album, playlists)
+            } catch (ce: CancellationException) {
+                Log.i(TAG, "Cancelled", ce)
+            } catch (e: Exception) {
+                Log.e(TAG, "Erreur pendant le téléchargement", e)
+                if (!DownloadHolder.status.value.startsWith("❌")) {
+                    sendStatus("❌ Erreur interne (voir logs)")
                 }
+            } finally {
+                stopSelf()
             }
         }
 
@@ -75,9 +84,11 @@ class DownloadService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun isUrlFormatted(url: String): Boolean {
-        return url.startsWith("https://youtu.be/")
-                || url.startsWith("https://m.youtube.com/watch?v=")
-                || url.startsWith("https://www.youtube.com/watch?v=")
+        return url.startsWith("https://youtu.be/") ||
+                url.startsWith("https://m.youtube.com/watch?v=") ||
+                url.startsWith("https://www.youtube.com/watch?v=") ||
+                url.startsWith("https://music.youtube.com/watch?v=") ||
+                url.contains("youtube.com/shorts/")
     }
 
     private fun sendStatus(message: String) {
@@ -90,7 +101,7 @@ class DownloadService : Service() {
             val raw = match.groupValues[1].toInt().coerceIn(0, 100)
             val percent = 10 + (raw / 100f) * (90 - 10)
             DownloadHolder.progress.floatValue = percent / 100f
-        } else if (message.startsWith("Extraction")){
+        } else if (message.startsWith("Extraction")) {
             DownloadHolder.progress.floatValue = 0.05f
         } else if (message.startsWith("Téléchargement")) {
             // le download ajuste la barre via les %
@@ -109,77 +120,45 @@ class DownloadService : Service() {
         sendBroadcast(intent)
     }
 
-    private suspend fun downloadAndConvert(url: String, title: String, artist: String, album: String, playlists: ArrayList<String>) {
+    private suspend fun downloadAndConvert(
+        url: String,
+        title: String,
+        artist: String,
+        album: String,
+        playlists: ArrayList<String>
+    ) {
         sendStatus("Extraction...")
 
-        val videoId = YoutubeApi.extractVideoId(url) ?: return
+        val resolved = NewPipeResolver.resolve(url)
+        if (resolved == null) {
+            sendStatus("❌ Extraction impossible (NewPipe)")
+            return
+        }
 
-        val playerJson = YoutubeApi.getPlayerResponse(videoId) ?: return
-        val videoTitle = playerJson["videoDetails"]
-            ?.asJsonObject
-            ?.get("title")
-            ?.asString ?: videoId
-
-        val audioUrl = YoutubeApi.extractBestAudioUrl(playerJson) ?: return
+        val videoTitle = resolved.title
+        val audioUrl = resolved.audioUrl
 
         sendStatus("Téléchargement…")
 
-        val tempFile = withContext(Dispatchers.IO) {
-            val client = OkHttpClient()
-            val req = Request.Builder().url(audioUrl).build()
-
-            val call = client.newCall(req)
-            currentCall = call
-
-            val resp = call.execute()
-
-            try {
-                val totalBytes = resp.body?.contentLength() ?: -1
-                val input = resp.body?.byteStream() ?: return@withContext null
-                val file = File.createTempFile("yt_", ".webm")
-
-                FileOutputStream(file).use { output ->
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    var bytesCopied = 0L
-                    var lastProgress = 0
-
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read <= 0) break
-                        output.write(buffer, 0, read)
-                        bytesCopied += read
-
-                        if (totalBytes > 0) {
-                            val progress = ((bytesCopied * 100) / totalBytes).toInt()
-                            if (progress > lastProgress) {
-                                lastProgress = progress
-                                sendStatus("Téléchargement... $progress%")
-                            }
-                        }
-                    }
-                }
-                file
-            } finally {
-                resp.close()
-                currentCall = null
-            }
-        } ?: run {
+        val tempFile = downloadToTempFile(audioUrl) ?: run {
             if (!DownloadHolder.status.value.startsWith("❌ Téléchargement annulé")) {
-                sendStatus("❌ Échec du téléchargement.")
+                if (!DownloadHolder.status.value.startsWith("❌")) {
+                    sendStatus("❌ Échec du téléchargement.")
+                }
             }
             return
         }
 
         sendStatus("Conversion…")
 
-        val outputFile = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-            "${(title.ifBlank { videoTitle }).trim()}.mp3"
-        )
-
         val finalTitle = title.ifBlank { videoTitle }
         val finalArtist = artist.ifBlank { null }
         val finalAlbum = album.ifBlank { null }
+
+        val outputFile = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
+            "${safeFileName(finalTitle)}.mp3"
+        )
 
         val metaArgs = buildString {
             append(" -metadata title=\"${esc(finalTitle)}\"")
@@ -188,45 +167,175 @@ class DownloadService : Service() {
             append(" -id3v2_version 3 -write_id3v1 1")
         }
 
-        MetadataManager.addIfNotExists(
-            this,
-            MusicMetadata(
-                videoTitle,
-                finalTitle,
-                finalArtist ?: "Unknown",
-                finalAlbum ?: "Unknown Album",
-                outputFile.absolutePath,
-            )
-        )
+        val cmd =
+            "-y -i \"${tempFile.absolutePath}\" -vn -ar 44100 -ac 2 -b:a 192k$metaArgs \"${outputFile.absolutePath}\""
 
-        playlists.forEach { name ->
-            PlaylistManager.addMusicToPlaylist(this@DownloadService, name, outputFile.absolutePath)
+        val session = try {
+            withContext(Dispatchers.IO) {
+                FFmpegKit.execute(cmd)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "FFmpeg execute exception", e)
+            sendStatus("❌ Erreur conversion (exception)")
+            safeDelete(tempFile)
+            return
         }
 
-        val cmd = "-y -i \"${tempFile.absolutePath}\" -vn -ar 44100 -ac 2 -b:a 192k$metaArgs \"${outputFile.absolutePath}\""
+        val rc = session.returnCode
+        val logs = session.allLogsAsString
 
-        FFmpegKit.executeAsync(cmd) { session ->
-            if (session.returnCode.isValueSuccess) {
-                MediaScannerConnection.scanFile(
+        if (rc != null && rc.isValueSuccess) {
+            MediaScannerConnection.scanFile(
+                this,
+                arrayOf(outputFile.absolutePath),
+                arrayOf("audio/mpeg"),
+                null
+            )
+
+            try {
+                MetadataManager.addIfNotExists(
                     this,
-                    arrayOf(outputFile.absolutePath),
-                    arrayOf("audio/mpeg"),
-                    null
+                    MusicMetadata(
+                        fileName = videoTitle,
+                        title = finalTitle,
+                        artist = finalArtist ?: "Unknown",
+                        album = finalAlbum ?: "Unknown Album",
+                        filePath = outputFile.absolutePath
+                    )
                 )
 
-                val newMusic = Music(
-                    uri = outputFile.absolutePath,
-                    name = finalTitle,
-                    artist = finalArtist,
-                    album = finalAlbum
-                )
-                MusicHolder.addMusic(newMusic)
-                sendStatus("✅ Fini : ${outputFile.absolutePath}")
-            } else {
-                sendStatus("❌ Erreur conversion")
+                playlists.forEach { name ->
+                    PlaylistManager.addMusicToPlaylist(
+                        this@DownloadService,
+                        name,
+                        outputFile.absolutePath
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Post-success metadata/playlist error", e)
             }
+
+            val newMusic = Music(
+                uri = outputFile.absolutePath,
+                name = finalTitle,
+                artist = finalArtist,
+                album = finalAlbum
+            )
+            MusicHolder.addMusic(newMusic)
+
+            sendStatus("✅ Fini : ${outputFile.absolutePath}")
+        } else {
+            Log.e(TAG, "FFmpeg failed rc=$rc\n---logs---\n${logs.takeLast(4000)}")
+            sendStatus("❌ Erreur conversion (ffmpeg)")
+        }
+
+        safeDelete(tempFile)
+    }
+
+    private suspend fun downloadToTempFile(audioUrl: String): File? = withContext(Dispatchers.IO) {
+        val req = Request.Builder()
+            .url(audioUrl)
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            .header("Accept", "*/*")
+            .header("Accept-Language", "en-US,en;q=0.9")
+            .header("Referer", "https://www.youtube.com/")
+            .build()
+
+        val call = httpClient.newCall(req)
+        currentCall = call
+
+        val resp = try {
+            call.execute()
+        } catch (e: IOException) {
+            if (call.isCanceled()) {
+                sendStatus("❌ Téléchargement annulé")
+                return@withContext null
+            }
+            Log.e(TAG, "HTTP execute error", e)
+            sendStatus("❌ Erreur réseau")
+            return@withContext null
+        }
+
+        try {
+            val code = resp.code
+            val ctype = resp.header("Content-Type") ?: "?"
+
+            if (!resp.isSuccessful) {
+                val peek = try { resp.peekBody(512).string() } catch (_: Exception) { "" }
+                sendStatus("❌ Téléchargement HTTP $code")
+                Log.e(TAG, "HTTP $code Content-Type=$ctype peek=${peek.take(200)}")
+                return@withContext null
+            }
+
+            if (!ctype.startsWith("audio/") && !ctype.startsWith("video/") && !ctype.contains("octet-stream")) {
+                val peek = try { resp.peekBody(512).string() } catch (_: Exception) { "" }
+                sendStatus("❌ Réponse non-audio ($ctype)")
+                Log.e(TAG, "Bad Content-Type=$ctype peek=${peek.take(200)}")
+                return@withContext null
+            }
+
+            val body = resp.body ?: run {
+                sendStatus("❌ Réponse vide")
+                return@withContext null
+            }
+
+            val totalBytes = body.contentLength()
+            val input = body.byteStream()
+
+            val file = File.createTempFile("yt_", ".webm")
+
+            FileOutputStream(file).use { output ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                var bytesCopied = 0L
+                var lastProgress = -1
+
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    output.write(buffer, 0, read)
+                    bytesCopied += read
+
+                    if (totalBytes > 0) {
+                        val progress = ((bytesCopied * 100) / totalBytes).toInt().coerceIn(0, 100)
+                        if (progress != lastProgress) {
+                            lastProgress = progress
+                            sendStatus("Téléchargement... $progress%")
+                        }
+                    }
+                }
+            }
+
+            if (file.length() < 32_000) {
+                val head = try {
+                    file.inputStream().buffered().readBytes().decodeToString()
+                } catch (_: Exception) { "" }
+
+                Log.e(TAG, "Downloaded file suspiciously small (${file.length()} bytes). Head=${head.take(200)}")
+                sendStatus("❌ Flux invalide (trop petit) — YouTube a peut-être bloqué")
+                safeDelete(file)
+                return@withContext null
+            }
+
+            file
+        } finally {
+            resp.close()
+            currentCall = null
         }
     }
 
     private fun esc(s: String) = s.replace("\"", "\\\"")
+
+    private fun safeFileName(s: String): String {
+        val cleaned = s.trim()
+            .replace(Regex("""[\\/:*?"<>|]"""), "_")
+            .replace(Regex("""\s+"""), " ")
+            .take(120)
+        return if (cleaned.isBlank()) "audio" else cleaned
+    }
+
+    private fun safeDelete(f: File?) {
+        try {
+            if (f != null && f.exists()) f.delete()
+        } catch (_: Exception) { }
+    }
 }

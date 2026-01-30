@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
         MediaSessionManager.init(this)
 
         // Init NewPipeExtractor
-        val localization = Localization("en", "US")
+        val localization = Localization("fr", "FR")
         NewPipe.init(OkHttpDownloader(), localization)
 
         MusicPlayerManager.setOnCompletionListener {
