@@ -1,40 +1,78 @@
 package com.example.veyra.model.convert
 
-import android.util.Log
 import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.RequestBody
 import org.schabi.newpipe.extractor.downloader.Downloader
+import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
+import java.nio.charset.Charset
 
 class OkHttpDownloader : Downloader() {
+
     private val client = OkHttpClient()
 
-    override fun execute(request: org.schabi.newpipe.extractor.downloader.Request): Response {
-        val builder = Request.Builder().url(request.url())
+    override fun execute(request: Request): Response {
+        val url = request.url()
+        val method = request.httpMethod()
 
-        // Ajout des headers
-        for ((key, values) in request.headers()) {
-            for (value in values) {
-                builder.addHeader(key, value)
+        val builder = okhttp3.Request.Builder()
+            .url(url)
+
+        // 1️⃣ Headers demandés par NewPipe (Map<String, List<String>>)
+        val headers = request.headers()
+        for ((k, values) in headers) {
+            builder.removeHeader(k)
+            for (v in values) {
+                builder.addHeader(k, v)
             }
         }
 
-        builder.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        builder.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-        builder.addHeader("Accept-Language", "en-US,en;q=0.9")
+        // 2️⃣ Consent EU (sinon HTML au lieu de JSON)
+        val hasCookie = headers.keys.any { it.equals("Cookie", ignoreCase = true) }
+        if (!hasCookie && (url.contains("youtube.com") || url.contains("googleapis.com"))) {
+            builder.addHeader("Cookie", "CONSENT=YES+1")
+        }
 
-        val response = client.newCall(builder.build()).execute()
-        val bodyString = response.body?.string() ?: ""
+        // 3️⃣ Body (POST Innertube)
+        val data = request.dataToSend()
+        val body: RequestBody? =
+            if (data != null) {
+                RequestBody.create(null, data)
+            } else {
+                if (method.equals("POST", true) ||
+                    method.equals("PUT", true) ||
+                    method.equals("PATCH", true)
+                ) {
+                    RequestBody.create(null, ByteArray(0))
+                } else null
+            }
 
-        Log.d("VEYRA_HTTP", "URL=${request.url()} | CODE=${response.code}")
-        Log.d("VEYRA_HTTP", "BODY=${bodyString.take(500)}")
+        builder.method(method, body)
 
-        return Response(
-            response.code,
-            response.message,
-            response.headers.toMultimap(),
-            bodyString,
-            response.request.url.toString()
-        )
+        val resp = client.newCall(builder.build()).execute()
+
+        resp.use { r ->
+            val responseBytes = r.body?.bytes() ?: ByteArray(0)
+
+            val charset: Charset = try {
+                r.body?.contentType()?.charset(Charsets.UTF_8) ?: Charsets.UTF_8
+            } catch (_: Exception) {
+                Charsets.UTF_8
+            }
+
+            val responseString = try {
+                String(responseBytes, charset)
+            } catch (_: Exception) {
+                String(responseBytes, Charsets.UTF_8)
+            }
+
+            return Response(
+                r.code,
+                r.message,
+                r.headers.toMultimap(),
+                responseString,
+                r.request.url.toString()
+            )
+        }
     }
 }

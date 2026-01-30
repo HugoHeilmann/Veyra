@@ -65,15 +65,12 @@ repositories {
 }
 
 dependencies {
-    // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-
     // Hilt
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-android-compiler:2.48")
 
     // NewPipe / extraction
-    implementation("com.github.TeamNewPipe:newpipeextractor:master-SNAPSHOT")
+    implementation("com.github.teamnewpipe:newpipeextractor:v0.25.1")
 
     // FFmpeg kit (local AAR + exceptions)
     implementation(files("libs/ffmpeg-kit.aar"))
