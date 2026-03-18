@@ -54,7 +54,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.TopBar
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder

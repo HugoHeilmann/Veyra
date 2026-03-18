@@ -77,14 +77,6 @@ class MainActivity : ComponentActivity() {
         val localization = Localization("fr", "FR")
         NewPipe.init(OkHttpDownloader(), localization)
 
-        MusicPlayerManager.setOnCompletionListener {
-            val nextMusic = MusicHolder.getNext()
-
-            if (nextMusic != null) {
-                MusicHolder.setPlayedMusic(this, nextMusic)
-            }
-        }
-
         setContent {
             val themeVm: ThemeViewModel = viewModel()
             val primaryColor = themeVm.primaryColor.collectAsState().value

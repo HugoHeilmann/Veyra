@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -126,22 +125,6 @@ fun QueueItemRow(
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        // Remove music (désactivé si current)
-        IconButton(
-            onClick = { QueueManager.remove(music) },
-            enabled = removeEnabled,
-            modifier = Modifier
-                .size(36.dp)
-                .padding(end = 12.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_remove_from_queue),
-                contentDescription = if (removeEnabled) "Retirer de la file"
-                else "Impossible de retirer le morceau en cours",
-                tint = removeTint
             )
         }
 

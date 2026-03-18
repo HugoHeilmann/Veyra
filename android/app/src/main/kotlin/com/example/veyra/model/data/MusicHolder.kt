@@ -2,17 +2,25 @@ package com.example.veyra.model.data
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.PlaylistManager
 
 object MusicHolder {
-    private var currentMusic by mutableStateOf<Music?>(null)
+    var currentMusic by mutableStateOf<Music?>(null)
+        private set
+
+    var currentIndex by mutableIntStateOf(-1)
+        private set
+
     private var musicList: List<Music> = emptyList()
 
-    private var originalContextList: List<Music> = emptyList()
-    private var shuffledContextList: List<Music> = emptyList()
+    private val originalContextList = mutableStateListOf<Music>()
+    private val shuffledContextList = mutableStateListOf<Music>()
+    private val queueList = mutableStateListOf<Music>()
 
     private val artistMap = mutableMapOf<String, List<Music>>()
     private val albumMap = mutableMapOf<String, List<Music>>()
@@ -64,10 +72,14 @@ object MusicHolder {
         playlistMap.clear()
     }
 
-    fun setPlayedMusic(context: Context, music: Music) {
+    fun playMusic(context: Context, music: Music) {
         currentMusic = music
-        // La lecture déclenche la mise à jour de la notif via MusicPlayerManager
+        syncCurrentIndexWithMusic()
         MusicPlayerManager.playMusic(context, music)
+    }
+
+    fun setPlayedMusic(context: Context, music: Music) {
+        playMusic(context, music)
     }
 
     fun setCurrentMusic(
@@ -78,15 +90,57 @@ object MusicHolder {
     ) {
         currentMusic = music
 
-        originalContextList = when {
+        val newOriginal = when {
             contextList != null && keepOrder -> contextList
             contextList != null && !keepOrder -> contextList.sortedBy { it.name.lowercase() }
             else -> musicList.sortedBy { it.name.lowercase() }
         }
-        shuffledContextList = originalContextList.shuffled()
 
-        // On ne démarre plus directement le service de notif ici.
-        // La notif sera gérée quand la musique sera effectivement lancée.
+        originalContextList.clear()
+        originalContextList.addAll(newOriginal)
+
+        shuffledContextList.clear()
+        shuffledContextList.addAll(originalContextList.shuffled())
+
+        syncCurrentIndexWithMusic()
+    }
+
+    fun playNext(context: Context) {
+        val list = getActiveList()
+        if (list.isEmpty()) return
+
+        val nextIndex = when {
+            currentIndex in list.indices -> (currentIndex + 1) % list.size
+            else -> 0
+        }
+
+        currentIndex = nextIndex
+        currentMusic = list[nextIndex]
+
+        if (currentMusic in queueList) {
+            queueList.remove(currentMusic)
+        }
+
+        MusicPlayerManager.playMusic(context, list[nextIndex])
+    }
+
+    fun playPrevious(context: Context) {
+        val list = getActiveList()
+        if (list.isEmpty()) return
+
+        val previousIndex = when {
+            currentIndex in list.indices -> (currentIndex - 1 + list.size) % list.size
+            else -> list.lastIndex
+        }
+
+        currentIndex = previousIndex
+        currentMusic = list[previousIndex]
+        MusicPlayerManager.playMusic(context, list[previousIndex])
+    }
+
+    fun clearCurrentMusic() {
+        currentMusic = null
+        currentIndex = -1
     }
 
     fun addMusic(music: Music) {
@@ -104,39 +158,101 @@ object MusicHolder {
     }
 
     fun enableShuffle(enabled: Boolean) {
+        if (isShuffled == enabled) return
+
         isShuffled = enabled
+        syncCurrentIndexWithMusic()
     }
 
     fun getMusicList(): List<Music> = musicList
+
     fun getArtistList(): List<String> =
         artistMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
 
     fun getArtistSongs(artist: String): List<Music> = artistMap[artist] ?: emptyList()
+
     fun getAlbumList(): List<String> =
         albumMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
 
     fun getAlbumSongs(album: String): List<Music> = albumMap[album] ?: emptyList()
+    fun getQueue(): List<Music> = queueList
     fun getPlaylistSongs(playlist: String): List<Music> = playlistMap[playlist] ?: emptyList()
     fun getCurrent(): Music? = currentMusic
 
-    private fun getActiveList(): List<Music> {
+    fun getActiveList(): List<Music> {
         return if (isShuffled) shuffledContextList else originalContextList
+    }
+
+    fun isInQueue(music: Music): Boolean {
+        return queueList.contains(music)
+    }
+
+    fun addInQueue(music: Music) {
+        val current = currentMusic ?: return
+
+        originalContextList.remove(music)
+        shuffledContextList.remove(music)
+        queueList.remove(music)
+        queueList.add(0, music)
+
+        val originalIndex = originalContextList.indexOfFirst { it.uri == current.uri }
+        if (originalIndex != -1) {
+            originalContextList.add(originalIndex + 1, music)
+        } else {
+            originalContextList.add(music)
+        }
+
+        val shuffledIndex = shuffledContextList.indexOfFirst { it.uri == current.uri }
+        if (shuffledIndex != -1) {
+            shuffledContextList.add(shuffledIndex + 1, music)
+        } else {
+            shuffledContextList.add(music)
+        }
+
+        syncCurrentIndexWithMusic()
+    }
+
+    fun removeFromQueue(music: Music) {
+        originalContextList.remove(music)
+        shuffledContextList.remove(music)
+        queueList.remove(music)
+
+        val index = originalContextList.indexOfFirst {
+            it.name.lowercase() > music.name.lowercase()
+        }
+
+        if (index == -1) {
+            originalContextList.add(music)
+        } else {
+            originalContextList.add(index, music)
+        }
+
+        shuffledContextList.add(music)
+
+        syncCurrentIndexWithMusic()
     }
 
     fun getNext(): Music? {
         val list = getActiveList()
-        val index = list.indexOf(currentMusic)
-        return if (list.isNotEmpty() && index != -1) {
-            list[(index + 1) % list.size]
-        } else null
+        if (list.isEmpty() || currentIndex !in list.indices) return null
+        return list[(currentIndex + 1) % list.size]
     }
 
     fun getPrevious(): Music? {
         val list = getActiveList()
-        val index = list.indexOf(currentMusic)
-        return if (list.isNotEmpty() && index != -1) {
-            list[(index - 1 + list.size) % list.size]
-        } else null
+        if (list.isEmpty() || currentIndex !in list.indices) return null
+        return list[(currentIndex - 1 + list.size) % list.size]
+    }
+
+    private fun syncCurrentIndexWithMusic() {
+        val current = currentMusic
+        if (current == null) {
+            currentIndex = -1
+            return
+        }
+
+        val list = getActiveList()
+        currentIndex = list.indexOfFirst { it.uri == current.uri }
     }
 
     fun sanitizeMaps() {
@@ -157,7 +273,6 @@ object MusicHolder {
             albumMap[album] = mutableListOf(music)
         }
 
-        // Remove empty keys
         artistMap.entries.removeAll { it.value.isEmpty() }
         albumMap.entries.removeAll { it.value.isEmpty() }
     }
@@ -192,13 +307,17 @@ object MusicHolder {
         }
 
         albumMap.entries.removeAll { it.value.isEmpty() }
+
+        syncCurrentIndexWithMusic()
     }
 
     fun reset() {
         currentMusic = null
+        currentIndex = -1
         musicList = emptyList()
-        originalContextList = emptyList()
-        shuffledContextList = emptyList()
+        originalContextList.clear()
+        shuffledContextList.clear()
+        queueList.clear()
         artistMap.clear()
         albumMap.clear()
         playlistMap.clear()
@@ -220,5 +339,7 @@ object MusicHolder {
                 music.coverPath = coverPath
             }
         }
+
+        syncCurrentIndexWithMusic()
     }
 }

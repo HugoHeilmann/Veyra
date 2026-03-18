@@ -43,20 +43,16 @@ fun MusicRow(
     music: Music,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    onEditClick: (Music) -> Unit,
-    onAddClick: (Music) -> Unit,
-    onRemoveClick: (Music) -> Unit
+    onEditClick: (Music) -> Unit
 ) {
     val context = LocalContext.current
 
     val usable = MetadataManager.getByPath(context, music.uri)
     val musicToUse = usable?.toMusic() ?: music
-    val inQueue = QueueManager.queue.contains(music)
+    val inQueue = MusicHolder.isInQueue(music)
 
-    // Est-ce la musique en cours de lecture ?
     val isCurrent = MusicHolder.getCurrent()?.uri == musicToUse.uri
 
-    // Animation d'onde : une bande qui glisse du coin bas-gauche vers haut-droit
     val infiniteTransition = rememberInfiniteTransition(label = "waveTransition")
     val waveProgress by infiniteTransition.animateFloat(
         initialValue = -0.3f,
@@ -158,7 +154,9 @@ fun MusicRow(
                     painterResource(id = R.drawable.ic_remove_from_queue)
                 },
                 contentDescription = "Add to queue",
-                tint = if (!inQueue) {
+                tint = if (MusicHolder.currentMusic == null) {
+                    Color.Gray
+                } else if (!inQueue) {
                     MaterialTheme.colorScheme.primary
                 } else {
                     Color.Red
@@ -167,11 +165,12 @@ fun MusicRow(
                     .size(36.dp)
                     .padding(end = 12.dp)
                     .clickable(
+                        enabled = MusicHolder.currentMusic != null,
                         onClick = {
-                            if (!inQueue) {
-                                onAddClick(music)
+                            if (!MusicHolder.isInQueue(music)) {
+                                MusicHolder.addInQueue(music)
                             } else {
-                                onRemoveClick(music)
+                                MusicHolder.removeFromQueue(music)
                             }
                         }
                     )

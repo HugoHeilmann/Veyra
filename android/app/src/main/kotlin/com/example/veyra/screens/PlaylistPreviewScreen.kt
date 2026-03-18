@@ -39,13 +39,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.veyra.components.AlphabeticalListWithFastScroller
-import com.example.veyra.components.BlandMusicRow
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.TopBar
 import com.example.veyra.model.Music
 import com.example.veyra.model.Section
 import com.example.veyra.model.data.MusicHolder
-import com.example.veyra.model.data.QueueManager
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.model.metadata.PlaylistMetadata
 import java.net.URLEncoder
@@ -188,12 +186,6 @@ fun PlaylistPreviewScreen(
                             onEditClick = { _ ->
                                 val encodedUri = URLEncoder.encode(music.uri, StandardCharsets.UTF_8.toString())
                                 navController.navigate("editMusic/${encodedUri}")
-                            },
-                            onAddClick = { _ ->
-                                QueueManager.addToEnd(music)
-                            },
-                            onRemoveClick = { _ ->
-                                QueueManager.remove(music)
                             }
                         )
                     }
