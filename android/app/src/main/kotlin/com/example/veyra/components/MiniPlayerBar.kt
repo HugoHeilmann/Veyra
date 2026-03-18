@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,7 +26,7 @@ import com.example.veyra.model.data.MusicPlayerManager
 @Composable
 fun MiniPlayerBar(navController: NavHostController) {
     val context = LocalContext.current
-    val currentMusic by rememberUpdatedState(MusicHolder.getCurrent())
+    val currentMusic = MusicHolder.currentMusic
     val isPlaying = MusicPlayerManager.isPlaying()
 
     currentMusic?.let { music ->
@@ -45,7 +45,6 @@ fun MiniPlayerBar(navController: NavHostController) {
                     .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 🎵 Partie cliquable pour ouvrir PlayerScreen
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -73,10 +72,8 @@ fun MiniPlayerBar(navController: NavHostController) {
                     }
                 }
 
-                // 🎛️ Contrôles
                 val isShuffled = MusicHolder.isShuffled
 
-                // Shuffle toggle
                 IconButton(onClick = {
                     MusicHolder.enableShuffle(!isShuffled)
                 }) {
@@ -87,12 +84,8 @@ fun MiniPlayerBar(navController: NavHostController) {
                     )
                 }
 
-                // Previous
                 IconButton(onClick = {
-                    val previousMusic = MusicHolder.getPrevious()
-                    if (previousMusic != null) {
-                        MusicHolder.setPlayedMusic(context, previousMusic)
-                    }
+                    MusicHolder.playPrevious(context)
                 }) {
                     Icon(
                         Icons.Default.SkipPrevious,
@@ -101,7 +94,6 @@ fun MiniPlayerBar(navController: NavHostController) {
                     )
                 }
 
-                // Play/Pause
                 IconButton(onClick = {
                     if (isPlaying) {
                         MusicPlayerManager.pauseMusic(context)
@@ -116,12 +108,8 @@ fun MiniPlayerBar(navController: NavHostController) {
                     )
                 }
 
-                // Next
                 IconButton(onClick = {
-                    val nextMusic = MusicHolder.getNext()
-                    if (nextMusic != null) {
-                        MusicHolder.setPlayedMusic(context, nextMusic)
-                    }
+                    MusicHolder.playNext(context)
                 }) {
                     Icon(
                         Icons.Default.SkipNext,

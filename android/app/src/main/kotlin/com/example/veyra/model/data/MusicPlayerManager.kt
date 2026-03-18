@@ -82,9 +82,11 @@ object MusicPlayerManager {
                 MediaSessionManager.updatePlaybackState(false)
                 abandonAudioFocus()
             }
+
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 mediaPlayer?.setVolume(0.2f, 0.2f)
             }
+
             AudioManager.AUDIOFOCUS_GAIN -> {
                 mediaPlayer?.setVolume(1f, 1f)
                 ensureNotificationVisible()
@@ -190,7 +192,8 @@ object MusicPlayerManager {
                 try {
                     NotificationService.startOrUpdate(ctx)
                     saveWidgetState(currentMusic, true)
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             }
             return
         }
@@ -201,7 +204,8 @@ object MusicPlayerManager {
         try {
             NotificationService.startOrUpdate(ctx)
             saveWidgetState(music, _isPlaying)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
 
         mediaPlayer = MediaPlayer().apply {
             if (music.uri.startsWith("content://")) {
@@ -209,7 +213,9 @@ object MusicPlayerManager {
             } else {
                 setDataSource(music.uri)
             }
+
             prepareAsync()
+
             setOnPreparedListener {
                 requestAudioFocus()
                 start()
@@ -219,20 +225,22 @@ object MusicPlayerManager {
                 try {
                     NotificationService.startOrUpdate(ctx)
                     saveWidgetState(music, true)
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             }
+
             setOnCompletionListener {
                 _isPlaying = false
                 MediaSessionManager.updatePlaybackState(false)
 
                 val appCtx = appContext ?: ctx
+                val next = MusicHolder.getNext()
 
-                val next = QueueManager.getNext()
                 if (next != null) {
-                    playInternal(next, appCtx)
+                    MusicHolder.setPlayedMusic(appCtx, next)
                 } else {
-                    // Fin de file : plus de musique → on arrête la notif
                     currentMusic = null
+                    MusicHolder.clearCurrentMusic()
                     try {
                         appCtx.stopService(Intent(appCtx, NotificationService::class.java))
                         saveWidgetState(null, false)
@@ -262,6 +270,7 @@ object MusicPlayerManager {
         stopMusicInternal()
         abandonAudioFocus()
         MediaSessionManager.updatePlaybackState(false)
+        MusicHolder.clearCurrentMusic()
 
         val ctx = appContext
         if (ctx != null) {
@@ -285,6 +294,7 @@ object MusicPlayerManager {
         stopMusicInternal()
         abandonAudioFocus()
         unregisterReceivers()
+        MusicHolder.clearCurrentMusic()
     }
 
     fun isPlaying(): Boolean = _isPlaying
@@ -341,7 +351,8 @@ object MusicPlayerManager {
             try {
                 NotificationService.startOrUpdate(context)
                 saveWidgetState(currentMusic, _isPlaying)
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 }

@@ -61,12 +61,6 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                         onEditClick = { _ ->
                             val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
                             navController.navigate("editMusic/${encodedUri}")
-                        },
-                        onAddClick = { _ ->
-                            QueueManager.addToEnd(song)
-                        },
-                        onRemoveClick = { _ ->
-                            QueueManager.remove(song)
                         }
                     )
                 }

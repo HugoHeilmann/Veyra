@@ -280,12 +280,6 @@ fun MusicListScreen(
                                 onEditClick = { _ ->
                                     val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
                                     navController.navigate("editMusic/${encodedUri}")
-                                },
-                                onAddClick = { _ ->
-                                    QueueManager.addToEnd(musicReference)
-                                },
-                                onRemoveClick = { _ ->
-                                    QueueManager.remove(musicReference)
                                 }
                             )
                         },
