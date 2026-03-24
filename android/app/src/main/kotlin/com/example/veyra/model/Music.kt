@@ -7,6 +7,6 @@ data class Music(
     var artist: String? = null,
     var album: String? = null,
     var image: Int = R.drawable.default_album_cover,
-    val uri: String,
+    var uri: String,
     var coverPath: String? = null
 )

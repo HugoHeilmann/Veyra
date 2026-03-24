@@ -53,7 +53,6 @@ object MetadataManager {
         }
     }
 
-    // Lire tout le JSON comme une liste d’objets MusicMetadata
     fun readAll(context: Context): MutableList<MusicMetadata> {
         val file = getFile(context)
         if (!file.exists()) initializeIfNeeded(context)
@@ -71,14 +70,12 @@ object MetadataManager {
         }
     }
 
-    // Sauvegarder la liste complète
     fun writeAll(context: Context, list: List<MusicMetadata>) {
         val file = getFile(context)
         val json = gson.toJson(list)
         writeTextAtomic(file, json)
     }
 
-    // Add entry if does not exists
     fun addIfNotExists(context: Context, metadata: MusicMetadata) {
         val list = readAll(context)
         val keyNew = stableKey(metadata.filePath)
@@ -105,6 +102,7 @@ object MetadataManager {
         if (index >= 0) {
             val existing = list[index]
             list[index] = existing.copy(
+                fileName = File(filePath).name,
                 title = title,
                 artist = artist,
                 album = album,
@@ -114,40 +112,65 @@ object MetadataManager {
         }
     }
 
-    // Récupérer une entrée par chemin
     fun getByPath(context: Context, filePath: String): MusicMetadata? {
         val key = stableKey(filePath)
         return readAll(context).find { stableKey(it.filePath) == key }
     }
 
-    // Remove all unused data
-    fun cleanup(context: Context) {
-        val file = getFile(context)
-        if (!file.exists()) return
+    fun renameFilePath(
+        context: Context,
+        oldPath: String,
+        newPath: String
+    ) {
+        val list = readAll(context)
 
-        try {
-            val json = file.readText()
-            val gson = Gson()
-            val arr = com.google.gson.JsonParser.parseString(json).asJsonArray
+        val oldKey = stableKey(oldPath)
+        val newKey = stableKey(newPath)
 
-            val cleanedJsonArray = arr.mapNotNull { element ->
-                val obj = element.asJsonObject
+        val oldIndex = list.indexOfFirst { stableKey(it.filePath) == oldKey }
+        val newIndex = list.indexOfFirst { stableKey(it.filePath) == newKey }
 
-                // Supprimer la clé "playlists" si elle existe
-                obj.remove("playlists")
+        if (oldIndex < 0) return
 
-                // Vérifier que le fichier existe toujours
-                val path = obj["filePath"]?.asString
-                if (path != null && File(path).exists()) obj else null
-            }
+        val existing = list[oldIndex]
 
-            // Réécrire le fichier nettoyé
-            val cleanedJson = gson.toJson(cleanedJsonArray)
-            writeTextAtomic(file, cleanedJson)
-
-        } catch (_: Exception) {
-            // en cas de JSON invalide → reset à []
-            writeTextAtomic(file, "[]")
+        if (newIndex >= 0) {
+            list.removeAt(oldIndex)
+        } else {
+            list[oldIndex] = existing.copy(
+                filePath = newPath,
+                fileName = File(newPath).name
+            )
         }
+
+        writeAll(context, list)
+    }
+
+    fun cleanup(context: Context) {
+        val list = readAll(context)
+
+        val cleaned = linkedMapOf<String, MusicMetadata>()
+
+        for (item in list) {
+            val file = File(item.filePath)
+            if (!file.exists() || !file.isFile) continue
+
+            val key = stableKey(item.filePath)
+            val existing = cleaned[key]
+
+            if (existing == null) {
+                cleaned[key] = item.copy(fileName = file.name)
+            } else {
+                cleaned[key] = existing.copy(
+                    fileName = file.name,
+                    title = existing.title.ifBlank { item.title },
+                    artist = existing.artist.ifBlank { item.artist },
+                    album = existing.album.ifBlank { item.album },
+                    coverPath = existing.coverPath ?: item.coverPath
+                )
+            }
+        }
+
+        writeAll(context, cleaned.values.toList())
     }
 }
