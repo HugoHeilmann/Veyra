@@ -1,7 +1,11 @@
 package com.example.veyra.screens
 
+import android.app.Activity
 import android.content.Intent
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,9 +25,21 @@ import com.example.veyra.components.PlaylistSelector
 import com.example.veyra.components.SelectorInput
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
-import com.example.veyra.model.metadata.MetadataManager
-import com.example.veyra.model.metadata.PlaylistManager
+import com.example.veyra.model.metadata.*
 import com.example.veyra.utils.FileUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private data class PendingTagEdit(
+    val oldFilePath: String,
+    val contentUri: android.net.Uri,
+    val title: String,
+    val artist: String,
+    val album: String,
+    val coverPath: String?,
+    val renameFileName: Boolean
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,10 +49,202 @@ fun EditMusicScreen(
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var isSaving by remember { mutableStateOf(false) }
+    var pendingTagEdit by remember { mutableStateOf<PendingTagEdit?>(null) }
 
     var coverPath by remember { mutableStateOf(music.coverPath) }
     var coverVersion by remember { mutableIntStateOf(0) }
     val defaultCover = R.drawable.default_album_cover
+
+    val playlistName = PlaylistManager.getAllNames(context)
+    val selectedPlaylists = remember { mutableStateListOf<String>() }
+
+    var title by remember { mutableStateOf(music.name) }
+    var album by remember { mutableStateOf(music.album ?: "Unknown") }
+
+    fun applyLocalChanges(
+        originalPath: String,
+        finalTitle: String,
+        finalArtist: String,
+        finalAlbum: String,
+        finalCoverPath: String?,
+        newPath: String
+    ) {
+        MusicHolder.updateMusic(
+            filePath = originalPath,
+            title = finalTitle,
+            artist = finalArtist,
+            album = finalAlbum,
+            coverPath = finalCoverPath
+        )
+
+        playlistName.forEach { currentPlaylistName ->
+            PlaylistManager.removeMusicFromPlaylist(
+                context = context,
+                playlistName = currentPlaylistName,
+                filePathOrUri = originalPath
+            )
+        }
+
+        selectedPlaylists.forEach { currentPlaylistName ->
+            PlaylistManager.addMusicToPlaylist(
+                context = context,
+                playlistName = currentPlaylistName,
+                filePathOrUri = newPath
+            )
+        }
+
+        if (newPath != originalPath) {
+            MetadataManager.renameFilePath(
+                context = context,
+                oldPath = originalPath,
+                newPath = newPath
+            )
+        }
+
+        MetadataManager.updateMetadata(
+            context = context,
+            filePath = newPath,
+            title = finalTitle,
+            artist = finalArtist,
+            album = finalAlbum,
+            coverPath = finalCoverPath
+        )
+
+        music.uri = newPath
+        music.coverPath = finalCoverPath
+        music.name = finalTitle
+        music.artist = finalArtist
+        music.album = finalAlbum
+
+        MusicHolder.refreshMapsForMusic(music)
+    }
+
+    val writeRequestLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { activityResult ->
+        val request = pendingTagEdit
+
+        if (activityResult.resultCode != Activity.RESULT_OK || request == null) {
+            pendingTagEdit = null
+            isSaving = false
+            Toast.makeText(context, "Modification annulée", Toast.LENGTH_LONG).show()
+            return@rememberLauncherForActivityResult
+        }
+
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                AudioTagWriter.saveTagsAfterPermission(
+                    context = context,
+                    contentUri = request.contentUri,
+                    title = request.title,
+                    artist = request.artist,
+                    album = request.album,
+                    coverPath = request.coverPath,
+                    renameFileName = request.renameFileName
+                )
+            }
+
+            pendingTagEdit = null
+
+            when (result) {
+                is AudioTagWriteResult.Success -> {
+                    val newPath = result.updatedFilePath ?: request.oldFilePath
+
+                    applyLocalChanges(
+                        originalPath = request.oldFilePath,
+                        finalTitle = request.title,
+                        finalArtist = request.artist,
+                        finalAlbum = request.album,
+                        finalCoverPath = request.coverPath,
+                        newPath = newPath
+                    )
+
+                    isSaving = false
+                    onSave()
+                }
+
+                is AudioTagWriteResult.Failure -> {
+                    isSaving = false
+                    Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                }
+
+                is AudioTagWriteResult.NeedsUserPermission -> {
+                    isSaving = false
+                    Toast.makeText(
+                        context,
+                        "Autorisation d'écriture toujours requise",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    fun handleWriteResult(
+        originalPath: String,
+        result: AudioTagWriteResult,
+        finalTitle: String,
+        finalArtist: String,
+        finalAlbum: String,
+        finalCoverPath: String?
+    ) {
+        when (result) {
+            is AudioTagWriteResult.Success -> {
+                val newPath = result.updatedFilePath ?: originalPath
+
+                applyLocalChanges(
+                    originalPath = originalPath,
+                    finalTitle = finalTitle,
+                    finalArtist = finalArtist,
+                    finalAlbum = finalAlbum,
+                    finalCoverPath = finalCoverPath,
+                    newPath = newPath
+                )
+
+                isSaving = false
+                onSave()
+            }
+
+            is AudioTagWriteResult.NeedsUserPermission -> {
+                val intentSender = AudioTagWriter.createWriteRequestIntentSender(
+                    context = context,
+                    uris = listOf(result.contentUri)
+                )
+
+                if (intentSender == null) {
+                    isSaving = false
+                    Toast.makeText(
+                        context,
+                        "Autorisation d'écriture non supportée",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return
+                }
+
+                pendingTagEdit = PendingTagEdit(
+                    oldFilePath = originalPath,
+                    contentUri = result.contentUri,
+                    title = finalTitle,
+                    artist = finalArtist,
+                    album = finalAlbum,
+                    coverPath = finalCoverPath,
+                    renameFileName = finalTitle != music.name.trim()
+                )
+
+                writeRequestLauncher.launch(
+                    IntentSenderRequest.Builder(intentSender).build()
+                )
+            }
+
+            is AudioTagWriteResult.Failure -> {
+                isSaving = false
+                Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
@@ -61,12 +269,6 @@ fun EditMusicScreen(
         }
     )
 
-    var title by remember { mutableStateOf(music.name) }
-    var album by remember { mutableStateOf(music.album ?: "Unknown") }
-
-    val playlistName = PlaylistManager.getAllNames(context)
-    val selectedPlaylists = remember { mutableStateListOf<String>() }
-
     LaunchedEffect(music.uri) {
         selectedPlaylists.clear()
         selectedPlaylists.addAll(
@@ -74,14 +276,10 @@ fun EditMusicScreen(
         )
     }
 
-    // ============================
-    // ✅ Parse artiste principal + feats depuis music.artist
-    // ============================
     fun parseArtistAndFeats(raw: String?): Pair<String, List<String>> {
         val s = raw?.trim().orEmpty()
         if (s.isBlank()) return "" to emptyList()
 
-        // split autour des tokens de feat
         val featRegex = Regex("""\s*(?:ft\.?|feat\.?|featuring)\s*""", RegexOption.IGNORE_CASE)
         val parts = featRegex.split(s, limit = 2)
 
@@ -90,8 +288,6 @@ fun EditMusicScreen(
         if (parts.size < 2) return main to emptyList()
 
         val featPart = parts[1]
-
-        // séparateurs possibles entre feats
         val splitRegex = Regex("""\s*(?:&|,| and )\s*""", RegexOption.IGNORE_CASE)
 
         val feats = featPart
@@ -100,20 +296,25 @@ fun EditMusicScreen(
             .filter { it.isNotBlank() }
             .distinctBy { it.lowercase() }
 
-        return main to feats
+        return main to emptyList<String>() + feats
     }
 
-    // init states depuis music.artist PARSÉ
     val (initialMainArtist, initialFeats) = remember(music.artist) {
         parseArtistAndFeats(music.artist)
     }
 
-    var mainArtist by remember { mutableStateOf(if (initialMainArtist.isBlank()) (music.artist ?: "Unknown") else initialMainArtist) }
+    var mainArtist by remember {
+        mutableStateOf(
+            if (initialMainArtist.isBlank()) {
+                music.artist ?: "Unknown"
+            } else {
+                initialMainArtist
+            }
+        )
+    }
+
     val feats = remember { mutableStateListOf<String>().apply { addAll(initialFeats) } }
 
-    // ============================
-    // ✅ Recompose la string finale artiste
-    // ============================
     fun buildArtistString(main: String, featList: List<String>): String {
         val m = main.trim()
         val f = featList.map { it.trim() }
@@ -125,7 +326,6 @@ fun EditMusicScreen(
         return "$m ft. ${f.joinToString(" & ")}"
     }
 
-    // (optionnel) string finale toujours à jour
     val artistFinal by remember(mainArtist, feats) {
         derivedStateOf { buildArtistString(mainArtist, feats) }
     }
@@ -150,7 +350,6 @@ fun EditMusicScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            // ----- Bloc principal : pochette + métadonnées -----
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -162,12 +361,9 @@ fun EditMusicScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Pochette
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(
-                                coverPath ?: music.image
-                            )
+                            .data(coverPath ?: music.image)
                             .size(Size.ORIGINAL)
                             .crossfade(true)
                             .error(defaultCover)
@@ -179,7 +375,7 @@ fun EditMusicScreen(
                         modifier = Modifier
                             .size(220.dp)
                             .padding(top = 8.dp)
-                            .clickable {
+                            .clickable(enabled = !isSaving) {
                                 imagePicker.launch(arrayOf("image/*"))
                             }
                     )
@@ -192,7 +388,8 @@ fun EditMusicScreen(
                             onClick = {
                                 imagePicker.launch(arrayOf("image/*"))
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            enabled = !isSaving
                         ) {
                             Text("Changer l'image")
                         }
@@ -202,26 +399,26 @@ fun EditMusicScreen(
                                 coverPath = null
                                 coverVersion++
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            enabled = !isSaving
                         ) {
                             Text("Supprimer l'image")
                         }
                     }
 
-                    // Titre
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
                         label = { Text("Titre") },
                         singleLine = true,
                         maxLines = 1,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSaving
                     )
 
-                    // Artiste + feats
                     ArtistSelectorInput(
                         artists = MusicHolder.getArtistList(),
-                        enabled = true,
+                        enabled = !isSaving,
                         initialArtist = mainArtist,
                         initialFeats = feats.toList(),
                         onArtistChange = { mainArtist = it },
@@ -231,18 +428,16 @@ fun EditMusicScreen(
                         }
                     )
 
-                    // Album
                     SelectorInput(
                         list = MusicHolder.getAlbumList(),
                         placeholder = music.album ?: "Album",
                         onValueChange = { album = it }
                     )
 
-                    // Playlists
                     PlaylistSelector(
                         playlists = playlistName,
                         selectedPlaylists = selectedPlaylists,
-                        enabled = !playlistName.isEmpty(),
+                        enabled = !playlistName.isEmpty() && !isSaving,
                         onSelectionChange = { newList ->
                             selectedPlaylists.clear()
                             selectedPlaylists.addAll(newList)
@@ -250,70 +445,60 @@ fun EditMusicScreen(
                     )
                 }
             }
-            
-            // ----- Boutons d'action -----
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedButton(
                     onClick = { onCancel() },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isSaving
                 ) {
                     Text("Annuler")
                 }
 
                 Button(
                     onClick = {
-                        title = title.trim()
-                        album = album.trim()
+                        if (isSaving) return@Button
 
-                        val artistToSave = artistFinal.trim()
+                        scope.launch {
+                            isSaving = true
 
-                        MusicHolder.updateMusic(
-                            filePath = music.uri,
-                            title = title,
-                            artist = artistToSave,
-                            album = album,
-                            coverPath = coverPath
-                        )
+                            val originalPath = music.uri
+                            val finalTitle = title.trim()
+                            val finalAlbum = album.trim()
+                            val finalArtist = artistFinal.trim()
 
-                        MusicHolder.refreshMapsForMusic(music)
+                            val shouldRenameFile = finalTitle != music.name.trim()
 
-                        MetadataManager.updateMetadata(
-                            context = context,
-                            filePath = music.uri,
-                            title = title,
-                            artist = artistToSave,
-                            album = album,
-                            coverPath = coverPath
-                        )
+                            Log.d("EditMusicScreen", "SAVE -> title=$finalTitle / artist=$finalArtist / album=$finalAlbum")
+                            val result = withContext(Dispatchers.IO) {
+                                AudioTagWriter.saveTags(
+                                    context = context,
+                                    filePath = originalPath,
+                                    title = finalTitle,
+                                    artist = finalArtist,
+                                    album = finalAlbum,
+                                    coverPath = coverPath,
+                                    renameFileName = shouldRenameFile
+                                )
+                            }
 
-                        // Retirer la musique de toutes les playlists
-                        playlistName.forEach { playlistName ->
-                            PlaylistManager.removeMusicFromPlaylist(
-                                context = context,
-                                playlistName = playlistName,
-                                filePathOrUri = music.uri
+                            handleWriteResult(
+                                originalPath = originalPath,
+                                result = result,
+                                finalTitle = finalTitle,
+                                finalArtist = finalArtist,
+                                finalAlbum = finalAlbum,
+                                finalCoverPath = coverPath
                             )
                         }
-
-                        // Ajouter la musique a toutes les playlists selectionnees
-                        selectedPlaylists.forEach { playlistName ->
-                            PlaylistManager.addMusicToPlaylist(
-                                context = context,
-                                playlistName = playlistName,
-                                filePathOrUri = music.uri
-                            )
-                        }
-
-                        music.coverPath = coverPath
-
-                        onSave()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isSaving
                 ) {
-                    Text("Sauvegarder")
+                    Text(if (isSaving) "Sauvegarde..." else "Sauvegarder")
                 }
             }
         }

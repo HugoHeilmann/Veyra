@@ -65,6 +65,9 @@ repositories {
 }
 
 dependencies {
+    // Mp3 modification
+    implementation("com.github.adonai:jaudiotagger-android:2.3.15")
+
     // Hilt
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-android-compiler:2.48")

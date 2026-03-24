@@ -33,14 +33,15 @@ import com.example.veyra.components.FullColorPickerDialog
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.PlayerButton
+import com.example.veyra.components.animations.CustomLoader
 import com.example.veyra.components.animations.WaveBars
 import com.example.veyra.model.Music
-import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.Section
-import com.example.veyra.model.data.QueueManager
-import com.example.veyra.utils.loadMusicFromDevice
+import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
+import com.example.veyra.utils.loadMusicFromDevice
+import com.example.veyra.utils.rememberBulkDeleteHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -60,6 +61,7 @@ fun MusicListScreen(
 ) {
     val context = LocalContext.current
     val appUiVm: AppUIViewModel = viewModel(context as ComponentActivity)
+    val scope = rememberCoroutineScope()
 
     var searchText by remember { mutableStateOf("") }
     var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
@@ -72,10 +74,22 @@ fun MusicListScreen(
     }
 
     var showColorDialog by remember { mutableStateOf(false) }
+    var isBulkDeleting by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { appUiVm.updateBottomBarEnabled(false) }
+    val bulkDeleteHandler = rememberBulkDeleteHandler(
+        context = context,
+        scope = scope,
+        getMusicsForArtistDeletion = MusicHolder::getMusicsForArtistDeletion,
+        getMusicsForAlbumDeletion = MusicHolder::getMusicsForAlbumDeletion,
+        onProcessingChanged = { processing ->
+            isBulkDeleting = processing
+            appUiVm.updateBottomBarEnabled(!processing)
+        },
+        onCompleted = {
+            allMusic = MusicHolder.getMusicList().toList()
+        }
+    )
 
-    // Charger les musiques au lancement
     LaunchedEffect(Unit) {
         if (MusicHolder.getMusicList().isEmpty()) {
             allMusic = emptyList()
@@ -83,24 +97,20 @@ fun MusicListScreen(
 
             launch(Dispatchers.IO) {
                 async { scanMusicFolder(context) }.await()
-                async { loadMusicFromDevice(context) }.await()
-
-                val metadataList = async { MetadataManager.readAll(context) }.await()
-                val musics = metadataList.map { it.toMusic() }
+                val musics = async { loadMusicFromDevice(context) }.await()
 
                 withContext(Dispatchers.Main) {
                     MusicHolder.setMusicList(musics)
-                    allMusic = musics
+                    allMusic = musics.toList()
                     appUiVm.updateBottomBarEnabled(true)
                 }
             }
         } else {
-            allMusic = MusicHolder.getMusicList()
+            allMusic = MusicHolder.getMusicList().toList()
             appUiVm.updateBottomBarEnabled(true)
         }
     }
 
-    // all musics
     val musicList by remember(allMusic, searchText) {
         derivedStateOf {
             allMusic.filter {
@@ -111,7 +121,6 @@ fun MusicListScreen(
         }
     }
 
-    // music map according to artist
     val artistMap by remember(musicList) {
         derivedStateOf {
             musicList
@@ -124,7 +133,6 @@ fun MusicListScreen(
         }
     }
 
-    // music map according to album
     val albumMap by remember(musicList) {
         derivedStateOf {
             musicList
@@ -133,256 +141,268 @@ fun MusicListScreen(
         }
     }
 
-    // Remember scroll (save/restored automatically)
     val songsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val artistsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val albumsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
-    // Tabs
     val tabs = listOf("Chansons", "Artistes", "Albums")
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        WaveBars(MaterialTheme.colorScheme.primary)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            WaveBars(MaterialTheme.colorScheme.primary)
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
 
-                        Text(
-                            text = "Veyra",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.clickable {
-                                showColorDialog = true
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        WaveBars(MaterialTheme.colorScheme.primary)
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
-        contentWindowInsets = WindowInsets(0)
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            // 🔍 Barre de recherche
-            BasicTextField(
-                value = searchText,
-                onValueChange = { searchText = it },
-                singleLine = true,
-                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
-                    .padding(12.dp),
-                decorationBox = { innerTextField ->
-                    if (searchText.isEmpty()) {
-                        Text("Rechercher...", color = Color.Gray)
-                    }
-                    innerTextField()
-                }
-            )
-
-            // 🧭 Onglets : Chansons / Artistes / Albums
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                tabs.forEach { tab ->
-                    val isSelected = tab == selectedTab
-
-                    val backgroundColor by animateColorAsState(
-                        targetValue = if (isSelected)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        else
-                            Color.Transparent
-                    )
-                    val textColor by animateColorAsState(
-                        targetValue = if (isSelected)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onBackground
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .clickable { selectedTab = tab }
-                            .background(backgroundColor)
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = tab,
-                            color = textColor,
-                            fontWeight = SemiBold,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-
-            // 📄 Liste scrollable avec gestion des tabs
-            when (selectedTab) {
-                "Chansons" -> {
-                    val groupedSongs = remember(musicList) {
-                        groupByFirstLetter(musicList) { it.name }
-                    }
-                    val sections = remember(groupedSongs) {
-                        buildSectionsFromGroupedMap(groupedSongs)
-                    }
-
-                    PlayerButton(navController)
-
-                    AlphabeticalListWithFastScroller(
-                        sections = sections,
-                        headerContent = { letter ->
                             Text(
-                                text = letter,
-                                style = MaterialTheme.typography.titleLarge,
+                                text = "Veyra",
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
-                            )
-                        },
-                        itemContent = { music ->
-                            val musicReference = metadataByPath[music.uri]?.toMusic() ?: music
-
-                            MusicRow(
-                                music = musicReference,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp),
-                                onClick = {
-                                    MusicHolder.isShuffled = true
-                                    MusicHolder.setCurrentMusic(context, music, null)
-                                    navController.navigate("player")
-                                },
-                                onEditClick = { _ ->
-                                    val encodedUri = URLEncoder.encode(musicReference.uri, StandardCharsets.UTF_8.toString())
-                                    navController.navigate("editMusic/${encodedUri}")
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.clickable(enabled = !isBulkDeleting) {
+                                    showColorDialog = true
                                 }
                             )
-                        },
-                        listState = songsListState
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            WaveBars(MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
-                }
-                "Artistes" -> {
-                    val groupedArtists = remember(artistMap.keys) {
-                        groupByFirstLetter(artistMap.keys.toList()) { it }
+                )
+            },
+            contentWindowInsets = WindowInsets(0)
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                BasicTextField(
+                    value = searchText,
+                    onValueChange = {
+                        if (!isBulkDeleting) {
+                            searchText = it
+                        }
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
+                        .padding(12.dp),
+                    decorationBox = { innerTextField ->
+                        if (searchText.isEmpty()) {
+                            Text("Rechercher...", color = Color.Gray)
+                        }
+                        innerTextField()
                     }
-                    val sections = remember(groupedArtists) {
-                        buildSectionsFromGroupedMap(groupedArtists)
-                    }
+                )
 
-                    NewArtistOrAlbum(navController, context, true)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    tabs.forEach { tab ->
+                        val isSelected = tab == selectedTab
 
-                    AlphabeticalListWithFastScroller(
-                        sections = sections,
-                        headerContent = { letter ->
+                        val backgroundColor by animateColorAsState(
+                            targetValue = if (isSelected)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            else
+                                Color.Transparent
+                        )
+                        val textColor by animateColorAsState(
+                            targetValue = if (isSelected)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onBackground
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .clickable(enabled = !isBulkDeleting) { selectedTab = tab }
+                                .background(backgroundColor)
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
                             Text(
-                                text = letter,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
+                                text = tab,
+                                color = textColor,
+                                fontWeight = SemiBold,
+                                style = MaterialTheme.typography.bodyMedium
                             )
-                        },
-                        itemContent = { artist: String ->
-                            val songs = artistMap[artist] ?: emptyList()
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        navController.navigate("artist_detail/${Uri.encode(artist)}")
-                                    }
-                                    .padding(vertical = 8.dp)
-                            ) {
-                                BlandMusicRow(
-                                    artist,
-                                    "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
-                                )
-                            }
-                        },
-                        listState = artistsListState
-                    )
-                }
-                "Albums" -> {
-                    val groupedAlbums = remember(albumMap.keys) {
-                        groupByFirstLetter(albumMap.keys.toList()) { it }
+                        }
                     }
-                    val sections = remember(groupedAlbums) {
-                        buildSectionsFromGroupedMap(groupedAlbums)
+                }
+
+                when (selectedTab) {
+                    "Chansons" -> {
+                        val groupedSongs = remember(musicList) {
+                            groupByFirstLetter(musicList) { it.name }
+                        }
+                        val sections = remember(groupedSongs) {
+                            buildSectionsFromGroupedMap(groupedSongs)
+                        }
+
+                        PlayerButton(navController)
+
+                        AlphabeticalListWithFastScroller(
+                            sections = sections,
+                            headerContent = { letter ->
+                                Text(
+                                    text = letter,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                                )
+                            },
+                            itemContent = { music ->
+                                val musicReference = metadataByPath[music.uri]?.toMusic() ?: music
+
+                                MusicRow(
+                                    music = musicReference,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp),
+                                    onClick = {
+                                        if (!isBulkDeleting) {
+                                            MusicHolder.isShuffled = true
+                                            MusicHolder.setCurrentMusic(context, music, null)
+                                            navController.navigate("player")
+                                        }
+                                    },
+                                    onEditClick = { _ ->
+                                        if (!isBulkDeleting) {
+                                            val encodedUri = URLEncoder.encode(
+                                                musicReference.uri,
+                                                StandardCharsets.UTF_8.toString()
+                                            )
+                                            navController.navigate("editMusic/${encodedUri}")
+                                        }
+                                    }
+                                )
+                            },
+                            listState = songsListState
+                        )
                     }
 
-                    NewArtistOrAlbum(navController, context, false)
+                    "Artistes" -> {
+                        val groupedArtists = remember(artistMap.keys) {
+                            groupByFirstLetter(artistMap.keys.toList()) { it }
+                        }
+                        val sections = remember(groupedArtists) {
+                            buildSectionsFromGroupedMap(groupedArtists)
+                        }
 
-                    AlphabeticalListWithFastScroller(
-                        sections = sections,
-                        headerContent = { letter ->
-                            Text(
-                                text = letter,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp, horizontal = 16.dp)
-                            )
-                        },
-                        itemContent = { album: String ->
-                            val songs = albumMap[album] ?: emptyList()
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        navController.navigate("album_detail/${Uri.encode(album)}")
-                                    }
-                                    .padding(vertical = 8.dp)
-                            ) {
-                                BlandMusicRow(
-                                    album,
-                                    "${songs.size} chanson${if (songs.size == 1) "" else "s"}"
+                        NewArtistOrAlbum(navController, context, true)
+
+                        AlphabeticalListWithFastScroller(
+                            sections = sections,
+                            headerContent = { letter ->
+                                Text(
+                                    text = letter,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
                                 )
-                            }
-                        },
-                        listState = albumsListState
-                    )
+                            },
+                            itemContent = { artist: String ->
+                                val songs = artistMap[artist] ?: emptyList()
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(enabled = !isBulkDeleting) {
+                                            navController.navigate("artist_detail/${Uri.encode(artist)}")
+                                        }
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    BlandMusicRow(
+                                        text = artist,
+                                        undertext = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
+                                        type = "artist",
+                                        onDeleteConfirmed = bulkDeleteHandler.handleBulkDelete
+                                    )
+                                }
+                            },
+                            listState = artistsListState
+                        )
+                    }
+
+                    "Albums" -> {
+                        val groupedAlbums = remember(albumMap.keys) {
+                            groupByFirstLetter(albumMap.keys.toList()) { it }
+                        }
+                        val sections = remember(groupedAlbums) {
+                            buildSectionsFromGroupedMap(groupedAlbums)
+                        }
+
+                        NewArtistOrAlbum(navController, context, false)
+
+                        AlphabeticalListWithFastScroller(
+                            sections = sections,
+                            headerContent = { letter ->
+                                Text(
+                                    text = letter,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp, horizontal = 16.dp)
+                                )
+                            },
+                            itemContent = { album: String ->
+                                val songs = albumMap[album] ?: emptyList()
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(enabled = !isBulkDeleting) {
+                                            navController.navigate("album_detail/${Uri.encode(album)}")
+                                        }
+                                        .padding(vertical = 8.dp)
+                                ) {
+                                    BlandMusicRow(
+                                        text = album,
+                                        undertext = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
+                                        type = "album",
+                                        onDeleteConfirmed = bulkDeleteHandler.handleBulkDelete
+                                    )
+                                }
+                            },
+                            listState = albumsListState
+                        )
+                    }
                 }
+
+                FullColorPickerDialog(
+                    show = showColorDialog && !isBulkDeleting,
+                    onDismiss = { showColorDialog = false },
+                    onConfirm = { color ->
+                        onColorSelected(color)
+                        showColorDialog = false
+                    }
+                )
             }
-
-            FullColorPickerDialog(
-                show = showColorDialog,
-                onDismiss = { showColorDialog = false },
-                onConfirm = { color ->
-                    onColorSelected(color)
-                    showColorDialog = false
-                }
-            )
         }
     }
 }
-
-// ---------- Utilitaires & FastScroller ----------
 
 fun scanMusicFolder(context: Context) {
     val musicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath)
@@ -416,7 +436,7 @@ private fun normalizeHeader(ch: Char): Char {
     if (!ch.isLetter()) return '#'
 
     val base = Normalizer.normalize(ch.toString(), Normalizer.Form.NFD)
-        .replace("\\p{Mn}+".toRegex(), "") // supprime les accents
+        .replace("\\p{Mn}+".toRegex(), "")
         .uppercase(Locale.ROOT)
 
     val c = base.firstOrNull() ?: return '#'

@@ -342,4 +342,91 @@ object MusicHolder {
 
         syncCurrentIndexWithMusic()
     }
+
+    private fun normalizeArtistKey(value: String?): String {
+        return value
+            ?.split(Regex("(?i) ft\\."))
+            ?.getOrNull(0)
+            ?.trim()
+            .orEmpty()
+    }
+
+    fun getMusicsForArtistDeletion(artistName: String): List<Music> {
+        val targetArtist = artistName.trim()
+        if (targetArtist.isBlank()) return emptyList()
+
+        return musicList.filter { music ->
+            normalizeArtistKey(music.artist).equals(targetArtist, ignoreCase = true)
+        }
+    }
+
+    fun getMusicsForAlbumDeletion(albumName: String): List<Music> {
+        val targetAlbum = albumName.trim()
+        if (targetAlbum.isBlank()) return emptyList()
+
+        return musicList.filter { music ->
+            music.album?.trim().equals(targetAlbum, ignoreCase = true)
+        }
+    }
+
+    fun applyBulkLocalUpdate(
+        oldFilePath: String,
+        newFilePath: String,
+        title: String,
+        artist: String,
+        album: String,
+        coverPath: String?
+    ) {
+        musicList.forEach { music ->
+            if (music.uri == oldFilePath) {
+                music.uri = newFilePath
+                music.name = title
+                music.artist = artist
+                music.album = album
+                music.coverPath = coverPath
+            }
+        }
+
+        refreshAllMaps()
+    }
+
+    fun deleteArtist(artistName: String) {
+        return
+    }
+
+    fun deleteAlbum(albumName: String) {
+        return
+    }
+
+    private fun refreshAllMaps() {
+        musicList = musicList.sortedBy { it.name.lowercase() }
+
+        artistMap.clear()
+        artistMap.putAll(
+            musicList
+                .filter { !it.artist.isNullOrBlank() }
+                .groupBy {
+                    it.artist?.split(Regex("(?i) ft\\."))?.get(0)?.trim() ?: "Unknown Artist"
+                }
+                .mapValues { entry ->
+                    entry.value
+                        .sortedBy { it.name.lowercase() }
+                        .toMutableList()
+                }
+        )
+
+        albumMap.clear()
+        albumMap.putAll(
+            musicList
+                .filter { !it.album.isNullOrBlank() }
+                .groupBy { it.album ?: "Unknown Album" }
+                .mapValues { entry ->
+                    entry.value
+                        .sortedBy { it.name.lowercase() }
+                        .toMutableList()
+                }
+        )
+
+        syncCurrentIndexWithMusic()
+    }
 }

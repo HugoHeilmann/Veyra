@@ -6,7 +6,6 @@ import com.example.veyra.R
 import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.MusicMetadata
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -50,16 +49,26 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
             sortOrder
         ) ?: return@withContext emptyList<Music>()
 
-        data class Row(val path: String, val rawTitle: String)
+        data class Row(
+            val path: String,
+            val rawTitle: String?,
+            val rawArtist: String?,
+            val rawAlbum: String?
+        )
+
         val rows = mutableListOf<Row>()
 
         cursor.use { it ->
             val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
             val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+            val artistColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+            val albumColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
 
             while (it.moveToNext()) {
                 val data = it.getString(dataColumn) ?: continue
-                val rawTitle = it.getString(titleColumn) ?: ""
+                val rawTitle = it.getString(titleColumn)
+                val rawArtist = it.getString(artistColumn)
+                val rawAlbum = it.getString(albumColumn)
 
                 val isSupportedExtension = SUPPORTED_EXTENSIONS.any { ext ->
                     data.endsWith(ext, ignoreCase = true)
@@ -68,7 +77,12 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
                 val isInMusicFolder = data.contains("/Music/", ignoreCase = true)
 
                 if (isSupportedExtension && isInMusicFolder) {
-                    rows += Row(data, rawTitle)
+                    rows += Row(
+                        path = data,
+                        rawTitle = rawTitle,
+                        rawArtist = rawArtist,
+                        rawAlbum = rawAlbum
+                    )
                 }
             }
         }
@@ -81,34 +95,52 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
             val deferredList = rows.map { row ->
                 async(workerDispatcher) {
                     val data = row.path
-                    val rawTitle = row.rawTitle
-
-                    val parts = rawTitle.split(" - ")
-
-                    val filename = data.substringAfterLast("/")
-                    val title = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: "Unknown Title"
-                    val artist = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "Unknown Artist"
-                    val album = parts.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "Unknown Album"
+                    val filename = data.substringAfterLast("/").substringBeforeLast(".")
 
                     val existingMetadata = MetadataManager.getByPath(context, data)
                     val coverPath = existingMetadata?.coverPath
 
+                    val title = row.rawTitle
+                        ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
+                        ?: existingMetadata?.title
+                        ?: filename
+
+                    val artist = row.rawArtist
+                        ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
+                        ?: existingMetadata?.artist
+                        ?: "Unknown Artist"
+
+                    val album = row.rawAlbum
+                        ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
+                        ?: existingMetadata?.album
+                        ?: "Unknown Album"
+
                     val metadata = MusicMetadata(
-                        fileName = filename,
+                        fileName = data.substringAfterLast("/"),
                         title = title,
                         artist = artist,
                         album = album,
                         filePath = data,
                         coverPath = coverPath
                     )
+
                     MetadataManager.addIfNotExists(context, metadata)
+                    MetadataManager.updateMetadata(
+                        context = context,
+                        filePath = data,
+                        title = title,
+                        artist = artist,
+                        album = album,
+                        coverPath = coverPath
+                    )
 
                     Music(
                         name = title,
                         artist = artist,
                         album = album,
                         image = if (coverPath != null) 0 else R.drawable.default_album_cover,
-                        uri = data
+                        uri = data,
+                        coverPath = coverPath
                     )
                 }
             }
