@@ -2,10 +2,15 @@ package com.example.veyra.screens
 
 import android.content.Context
 import android.content.Intent
-import android.widget.Toast
-import androidx.compose.foundation.background
+import android.os.Build
+import android.os.PowerManager
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,17 +21,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veyra.components.ArtistSelectorInput
+import com.example.veyra.components.MusicRow
 import com.example.veyra.components.PlaylistSelector
-import com.example.veyra.components.animations.AnimatedDownloadIcon
 import com.example.veyra.components.SelectorInput
-import com.example.veyra.model.data.MusicHolder
+import com.example.veyra.components.animations.AnimatedDownloadIcon
+import com.example.veyra.model.Music
 import com.example.veyra.model.convert.DownloadHolder
+import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.service.DownloadService
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DownloadScreen(context: Context = LocalContext.current) {
+fun DownloadScreen(
+    context: Context = LocalContext.current,
+    onDownloadedMusicClick: (Music) -> Unit = {},
+    onDownloadedMusicEditClick: (Music) -> Unit = {}
+) {
     var url by rememberSaveable { mutableStateOf("") }
     var title by rememberSaveable { mutableStateOf("") }
     var artist by rememberSaveable { mutableStateOf("") }
@@ -40,15 +52,101 @@ fun DownloadScreen(context: Context = LocalContext.current) {
     var restoreAlbumSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val playlistName = PlaylistManager.getAllNames(context)
-    var expanded by remember { mutableStateOf(false) }
     val selectedPlaylists = remember { mutableStateListOf<String>() }
 
     var showCancelDialog by remember { mutableStateOf(false) }
     var showVerificationDialog by remember { mutableStateOf(false) }
 
-    // Vider les inputs en cas de succès
+    var lastDownloadedMusic by remember { mutableStateOf<Music?>(null) }
+    var pendingDownloadedTitle by remember { mutableStateOf("") }
+    var pendingDownloadedArtist by remember { mutableStateOf("") }
+    var lastHandledTerminalStatus by remember { mutableStateOf("") }
+
+    fun extractMainArtist(rawArtist: String?): String? {
+        if (rawArtist.isNullOrBlank()) return null
+
+        return rawArtist
+            .split(
+                Regex(
+                    "\\s+(?i)(ft\\.?|feat\\.?|featuring|with|&|,|\\(|\\[)"
+                )
+            )
+            .first()
+            .trim()
+    }
+
+    fun findDownloadedMusic(titleToFind: String, artistToFind: String): Music? {
+        return MusicHolder.getMusicList()
+            .asReversed()
+            .firstOrNull { music ->
+                music.name.equals(titleToFind.trim(), ignoreCase = true) &&
+                        (
+                                artistToFind.isBlank() ||
+                                        extractMainArtist(music.artist)?.equals(
+                                            artistToFind.trim(),
+                                            ignoreCase = true
+                                        ) == true
+                                )
+            }
+    }
+
+    fun vibrateBrieflyIfAllowed() {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        if (powerManager?.isPowerSaveMode == true) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager =
+                context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+            val vibrator = vibratorManager?.defaultVibrator ?: return
+
+            if (!vibrator.hasVibrator()) return
+
+            vibrator.vibrate(
+                VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE)
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+
+            @Suppress("DEPRECATION")
+            if (!vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(60, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(60)
+            }
+        }
+    }
+
     LaunchedEffect(status) {
-        if (status.startsWith("✅") || status.startsWith("OK")) {
+        val isSuccess = status.startsWith("✅") || status.startsWith("OK")
+        val isFailure = status.startsWith("❌")
+        val isTerminal = isSuccess || isFailure
+
+        if (!isTerminal || status == lastHandledTerminalStatus) return@LaunchedEffect
+
+        lastHandledTerminalStatus = status
+        vibrateBrieflyIfAllowed()
+
+        if (isSuccess) {
+            var foundMusic: Music? = null
+
+            repeat(20) {
+                foundMusic = findDownloadedMusic(
+                    titleToFind = pendingDownloadedTitle,
+                    artistToFind = pendingDownloadedArtist
+                )
+
+                if (foundMusic != null) return@repeat
+                delay(250)
+            }
+
+            lastDownloadedMusic = foundMusic
+
             url = ""
             title = ""
             artist = ""
@@ -68,7 +166,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
         }
     }
 
-    // ✅ Construit une string "Main ft. A & B" propre, utilisée pour l’envoi au service
     val finalArtistForService by remember(artist, feats) {
         derivedStateOf {
             val main = artist.trim()
@@ -78,7 +175,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                 .distinctBy { it.lowercase() }
 
             if (main.isBlank()) {
-                // si pas d'artiste principal, on n'ajoute rien
                 ""
             } else if (cleanedFeats.isEmpty()) {
                 main
@@ -88,20 +184,11 @@ fun DownloadScreen(context: Context = LocalContext.current) {
         }
     }
 
-    fun extractMainArtist(rawArtist: String?): String? {
-        if (rawArtist.isNullOrBlank()) return null
-
-        return rawArtist
-            .split(
-                Regex(
-                    "\\s+(?i)(ft\\.?|feat\\.?|featuring|with|&|,|\\(|\\[)"
-                )
-            )
-            .first()
-            .trim()
-    }
-
     fun startDownload() {
+        lastDownloadedMusic = null
+        pendingDownloadedTitle = title.trim()
+        pendingDownloadedArtist = artist.trim()
+
         DownloadHolder.status.value = "Extraction…"
 
         val intent = Intent(context, DownloadService::class.java).apply {
@@ -145,10 +232,10 @@ fun DownloadScreen(context: Context = LocalContext.current) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Bloc unique : URL + métadonnées + playlists
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -164,7 +251,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    // URL YouTube
                     OutlinedTextField(
                         value = url,
                         onValueChange = { url = it },
@@ -176,7 +262,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Titre
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
@@ -200,7 +285,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         onRefCreated = { restoreArtistSelector = it }
                     )
 
-                    // Album
                     SelectorInput(
                         list = MusicHolder.getAlbumList(),
                         placeholder = "Album",
@@ -209,7 +293,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         onRefCreated = { restoreAlbumSelector = it }
                     )
 
-                    // Playlists
                     PlaylistSelector(
                         playlists = playlistName,
                         selectedPlaylists = selectedPlaylists,
@@ -222,7 +305,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                 }
             }
 
-            // Bloc 2 : Action + statut
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -233,7 +315,10 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         } else {
                             val alreadyExists = MusicHolder.getMusicList().any { music ->
                                 music.name.equals(title.trim(), ignoreCase = true)
-                                && extractMainArtist(music.artist)?.equals(artist, ignoreCase = true) == true
+                                        && extractMainArtist(music.artist)?.equals(
+                                    artist,
+                                    ignoreCase = true
+                                ) == true
                             }
                             if (alreadyExists) {
                                 showVerificationDialog = true
@@ -259,7 +344,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     )
                 }
 
-                // Capsule de statut
                 if (status.isNotBlank()) {
                     Surface(
                         shape = MaterialTheme.shapes.small,
@@ -278,7 +362,7 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                         Text(
                             text = status,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                             maxLines = 2
                         )
                     }
@@ -291,7 +375,22 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                     )
                 }
             }
-            // Dialog de verification
+
+            lastDownloadedMusic?.let { downloadedMusic ->
+                Spacer(modifier = Modifier.height(4.dp))
+
+                MusicRow(
+                    music = downloadedMusic,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        onDownloadedMusicClick(downloadedMusic)
+                    },
+                    onEditClick = {
+                        onDownloadedMusicEditClick(it)
+                    }
+                )
+            }
+
             if (showVerificationDialog) {
                 AlertDialog(
                     onDismissRequest = { showVerificationDialog = false },
@@ -319,7 +418,6 @@ fun DownloadScreen(context: Context = LocalContext.current) {
                 )
             }
 
-            // Dialog d'annulation
             if (showCancelDialog && isLoading) {
                 AlertDialog(
                     onDismissRequest = { showCancelDialog = false },

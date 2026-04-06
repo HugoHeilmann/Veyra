@@ -19,13 +19,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat.checkSelfPermission
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -101,6 +101,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun VeyraApp() {
+    val context = LocalContext.current
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -235,7 +236,19 @@ fun VeyraApp() {
                     }
                 }
                 composable("download") {
-                    DownloadScreen()
+                    DownloadScreen(
+                        onDownloadedMusicClick = { music ->
+                            MusicHolder.playMusic(context, music)
+                            navController.navigate("player")
+                        },
+                        onDownloadedMusicEditClick = { music ->
+                            val encodedUri = java.net.URLEncoder.encode(
+                                music.uri,
+                                java.nio.charset.StandardCharsets.UTF_8.toString()
+                            )
+                            navController.navigate("editMusic/$encodedUri")
+                        }
+                    )
                 }
             }
 
