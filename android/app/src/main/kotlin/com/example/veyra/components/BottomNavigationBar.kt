@@ -144,7 +144,7 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                         )
                     )
                 },
-                label = { Text("Queue", style = MaterialTheme.typography.labelSmall) },
+                label = { Text("File", style = MaterialTheme.typography.labelSmall) },
                 selected = isQueueSelected,
                 enabled = isEnabled,
                 colors = itemColors,
