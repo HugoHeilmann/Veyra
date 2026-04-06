@@ -122,9 +122,7 @@ fun QueueScreen(
                                 isCurrent = true,
                                 isDragging = false,
                                 dragOffset = 0f,
-                                onDragStart = {},
-                                onDrag = {},
-                                onDragEnd = {}
+                                enabled = false
                             )
                         }
                     }
@@ -183,10 +181,7 @@ fun QueueScreen(
                                     music = music,
                                     isCurrent = false,
                                     isDragging = false,
-                                    dragOffset = 0f,
-                                    onDragStart = {},
-                                    onDrag = {},
-                                    onDragEnd = {}
+                                    dragOffset = 0f
                                 )
 
                                 Spacer(Modifier.height(4.dp))

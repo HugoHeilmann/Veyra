@@ -6,10 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -24,13 +21,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.veyra.R
 import com.example.veyra.model.Music
-import com.example.veyra.model.data.QueueManager
+import com.example.veyra.model.data.MusicHolder
 
 @Composable
 fun QueueItemRow(
@@ -39,9 +35,7 @@ fun QueueItemRow(
     isDragging: Boolean,
     dragOffset: Float,
     modifier: Modifier = Modifier,
-    onDragStart: () -> Unit,
-    onDrag: (Offset) -> Unit,
-    onDragEnd: () -> Unit
+    enabled: Boolean = true
 ) {
     // ===== Wave animation (comme MusicRow) =====
     val infiniteTransition = rememberInfiniteTransition(label = "queueWaveTransition")
@@ -130,20 +124,21 @@ fun QueueItemRow(
 
         // Handle de drag (burger)
         IconButton(
-            onClick = {},
-            modifier = Modifier.pointerInput(music.uri) {
-                detectDragGestures(
-                    onDragStart = { onDragStart() },
-                    onDrag = { _, dragAmount -> onDrag(dragAmount) },
-                    onDragEnd = { onDragEnd() },
-                    onDragCancel = { onDragEnd() }
-                )
-            }
+            enabled = enabled,
+            onClick = {
+                if (enabled) {
+                    MusicHolder.removeFromQueue(music)
+                }
+            },
         ) {
             Icon(
-                imageVector = Icons.Default.Menu,
+                painter = painterResource(id = R.drawable.ic_delete),
                 contentDescription = "Réordonner",
-                tint = MaterialTheme.colorScheme.primary
+                tint = if (enabled) {
+                    Color.Red
+                } else {
+                    Color.Gray
+                }
             )
         }
     }
