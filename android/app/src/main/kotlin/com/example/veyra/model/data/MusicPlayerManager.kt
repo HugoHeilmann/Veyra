@@ -11,6 +11,7 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import android.media.MediaPlayer
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.net.toUri
@@ -24,6 +25,8 @@ import com.example.veyra.service.widget.Widget
 import com.example.veyra.service.widget.WidgetPrefsKeys
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 object MusicPlayerManager {
@@ -33,7 +36,13 @@ object MusicPlayerManager {
     private var appContext: Context? = null
 
     private var _isPlaying by mutableStateOf(false)
-    private var _isQueuePlaying by mutableStateOf(false)
+
+    var playbackPosition by mutableIntStateOf(0)
+        private set
+    var playbackDuration by mutableIntStateOf(0)
+        private set
+
+    private var progressJob: Job? = null
 
     private var onCompletionListener: (() -> Unit)? = null
 
@@ -188,6 +197,9 @@ object MusicPlayerManager {
                 mediaPlayer?.start()
                 _isPlaying = true
                 MediaSessionManager.updatePlaybackState(true)
+                playbackDuration = mediaPlayer?.duration ?: 0
+                playbackPosition = mediaPlayer?.currentPosition ?: 0
+                startProgressUpdates()
 
                 try {
                     NotificationService.startOrUpdate(ctx)
@@ -221,6 +233,9 @@ object MusicPlayerManager {
                 start()
                 _isPlaying = true
                 MediaSessionManager.updatePlaybackState(true)
+                this@MusicPlayerManager.playbackDuration = duration
+                this@MusicPlayerManager.playbackPosition = 0
+                startProgressUpdates()
                 onPrepared.invoke(duration)
                 try {
                     NotificationService.startOrUpdate(ctx)
@@ -232,6 +247,7 @@ object MusicPlayerManager {
             setOnCompletionListener {
                 _isPlaying = false
                 MediaSessionManager.updatePlaybackState(false)
+                stopProgressUpdates(resetProgress = true)
 
                 val appCtx = appContext ?: ctx
                 val next = MusicHolder.getNext()
@@ -263,6 +279,8 @@ object MusicPlayerManager {
         WaveBarsController.stop()
         mediaPlayer?.pause()
         _isPlaying = false
+        stopProgressUpdates()
+        playbackPosition = mediaPlayer?.currentPosition ?: playbackPosition
         ensureNotificationVisible()
     }
 
@@ -284,6 +302,7 @@ object MusicPlayerManager {
 
     private fun stopMusicInternal() {
         WaveBarsController.stop()
+        stopProgressUpdates(resetProgress = true)
         mediaPlayer?.release()
         mediaPlayer = null
         currentMusic = null
@@ -301,12 +320,16 @@ object MusicPlayerManager {
 
     fun seekTo(positionMs: Int) {
         mediaPlayer?.seekTo(positionMs)
+        playbackPosition = positionMs
+        playbackDuration = mediaPlayer?.duration ?: playbackDuration
     }
 
     fun rewind10Seconds(): Float {
         mediaPlayer?.let {
             val newPos = (it.currentPosition - 10_000).coerceAtLeast(0)
             it.seekTo(newPos)
+            playbackPosition = newPos
+            playbackDuration = it.duration
             return newPos / 1000f
         }
         return 0f
@@ -316,6 +339,8 @@ object MusicPlayerManager {
         mediaPlayer?.let {
             val newPos = (it.currentPosition + 10_000).coerceAtMost(it.duration - 1_000)
             it.seekTo(newPos)
+            playbackPosition = newPos
+            playbackDuration = it.duration
             return newPos / 1000f
         }
         return 0f
@@ -353,6 +378,27 @@ object MusicPlayerManager {
                 saveWidgetState(currentMusic, _isPlaying)
             } catch (_: Exception) {
             }
+        }
+    }
+
+    private fun startProgressUpdates() {
+        progressJob?.cancel()
+        progressJob = CoroutineScope(Dispatchers.Main).launch {
+            while (true) {
+                playbackPosition = mediaPlayer?.currentPosition ?: 0
+                playbackDuration = mediaPlayer?.duration ?: 0
+                delay(500)
+            }
+        }
+    }
+
+    private fun stopProgressUpdates(resetProgress: Boolean = false) {
+        progressJob?.cancel()
+        progressJob = null
+
+        if (resetProgress) {
+            playbackPosition = 0
+            playbackDuration = 0
         }
     }
 }
