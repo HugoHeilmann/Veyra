@@ -189,13 +189,15 @@ fun DownloadScreen(
         pendingDownloadedTitle = title.trim()
         pendingDownloadedArtist = artist.trim()
 
+        val finalAlbum = album.trim().ifBlank { "Unknown Album" }
+
         DownloadHolder.status.value = "Extraction…"
 
         val intent = Intent(context, DownloadService::class.java).apply {
             putExtra("url", url)
             putExtra("title", title)
             putExtra("artist", finalArtistForService)
-            putExtra("album", album)
+            putExtra("album", finalAlbum)
             putStringArrayListExtra("playlists", ArrayList(selectedPlaylists))
         }
         context.startService(intent)
