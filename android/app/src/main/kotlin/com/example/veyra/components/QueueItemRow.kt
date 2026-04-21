@@ -35,7 +35,8 @@ fun QueueItemRow(
     isDragging: Boolean,
     dragOffset: Float,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    onClick: (() -> Unit)? = null,
 ) {
     // ===== Wave animation (comme MusicRow) =====
     val infiniteTransition = rememberInfiniteTransition(label = "queueWaveTransition")
@@ -94,6 +95,9 @@ fun QueueItemRow(
                 }
             }
             .padding(horizontal = 16.dp, vertical = 12.dp),
+            clickable(enabled = onClick != null) {
+                onClick?.invoke()
+            }
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
