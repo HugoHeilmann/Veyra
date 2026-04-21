@@ -23,6 +23,7 @@ import com.example.veyra.model.data.MusicHolder
 fun QueueScreen(
     navController: NavHostController,
 ) {
+    val context = LocalContext.current
     val currentMusic = MusicHolder.currentMusic
     val activeList = MusicHolder.getActiveList()
     val currentIndex = MusicHolder.currentIndex
@@ -122,7 +123,10 @@ fun QueueScreen(
                                 isCurrent = true,
                                 isDragging = false,
                                 dragOffset = 0f,
-                                enabled = false
+                                enabled = false,
+                                onClick = {
+                                    MusicHolder.playMusic(context, currentMusic)
+                                }
                             )
                         }
                     }
@@ -181,7 +185,10 @@ fun QueueScreen(
                                     music = music,
                                     isCurrent = false,
                                     isDragging = false,
-                                    dragOffset = 0f
+                                    dragOffset = 0f,
+                                    onClick = {
+                                        MusicHolder.playMusic(context, music)
+                                    }
                                 )
 
                                 Spacer(Modifier.height(4.dp))
