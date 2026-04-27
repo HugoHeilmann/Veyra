@@ -33,7 +33,6 @@ import com.example.veyra.components.FullColorPickerDialog
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.PlayerButton
-import com.example.veyra.components.animations.CustomLoader
 import com.example.veyra.components.animations.WaveBars
 import com.example.veyra.model.Music
 import com.example.veyra.model.Section
@@ -338,7 +337,8 @@ fun MusicListScreen(
                                         text = artist,
                                         undertext = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
                                         type = "artist",
-                                        onDeleteConfirmed = bulkDeleteHandler.handleBulkDelete
+                                        onDeleteConfirmed = bulkDeleteHandler.handleBulkDelete,
+                                        canBeDeleted = (artist != "Unknown Artist")
                                     )
                                 }
                             },
@@ -382,7 +382,8 @@ fun MusicListScreen(
                                         text = album,
                                         undertext = "${songs.size} chanson${if (songs.size == 1) "" else "s"}",
                                         type = "album",
-                                        onDeleteConfirmed = bulkDeleteHandler.handleBulkDelete
+                                        onDeleteConfirmed = bulkDeleteHandler.handleBulkDelete,
+                                        canBeDeleted = (album != "Unknown Album")
                                     )
                                 }
                             },
