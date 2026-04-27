@@ -181,6 +181,7 @@ fun PlaylistPreviewScreen(
                             onClick = {
                                 MusicHolder.isShuffled = true
                                 MusicHolder.setCurrentMusic(context, music, allSongs)
+                                MusicHolder.setContextName("Playlist: $playlistName")
                                 navController.navigate("player")
                             },
                             onEditClick = { _ ->

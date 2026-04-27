@@ -56,6 +56,7 @@ fun ArtistDetailScreen(artistName: String, navController: NavHostController) {
                         onClick = {
                             MusicHolder.isShuffled = true
                             MusicHolder.setCurrentMusic(context, song, songs)
+                            MusicHolder.setContextName("Artiste : $artistName")
                             navController.navigate("player")
                         },
                         onEditClick = { _ ->
