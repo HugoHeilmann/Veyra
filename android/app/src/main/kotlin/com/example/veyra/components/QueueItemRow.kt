@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -94,11 +95,10 @@ fun QueueItemRow(
                     drawRect(brush = brush)
                 }
             }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-            clickable(enabled = onClick != null) {
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clickable(enabled = onClick != null) {
                 onClick?.invoke()
             }
-        verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
             modifier = Modifier.weight(1f)
