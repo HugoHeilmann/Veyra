@@ -153,7 +153,7 @@ fun QueueScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Liste de lecture",
+                                text = MusicHolder.contextListName.ifBlank { "Liste de lecture" },
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
