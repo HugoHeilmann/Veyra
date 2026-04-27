@@ -384,6 +384,7 @@ fun DownloadScreen(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
                         onDownloadedMusicClick(downloadedMusic)
+                        MusicHolder.setContextName("Musique téléchargée")
                     },
                     onEditClick = {
                         onDownloadedMusicEditClick(it)

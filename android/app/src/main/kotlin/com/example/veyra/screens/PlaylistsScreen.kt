@@ -169,6 +169,7 @@ fun PlaylistsScreen(navController: NavController) {
 
                                     if (songs.isNotEmpty()) {
                                         MusicHolder.setCurrentMusic(context, songs.random(), songs)
+                                        MusicHolder.setContextName("Playlist : ${playlist.name}")
                                         navController.navigate("player")
                                     } else {
                                         Toast.makeText(context, "La playlist est vide", Toast.LENGTH_SHORT).show()

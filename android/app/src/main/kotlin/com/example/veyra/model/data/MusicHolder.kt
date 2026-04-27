@@ -22,6 +22,9 @@ object MusicHolder {
     private val shuffledContextList = mutableStateListOf<Music>()
     private val queueList = mutableStateListOf<Music>()
 
+    var contextListName by mutableStateOf("")
+        private set
+
     private val artistMap = mutableMapOf<String, List<Music>>()
     private val albumMap = mutableMapOf<String, List<Music>>()
     private val playlistMap = mutableMapOf<String, List<Music>>()
@@ -103,6 +106,10 @@ object MusicHolder {
         shuffledContextList.addAll(originalContextList.shuffled())
 
         syncCurrentIndexWithMusic()
+    }
+
+    fun setContextName(name: String) {
+        contextListName = name
     }
 
     fun playNext(context: Context) {
