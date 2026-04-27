@@ -22,6 +22,9 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 class DownloadService : Service() {
 
@@ -65,8 +68,26 @@ class DownloadService : Service() {
                 Log.i(TAG, "Cancelled", ce)
             } catch (e: Exception) {
                 Log.e(TAG, "Erreur pendant le téléchargement", e)
-                if (!DownloadHolder.status.value.startsWith("❌")) {
-                    sendStatus("❌ Erreur interne (voir logs)")
+
+                if (DownloadHolder.state.intValue != -1) {
+                    val message = when (e) {
+                        is UnknownHostException ->
+                            "❌ Connexion impossible : vérifie ta connexion internet."
+
+                        is SocketTimeoutException ->
+                            "❌ Délai dépassé : le téléchargement a mis trop longtemps à répondre."
+
+                        is ConnectException ->
+                            "❌ Connexion refusée : le serveur distant est inaccessible."
+
+                        is IOException ->
+                            "❌ Erreur réseau pendant le téléchargement."
+
+                        else ->
+                            "❌ Le téléchargement a échoué. Vérifie l’URL ou réessaie plus tard."
+                    }
+
+                    sendStatus(message)
                 }
             } finally {
                 stopSelf()
@@ -101,16 +122,27 @@ class DownloadService : Service() {
             val raw = match.groupValues[1].toInt().coerceIn(0, 100)
             val percent = 10 + (raw / 100f) * (90 - 10)
             DownloadHolder.progress.floatValue = percent / 100f
+            DownloadHolder.state.intValue = 0
+            DownloadHolder.isLoading.value = true
         } else if (message.startsWith("Extraction")) {
             DownloadHolder.progress.floatValue = 0.05f
+            DownloadHolder.state.intValue = 0
+            DownloadHolder.isLoading.value = true
         } else if (message.startsWith("Téléchargement")) {
-            // le download ajuste la barre via les %
+            DownloadHolder.state.intValue = 0
+            DownloadHolder.isLoading.value = true
         } else if (message.startsWith("Conversion")) {
             DownloadHolder.progress.floatValue = 0.95f
+            DownloadHolder.state.intValue = 0
+            DownloadHolder.isLoading.value = true
         } else if (message.startsWith("✅")) {
             DownloadHolder.progress.floatValue = 1f
+            DownloadHolder.state.intValue = 1
+            DownloadHolder.isLoading.value = false
         } else if (message.startsWith("❌")) {
             DownloadHolder.progress.floatValue = 0f
+            DownloadHolder.state.intValue = -1
+            DownloadHolder.isLoading.value = false
         }
 
         val intent = Intent(DownloadBroadcast.ACTION_STATUS).apply {
