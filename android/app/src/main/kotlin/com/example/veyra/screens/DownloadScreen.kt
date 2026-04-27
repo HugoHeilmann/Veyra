@@ -46,12 +46,14 @@ fun DownloadScreen(
     var album by rememberSaveable { mutableStateOf("") }
 
     val status by DownloadHolder.status
+    val state by DownloadHolder.state
     val progress by DownloadHolder.progress
+    val isLoading by DownloadHolder.isLoading
 
     var restoreArtistSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
     var restoreAlbumSelector by remember { mutableStateOf<(() -> Unit)?>(null) }
 
-    val playlistName = PlaylistManager.getAllNames(context)
+    val playlistName = remember { PlaylistManager.getAllNames(context) }
     val selectedPlaylists = remember { mutableStateListOf<String>() }
 
     var showCancelDialog by remember { mutableStateOf(false) }
@@ -122,17 +124,26 @@ fun DownloadScreen(
         }
     }
 
-    LaunchedEffect(status) {
-        val isSuccess = status.startsWith("✅") || status.startsWith("OK")
-        val isFailure = status.startsWith("❌")
-        val isTerminal = isSuccess || isFailure
+    fun clearForm() {
+        url = ""
+        title = ""
+        artist = ""
+        album = ""
+        feats.clear()
+        restoreArtistSelector?.invoke()
+        restoreAlbumSelector?.invoke()
+        selectedPlaylists.clear()
+    }
+
+    LaunchedEffect(state) {
+        val isTerminal = state != 0
 
         if (!isTerminal || status == lastHandledTerminalStatus) return@LaunchedEffect
 
         lastHandledTerminalStatus = status
         vibrateBrieflyIfAllowed()
 
-        if (isSuccess) {
+        if (state > 0) {
             var foundMusic: Music? = null
 
             repeat(20) {
@@ -147,22 +158,7 @@ fun DownloadScreen(
 
             lastDownloadedMusic = foundMusic
 
-            url = ""
-            title = ""
-            artist = ""
-            album = ""
-            feats.clear()
-            restoreArtistSelector?.invoke()
-            restoreAlbumSelector?.invoke()
-            selectedPlaylists.clear()
-        }
-    }
-
-    val isLoading by remember {
-        derivedStateOf {
-            status.startsWith("Extraction") ||
-                    status.startsWith("Téléchargement") ||
-                    status.startsWith("Conversion")
+            clearForm()
         }
     }
 
@@ -192,6 +188,8 @@ fun DownloadScreen(
         val finalAlbum = album.trim().ifBlank { "Unknown Album" }
 
         DownloadHolder.status.value = "Extraction…"
+        DownloadHolder.state.intValue = 0
+        DownloadHolder.isLoading.value = true
 
         val intent = Intent(context, DownloadService::class.java).apply {
             putExtra("url", url)
@@ -350,10 +348,10 @@ fun DownloadScreen(
                     Surface(
                         shape = MaterialTheme.shapes.small,
                         color = when {
-                            status.startsWith("✅") ->
+                            state > 0 ->
                                 MaterialTheme.colorScheme.primary
 
-                            status.startsWith("❌") ->
+                            state < 0 ->
                                 MaterialTheme.colorScheme.errorContainer
 
                             else ->
@@ -430,7 +428,8 @@ fun DownloadScreen(
                             onClick = {
                                 showCancelDialog = false
 
-                                DownloadHolder.status.value = "❌ Téléchargement annulé"
+                                DownloadHolder.status.value = "Téléchargement annulé"
+                                DownloadHolder.state.intValue = -1
                                 DownloadHolder.progress.floatValue = 0f
 
                                 val cancelIntent =
