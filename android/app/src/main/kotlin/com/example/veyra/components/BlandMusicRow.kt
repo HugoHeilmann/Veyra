@@ -30,7 +30,8 @@ fun BlandMusicRow(
     text: String,
     undertext: String,
     type: String,
-    onDeleteConfirmed: (String, String) -> Unit
+    onDeleteConfirmed: (String, String) -> Unit,
+    canBeDeleted: Boolean = true
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -103,16 +104,18 @@ fun BlandMusicRow(
                 )
             }
 
-            IconButton(
-                onClick = {
-                    showDeleteDialog = true
+            if (canBeDeleted) {
+                IconButton(
+                    onClick = {
+                        showDeleteDialog = true
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_delete),
+                        contentDescription = "Supprimer",
+                        tint = Color.Red
+                    )
                 }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_delete),
-                    contentDescription = "Supprimer",
-                    tint = Color.Red
-                )
             }
         }
     }
