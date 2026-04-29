@@ -194,6 +194,10 @@ object MusicHolder {
         return queueList.contains(music)
     }
 
+    fun isNext(music: Music): Boolean {
+        return getNext()?.uri == music.uri
+    }
+
     fun addInQueue(music: Music) {
         val current = currentMusic ?: return
 

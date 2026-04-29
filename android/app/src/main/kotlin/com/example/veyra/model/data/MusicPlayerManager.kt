@@ -250,19 +250,7 @@ object MusicPlayerManager {
                 stopProgressUpdates(resetProgress = true)
 
                 val appCtx = appContext ?: ctx
-                val next = MusicHolder.getNext()
-
-                if (next != null) {
-                    MusicHolder.setPlayedMusic(appCtx, next)
-                } else {
-                    currentMusic = null
-                    MusicHolder.clearCurrentMusic()
-                    try {
-                        appCtx.stopService(Intent(appCtx, NotificationService::class.java))
-                        saveWidgetState(null, false)
-                    } catch (_: Exception) {
-                    }
-                }
+                MusicHolder.playNext(appCtx)
 
                 onCompletionListener?.invoke()
             }
