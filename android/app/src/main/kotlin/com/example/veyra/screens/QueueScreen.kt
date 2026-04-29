@@ -78,17 +78,17 @@ fun QueueScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_add_to_queue),
+                        painter = painterResource(id = R.drawable.ic_double_arrow),
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Aucun morceau dans la file de lecture",
+                        text = "Aucun morceau dans la file de lecture.",
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "Ajoutez des morceaux à partir de votre bibliothèque.",
+                        text = "Lancez une musique pour voir la file d'écoute.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

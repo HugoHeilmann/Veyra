@@ -95,36 +95,6 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                 }
             )
 
-            // Playlists
-            val isPlaylistsSelected = currentRoute?.startsWith("playlists") ?: false
-            val playlistsScale by animateFloatAsState(
-                targetValue = if (isPlaylistsSelected) 1.15f else 1f,
-                animationSpec = tween(durationMillis = 200),
-                label = "playlistsScale"
-            )
-
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        Icons.Filled.LibraryMusic,
-                        contentDescription = "Playlists",
-                        modifier = Modifier.graphicsLayer(
-                            scaleX = playlistsScale,
-                            scaleY = playlistsScale
-                        )
-                    )
-                },
-                label = { Text("Playlists", style = MaterialTheme.typography.labelSmall) },
-                selected = isPlaylistsSelected,
-                enabled = isEnabled,
-                colors = itemColors,
-                onClick = {
-                    if (!isPlaylistsSelected && isEnabled) {
-                        navigateBottom("playlists")
-                    }
-                }
-            )
-
             // Queue
             val isQueueSelected = currentRoute?.startsWith("queue") ?: false
             val queueScale by animateFloatAsState(
@@ -151,6 +121,36 @@ fun BottomNavigationBar(navController: NavHostController, isEnabled: Boolean = t
                 onClick = {
                     if (!isQueueSelected && isEnabled) {
                         navigateBottom("queue")
+                    }
+                }
+            )
+
+            // Playlists
+            val isPlaylistsSelected = currentRoute?.startsWith("playlists") ?: false
+            val playlistsScale by animateFloatAsState(
+                targetValue = if (isPlaylistsSelected) 1.15f else 1f,
+                animationSpec = tween(durationMillis = 200),
+                label = "playlistsScale"
+            )
+
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        Icons.Filled.LibraryMusic,
+                        contentDescription = "Playlists",
+                        modifier = Modifier.graphicsLayer(
+                            scaleX = playlistsScale,
+                            scaleY = playlistsScale
+                        )
+                    )
+                },
+                label = { Text("Playlists", style = MaterialTheme.typography.labelSmall) },
+                selected = isPlaylistsSelected,
+                enabled = isEnabled,
+                colors = itemColors,
+                onClick = {
+                    if (!isPlaylistsSelected && isEnabled) {
+                        navigateBottom("playlists")
                     }
                 }
             )

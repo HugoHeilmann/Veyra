@@ -15,7 +15,9 @@ object MetadataManager {
 
     private fun getFile(context: Context): File = File(context.filesDir, FILE_NAME)
 
-    private fun stableKey(raw: String): String {
+    private fun stableKey(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+
         return if (raw.startsWith("content://")) {
             raw
         } else {
@@ -39,10 +41,7 @@ object MetadataManager {
 
         if (!tmp.renameTo(target)) {
             target.writeText(content)
-
-            if (tmp.exists()) {
-                tmp.delete()
-            }
+            if (tmp.exists()) tmp.delete()
         }
     }
 
@@ -56,6 +55,7 @@ object MetadataManager {
     fun readAll(context: Context): MutableList<MusicMetadata> {
         val file = getFile(context)
         if (!file.exists()) initializeIfNeeded(context)
+
         val json = try {
             file.readText()
         } catch (_: IOException) {
@@ -77,8 +77,9 @@ object MetadataManager {
     }
 
     fun addIfNotExists(context: Context, metadata: MusicMetadata) {
+        val keyNew = stableKey(metadata.filePath) ?: return
+
         val list = readAll(context)
-        val keyNew = stableKey(metadata.filePath)
         val exists = list.any { stableKey(it.filePath) == keyNew }
 
         if (!exists) {
@@ -89,20 +90,21 @@ object MetadataManager {
 
     fun updateMetadata(
         context: Context,
-        filePath: String,
+        filePath: String?,
         title: String,
         artist: String,
         album: String,
         coverPath: String? = null
     ) {
+        val key = stableKey(filePath) ?: return
+
         val list = readAll(context)
-        val key = stableKey(filePath)
         val index = list.indexOfFirst { stableKey(it.filePath) == key }
 
         if (index >= 0) {
             val existing = list[index]
             list[index] = existing.copy(
-                fileName = File(filePath).name,
+                fileName = File(filePath!!).name,
                 title = title,
                 artist = artist,
                 album = album,
@@ -112,20 +114,20 @@ object MetadataManager {
         }
     }
 
-    fun getByPath(context: Context, filePath: String): MusicMetadata? {
-        val key = stableKey(filePath)
+    fun getByPath(context: Context, filePath: String?): MusicMetadata? {
+        val key = stableKey(filePath) ?: return null
         return readAll(context).find { stableKey(it.filePath) == key }
     }
 
     fun renameFilePath(
         context: Context,
-        oldPath: String,
-        newPath: String
+        oldPath: String?,
+        newPath: String?
     ) {
-        val list = readAll(context)
+        val oldKey = stableKey(oldPath) ?: return
+        val newKey = stableKey(newPath) ?: return
 
-        val oldKey = stableKey(oldPath)
-        val newKey = stableKey(newPath)
+        val list = readAll(context)
 
         val oldIndex = list.indexOfFirst { stableKey(it.filePath) == oldKey }
         val newIndex = list.indexOfFirst { stableKey(it.filePath) == newKey }
@@ -138,7 +140,7 @@ object MetadataManager {
             list.removeAt(oldIndex)
         } else {
             list[oldIndex] = existing.copy(
-                filePath = newPath,
+                filePath = newPath!!,
                 fileName = File(newPath).name
             )
         }
@@ -148,14 +150,16 @@ object MetadataManager {
 
     fun cleanup(context: Context) {
         val list = readAll(context)
-
         val cleaned = linkedMapOf<String, MusicMetadata>()
 
         for (item in list) {
-            val file = File(item.filePath)
+            val path = item.filePath
+            if (path.isBlank()) continue
+
+            val file = File(path)
             if (!file.exists() || !file.isFile) continue
 
-            val key = stableKey(item.filePath)
+            val key = stableKey(path) ?: continue
             val existing = cleaned[key]
 
             if (existing == null) {

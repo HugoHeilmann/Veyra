@@ -15,7 +15,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +42,7 @@ import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.data.QueueManager
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
+import kotlinx.coroutines.delay
 
 @Composable
 fun MusicRow(
@@ -49,9 +55,21 @@ fun MusicRow(
 
     val usable = MetadataManager.getByPath(context, music.uri)
     val musicToUse = usable?.toMusic() ?: music
-    val inQueue = MusicHolder.isInQueue(music)
+    val isNext by remember {
+        derivedStateOf {
+            MusicHolder.isNext(music)
+        }
+    }
 
     val isCurrent = MusicHolder.getCurrent()?.uri == musicToUse.uri
+    var showQueuePopup by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showQueuePopup) {
+        if (showQueuePopup) {
+            delay(2000)
+            showQueuePopup = false
+        }
+    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "waveTransition")
     val waveProgress by infiniteTransition.animateFloat(
@@ -148,24 +166,18 @@ fun MusicRow(
             }
 
             Icon(
-                painter = if (!inQueue) {
-                    painterResource(id = R.drawable.ic_add_to_queue)
-                } else {
-                    painterResource(id = R.drawable.ic_remove_from_queue)
-                },
+                painter = painterResource(id = R.drawable.ic_double_arrow),
                 contentDescription = "Add to queue",
-                tint = if (MusicHolder.currentMusic == null) {
+                tint = if (isNext) {
                     Color.Gray
-                } else if (!inQueue) {
-                    MaterialTheme.colorScheme.primary
                 } else {
-                    Color.Red
+                    MaterialTheme.colorScheme.primary
                 },
                 modifier = Modifier
                     .size(36.dp)
                     .padding(end = 12.dp)
                     .clickable(
-                        enabled = MusicHolder.currentMusic != null,
+                        enabled = !isNext,
                         onClick = {
                             if (!MusicHolder.isInQueue(music)) {
                                 MusicHolder.addInQueue(music)
