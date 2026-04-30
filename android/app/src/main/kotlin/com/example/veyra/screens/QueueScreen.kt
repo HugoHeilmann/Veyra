@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -164,10 +163,6 @@ fun QueueScreen(
                         )
 
                         val listState = rememberLazyListState()
-
-                        LaunchedEffect(displayedList) {
-                            listState.scrollToItem(0)
-                        }
 
                         LazyColumn(
                             state = listState,

@@ -126,7 +126,7 @@ fun QueueItemRow(
             )
         }
 
-        // Handle de drag (burger)
+        // Delete button
         IconButton(
             enabled = enabled,
             onClick = {

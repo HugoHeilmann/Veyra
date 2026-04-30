@@ -268,28 +268,6 @@ object MusicHolder {
         currentIndex = list.indexOfFirst { it.uri == current.uri }
     }
 
-    fun sanitizeMaps() {
-        artistMap.entries.removeIf { it.value.isEmpty() }
-        albumMap.entries.removeIf { it.value.isEmpty() }
-    }
-
-    fun addElement(
-        music: Music,
-        artist: String,
-        album: String
-    ) {
-        if (artist !in artistMap.keys) {
-            artistMap[artist] = mutableListOf(music)
-        }
-
-        if (album !in albumMap.keys) {
-            albumMap[album] = mutableListOf(music)
-        }
-
-        artistMap.entries.removeAll { it.value.isEmpty() }
-        albumMap.entries.removeAll { it.value.isEmpty() }
-    }
-
     fun refreshMapsForMusic(music: Music) {
         artistMap.forEach { (key, list) ->
             val mutable = list.toMutableList()
@@ -401,14 +379,6 @@ object MusicHolder {
         }
 
         refreshAllMaps()
-    }
-
-    fun deleteArtist(artistName: String) {
-        return
-    }
-
-    fun deleteAlbum(albumName: String) {
-        return
     }
 
     private fun refreshAllMaps() {
