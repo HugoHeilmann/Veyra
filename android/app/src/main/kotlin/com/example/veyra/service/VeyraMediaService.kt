@@ -2,6 +2,9 @@ package com.example.veyra.service
 
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
@@ -26,19 +29,34 @@ class VeyraMediaService : MediaLibraryService() {
         Log.d(TAG, "onCreate")
 
         player = ExoPlayer.Builder(this).build().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .build(),
+                true //handleAudioFocus
+            )
+
+            setHandleAudioBecomingNoisy(true)
+            setWakeMode(C.WAKE_MODE_LOCAL)
+
             repeatMode = Player.REPEAT_MODE_ALL
-            addListener(object : Player.Listener {
+
+            addListener(object: Player.Listener {
                 override fun onEvents(player: Player, events: Player.Events) {
                     Log.d(
                         TAG,
                         "Player events=$events state=${player.playbackState} " +
                                 "playWhenReady=${player.playWhenReady} " +
+                                "isPlaying=${player.isPlaying} " +
+                                "volume=${player.volume} " +
+                                "uri=${player.currentMediaItem?.localConfiguration?.uri} " +
                                 "item=${player.currentMediaItem?.mediaMetadata?.title}"
                     )
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    Log.e(TAG, "Player error", error)
+                    Log.e(TAG, "Player error code=${error.errorCodeName}", error)
                 }
             })
         }
@@ -156,6 +174,10 @@ class VeyraMediaService : MediaLibraryService() {
 
                 Log.d(TAG, "onAddMediaItems -> queue size=${ordered.size}, startIndex=$startIndex")
 
+                ordered.forEachIndexed { index, item ->
+                    Log.d(TAG, "Queue[$index] id=${item.mediaId} uri=${item.localConfiguration?.uri}")
+                }
+
                 return Futures.immediateFuture(ordered)
             }
         }
@@ -187,8 +209,7 @@ class VeyraMediaService : MediaLibraryService() {
     ): MediaItem {
         return MediaItem.Builder()
             .setMediaId(uriString)
-            .setUri(Uri.parse(uriString))
-            .setMimeType(MimeTypes.AUDIO_MPEG)
+            .setUri(uriString.toUri())
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(title)
