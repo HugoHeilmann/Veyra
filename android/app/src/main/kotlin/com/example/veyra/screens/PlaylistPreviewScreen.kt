@@ -180,8 +180,7 @@ fun PlaylistPreviewScreen(
                                 .padding(vertical = 8.dp, horizontal = 16.dp),
                             onClick = {
                                 MusicHolder.isShuffled = true
-                                MusicHolder.setCurrentMusic(context, music, allSongs)
-                                MusicHolder.setContextName("Playlist: $playlistName")
+                                MusicHolder.setCurrentMusic(context, music, "Playlist: $playlistName", allSongs)
                                 navController.navigate("player")
                             },
                             onEditClick = { _ ->

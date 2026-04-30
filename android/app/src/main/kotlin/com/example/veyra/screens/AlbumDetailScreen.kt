@@ -55,7 +55,7 @@ fun AlbumDetailScreen(albumName: String, navController: NavHostController) {
                             .padding(vertical = 8.dp, horizontal = 16.dp),
                         onClick = {
                             MusicHolder.isShuffled = true
-                            MusicHolder.setCurrentMusic(context, song, songs)
+                            MusicHolder.setCurrentMusic(context, song,  "Album : $albumName", songs)
                             MusicHolder.setContextName("Album : $albumName")
                             navController.navigate("player")
                         },

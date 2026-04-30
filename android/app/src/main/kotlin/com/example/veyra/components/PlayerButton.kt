@@ -41,6 +41,18 @@ fun PlayerButton(
 
     val useProvidedOrder = list.isNotEmpty()
 
+    fun getContextName(): String {
+        return if (artist != "") {
+            "Artiste: $artist"
+        } else if (album != "") {
+            "Album: $album"
+        } else if (playlist != "") {
+            "Playlist: $playlist"
+        } else {
+            "Toutes les musiques"
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -71,6 +83,7 @@ fun PlayerButton(
                     MusicHolder.setCurrentMusic(
                         context = context,
                         music = track,
+                        contextName = getContextName(),
                         contextList = songs,
                         keepOrder = useProvidedOrder
                     )

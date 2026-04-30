@@ -282,8 +282,7 @@ fun MusicListScreen(
                                     onClick = {
                                         if (!isBulkDeleting) {
                                             MusicHolder.isShuffled = true
-                                            MusicHolder.setCurrentMusic(context, music, null)
-                                            MusicHolder.setContextName("Liste complète")
+                                            MusicHolder.setCurrentMusic(context, music, "Toutes les musiques", null)
                                             navController.navigate("player")
                                         }
                                     },
