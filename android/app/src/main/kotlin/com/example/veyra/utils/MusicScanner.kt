@@ -1,7 +1,9 @@
 package com.example.veyra.utils
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.provider.MediaStore
+import android.util.Log
 import com.example.veyra.R
 import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.MetadataManager
@@ -12,6 +14,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 private val SUPPORTED_EXTENSIONS = listOf(
     ".mp3",
@@ -98,7 +102,8 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
                     val filename = data.substringAfterLast("/").substringBeforeLast(".")
 
                     val existingMetadata = MetadataManager.getByPath(context, data)
-                    val coverPath = existingMetadata?.coverPath
+                    val embeddedCoverPath = extractEmbeddedCoverToCache(context, data)
+                    val coverPath = embeddedCoverPath ?: existingMetadata?.coverPath
 
                     val title = row.rawTitle
                         ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
@@ -147,5 +152,35 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
 
             deferredList.awaitAll()
         }
+    }
+}
+
+private fun extractEmbeddedCoverToCache(context: Context, audioPath: String): String? {
+    val retriever = MediaMetadataRetriever()
+
+    return try {
+        retriever.setDataSource(audioPath)
+
+        val artBytes = retriever.embeddedPicture
+        retriever.release()
+
+        if (artBytes == null) return null
+
+        val coversDir = File(context.cacheDir, "covers")
+        if (!coversDir.exists()) coversDir.mkdirs()
+
+        val safeName = audioPath.hashCode().toString()
+        val coverFile = File(coversDir, "$safeName.jpg")
+
+        FileOutputStream(coverFile).use { output ->
+            output.write(artBytes)
+        }
+
+        coverFile.absolutePath
+    } catch (e: Exception) {
+        e.message?.let { Log.e("EXTRACT COVER", it) }
+        null
+    } finally {
+        retriever.release()
     }
 }

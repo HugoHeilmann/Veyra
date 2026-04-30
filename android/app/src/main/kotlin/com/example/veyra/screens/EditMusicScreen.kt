@@ -2,8 +2,10 @@ package com.example.veyra.screens
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import android.graphics.Color as AndroidColor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,13 +29,15 @@ import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.*
 import com.example.veyra.utils.FileUtils
+import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 private data class PendingTagEdit(
     val oldFilePath: String,
-    val contentUri: android.net.Uri,
+    val contentUri: Uri,
     val title: String,
     val artist: String,
     val album: String,
@@ -115,6 +119,11 @@ fun EditMusicScreen(
 
         music.uri = newPath
         music.coverPath = finalCoverPath
+        music.image = if (finalCoverPath == null) {
+            R.drawable.default_album_cover
+        } else {
+            0
+        }
         music.name = finalTitle
         music.artist = finalArtist
         music.album = finalAlbum
@@ -246,28 +255,73 @@ fun EditMusicScreen(
         }
     }
 
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            uri?.let {
-                context.contentResolver.takePersistableUriPermission(
-                    it,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) {
+            return@rememberLauncherForActivityResult
+        }
 
-                val copiedPath = FileUtils.copyImageToInternalStorage(
-                    context = context,
-                    uri = it,
-                    musicId = music.uri
-                )
+        val croppedUri = UCrop.getOutput(result.data ?: return@rememberLauncherForActivityResult)
 
-                if (copiedPath != null) {
-                    coverPath = copiedPath
-                    coverVersion++
-                }
+        if (croppedUri != null) {
+            val copiedPath = FileUtils.copyImageToInternalStorage(
+                context = context,
+                uri = croppedUri,
+                musicId = music.uri
+            )
+
+            if (copiedPath != null) {
+                coverPath = copiedPath
+                coverVersion++
+            } else {
+                Toast.makeText(
+                    context,
+                    "Impossible de copier l'image",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
-    )
+    }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { sourceUri ->
+            context.contentResolver.takePersistableUriPermission(
+                sourceUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+
+            val destinationUri = Uri.fromFile(
+                File(context.cacheDir, "cropped_cover_${System.currentTimeMillis()}.jpg")
+            )
+
+            val cropOptions = UCrop.Options().apply {
+                setToolbarTitle("Recadrer l'image")
+
+                setToolbarColor(AndroidColor.BLACK)
+                setStatusBarColor(AndroidColor.BLACK)
+                setToolbarWidgetColor(AndroidColor.WHITE)
+                setActiveControlsWidgetColor(AndroidColor.WHITE)
+
+                setHideBottomControls(false)
+
+                setMaxScaleMultiplier(5f)
+                setImageToCropBoundsAnimDuration(200)
+
+                setMaxBitmapSize(1000)
+            }
+
+            val cropIntent = UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(1f, 1f)
+                .withMaxResultSize(1000, 1000)
+                .withOptions(cropOptions)
+                .getIntent(context)
+
+            cropLauncher.launch(cropIntent)
+        }
+    }
 
     LaunchedEffect(music.uri) {
         selectedPlaylists.clear()
@@ -305,15 +359,17 @@ fun EditMusicScreen(
 
     var mainArtist by remember {
         mutableStateOf(
-            if (initialMainArtist.isBlank()) {
+            initialMainArtist.ifBlank {
                 music.artist ?: "Unknown"
-            } else {
-                initialMainArtist
             }
         )
     }
 
-    val feats = remember { mutableStateListOf<String>().apply { addAll(initialFeats) } }
+    val feats = remember {
+        mutableStateListOf<String>().apply {
+            addAll(initialFeats)
+        }
+    }
 
     fun buildArtistString(main: String, featList: List<String>): String {
         val m = main.trim()
@@ -349,7 +405,6 @@ fun EditMusicScreen(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -437,7 +492,7 @@ fun EditMusicScreen(
                     PlaylistSelector(
                         playlists = playlistName,
                         selectedPlaylists = selectedPlaylists,
-                        enabled = !playlistName.isEmpty() && !isSaving,
+                        enabled = playlistName.isNotEmpty() && !isSaving,
                         onSelectionChange = { newList ->
                             selectedPlaylists.clear()
                             selectedPlaylists.addAll(newList)

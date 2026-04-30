@@ -65,6 +65,9 @@ repositories {
 }
 
 dependencies {
+    // Image crop
+    implementation("com.github.yalantis:ucrop:2.2.8")
+
     // Mp3 modification
     implementation("com.github.adonai:jaudiotagger-android:2.3.15")
 

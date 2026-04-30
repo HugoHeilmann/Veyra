@@ -178,11 +178,13 @@ object AudioTagWriter {
     ): AudioTagWriteResult {
         val originalDisplayName = getDisplayName(context, contentUri) ?: "audio.mp3"
         val extension = extractExtension(originalDisplayName)
+
         val finalDisplayName = if (renameFileName) {
             buildDisplayName(title, extension)
         } else {
             originalDisplayName
         }
+
         val tempSuffix = if (extension.isNotBlank()) ".$extension" else ".tmp"
         val tempFile = File.createTempFile("veyra_tag_edit_", tempSuffix, context.cacheDir)
 
@@ -210,6 +212,9 @@ object AudioTagWriter {
                             input.copyTo(output)
                         }
                         output.flush()
+
+                        output.channel.truncate(tempFile.length())
+                        output.channel.force(true)
                     }
                 } ?: return AudioTagWriteResult.Failure(
                     "Impossible d'ouvrir le fichier audio en ecriture"
@@ -239,6 +244,13 @@ object AudioTagWriter {
                     MediaScannerConnection.scanFile(
                         context,
                         arrayOf(updatedPath),
+                        null,
+                        null
+                    )
+                } else {
+                    MediaScannerConnection.scanFile(
+                        context,
+                        arrayOf(contentUri.toString()),
                         null,
                         null
                     )
@@ -287,9 +299,12 @@ object AudioTagWriter {
 
         if (!coverPath.isNullOrBlank()) {
             val coverFile = File(coverPath)
-            if (coverFile.exists()) {
+
+            if (coverFile.exists() && coverFile.length() > 0L) {
                 val artwork = ArtworkFactory.createArtworkFromFile(coverFile)
                 tag.setField(artwork)
+            } else {
+                Log.w(TAG, "Image introuvable ou vide : $coverPath")
             }
         }
 
