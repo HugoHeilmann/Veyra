@@ -88,9 +88,11 @@ object MusicHolder {
     fun setCurrentMusic(
         context: Context,
         music: Music,
+        contextName: String,
         contextList: List<Music>? = null,
-        keepOrder: Boolean = false
+        keepOrder: Boolean = false,
     ) {
+        setContextName(contextName)
         currentMusic = music
 
         val newOriginal = when {
