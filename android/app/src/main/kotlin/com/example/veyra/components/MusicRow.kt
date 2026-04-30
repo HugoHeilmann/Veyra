@@ -51,17 +51,15 @@ fun MusicRow(
     onClick: () -> Unit,
     onEditClick: (Music) -> Unit
 ) {
-    val context = LocalContext.current
+    val imageData = music.coverPath ?: R.drawable.default_album_cover
 
-    val usable = MetadataManager.getByPath(context, music.uri)
-    val musicToUse = usable?.toMusic() ?: music
     val isNext by remember {
         derivedStateOf {
             MusicHolder.isNext(music)
         }
     }
 
-    val isCurrent = MusicHolder.getCurrent()?.uri == musicToUse.uri
+    val isCurrent = MusicHolder.getCurrent()?.uri == music.uri
     var showQueuePopup by remember { mutableStateOf(false) }
 
     LaunchedEffect(showQueuePopup) {
@@ -140,7 +138,7 @@ fun MusicRow(
                     .padding(end = 8.dp)
             ) {
                 Text(
-                    text = musicToUse.name,
+                    text = music.name,
                     color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = SemiBold,
@@ -148,7 +146,7 @@ fun MusicRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = musicToUse.artist ?: "Unknown",
+                    text = music.artist ?: "Unknown",
                     color = Color.Gray,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = SemiBold,
@@ -156,7 +154,7 @@ fun MusicRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = musicToUse.album ?: "Unknown album",
+                    text = music.album ?: "Unknown album",
                     color = Color.Gray,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = SemiBold,
@@ -202,11 +200,11 @@ fun MusicRow(
 
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(musicToUse.coverPath ?: musicToUse.image)
+                    .data(imageData)
                     .size(Size.ORIGINAL)
                     .crossfade(true)
-                    .error(musicToUse.image)
-                    .fallback(musicToUse.image)
+                    .error(music.image)
+                    .fallback(music.image)
                     .build(),
                 contentDescription = "Music cover",
                 modifier = Modifier
