@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,7 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -39,9 +40,6 @@ import coil.size.Size
 import com.example.veyra.R
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
-import com.example.veyra.model.data.QueueManager
-import com.example.veyra.model.metadata.MetadataManager
-import com.example.veyra.model.metadata.toMusic
 import kotlinx.coroutines.delay
 
 @Composable
@@ -80,15 +78,16 @@ fun MusicRow(
         label = "waveProgress"
     )
 
-    val baseColor = Color(0xFF1A1A1A)
+    val baseColor = MaterialTheme.colorScheme.surface
     val accent = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
 
-    Card(
-        shape = RoundedCornerShape(12.dp),
+    ElevatedCard(
         modifier = Modifier
-            .shadow(2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.background
         )
     ) {
         Row(
@@ -147,7 +146,7 @@ fun MusicRow(
                 )
                 Text(
                     text = music.artist ?: "Unknown",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = SemiBold,
                     maxLines = 1,
@@ -155,7 +154,7 @@ fun MusicRow(
                 )
                 Text(
                     text = music.album ?: "Unknown album",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = SemiBold,
                     maxLines = 1,

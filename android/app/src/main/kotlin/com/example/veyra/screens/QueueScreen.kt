@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -102,10 +101,11 @@ fun QueueScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (currentMusic != null) {
-                    Surface(
+                    ElevatedCard(
                         shape = MaterialTheme.shapes.large,
-                        tonalElevation = 2.dp,
-                        color = Color(0xFF1A1A1A),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -121,7 +121,6 @@ fun QueueScreen(
                             QueueItemRow(
                                 music = currentMusic,
                                 isCurrent = true,
-                                isDragging = false,
                                 dragOffset = 0f,
                                 enabled = false,
                                 onClick = {
@@ -132,10 +131,11 @@ fun QueueScreen(
                     }
                 }
 
-                Surface(
+                ElevatedCard(
                     shape = MaterialTheme.shapes.large,
-                    tonalElevation = 2.dp,
-                    color = Color(0xFF1A1A1A),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
@@ -143,7 +143,7 @@ fun QueueScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(vertical = 8.dp)
+                            .padding(vertical = 8.dp),
                     ) {
                         Row(
                             modifier = Modifier
@@ -153,7 +153,8 @@ fun QueueScreen(
                         ) {
                             Text(
                                 text = MusicHolder.contextListName.ifBlank { "Liste de lecture" },
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -180,7 +181,6 @@ fun QueueScreen(
                                 QueueItemRow(
                                     music = music,
                                     isCurrent = false,
-                                    isDragging = false,
                                     dragOffset = 0f,
                                     onClick = {
                                         MusicHolder.playMusic(context, music)

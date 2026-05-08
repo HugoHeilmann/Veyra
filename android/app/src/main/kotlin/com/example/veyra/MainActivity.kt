@@ -80,8 +80,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeVm: ThemeViewModel = viewModel()
             val primaryColor = themeVm.primaryColor.collectAsState().value
+            val isDarkTheme = themeVm.isDarkTheme.collectAsState().value
 
-            VeyraTheme(primaryColor = primaryColor) {
+            VeyraTheme(
+                primaryColor = primaryColor,
+                isDarkTheme = isDarkTheme
+            ) {
                 VeyraApp()
             }
         }
@@ -162,7 +166,11 @@ fun VeyraApp() {
                         onColorSelected = { color ->
                             themeVm.setPrimaryColor(color)
                         },
-                        selectedTab)
+                        onThemeSelected = { isDarkTheme ->
+                            themeVm.setTheme(isDarkTheme)
+                        },
+                        selectedTab
+                    )
                 }
                 composable("editMusic/{uri}") { backStackEntry ->
                     val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""

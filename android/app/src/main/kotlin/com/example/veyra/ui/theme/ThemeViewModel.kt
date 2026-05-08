@@ -21,9 +21,24 @@ class ThemeViewModel(app: Application) : AndroidViewModel(app) {
                 initialValue = Color(0xFF00FF00)
             )
 
+    val isDarkTheme: StateFlow<Boolean> =
+        prefs.isDarkTheme
+            .map { it }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = true
+            )
+
     fun setPrimaryColor(color: Color) {
         viewModelScope.launch {
             prefs.setPrimaryColorArgb(color.toArgb())
+        }
+    }
+
+    fun setTheme(isDarkTheme: Boolean) {
+        viewModelScope.launch {
+            prefs.setTheme(isDarkTheme)
         }
     }
 }

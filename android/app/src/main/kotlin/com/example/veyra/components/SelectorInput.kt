@@ -64,16 +64,19 @@ fun SelectorInput(
                 onDismissRequest = { expanded = false },
                 properties = PopupProperties(focusable = true)
             ) {
-                Card(
+                Surface(
+                    color = MaterialTheme.colorScheme.background,
+                    shape = MaterialTheme.shapes.medium,
+                    tonalElevation = 6.dp,
+                    shadowElevation = 6.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 300.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.DarkGray)
+                        .heightIn(max = 260.dp),
                 ) {
                     if (filteredList.isEmpty()) {
                         Text(
                             "Aucun résultat",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(12.dp)
                         )
                     } else {
@@ -81,7 +84,7 @@ fun SelectorInput(
                             items(filteredList) { item ->
                                 Text(
                                     text = item,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(12.dp)

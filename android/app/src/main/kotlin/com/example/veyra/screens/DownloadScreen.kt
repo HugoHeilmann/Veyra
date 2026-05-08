@@ -415,7 +415,7 @@ fun DownloadScreen(
                             Text("Non, arrêter")
                         }
                     },
-                    containerColor = Color(0xFF2C2C2C)
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             }
 
@@ -451,7 +451,7 @@ fun DownloadScreen(
                             Text("Non, continuer")
                         }
                     },
-                    containerColor = Color(0xFF2C2C2C)
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             }
         }

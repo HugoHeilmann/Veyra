@@ -97,14 +97,18 @@ fun <T> AlphabeticalListWithFastScroller(
     }
 
     Box(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
             // --- Liste ---
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
-                userScrollEnabled = !isDragging // évite les conflits pendant le drag
+                userScrollEnabled = !isDragging,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 sections.forEachIndexed { _, section ->
                     item(

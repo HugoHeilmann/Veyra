@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,6 +26,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.example.veyra.R
 
 @Composable
@@ -61,7 +65,7 @@ fun BlandMusicRow(
                 }
             },
             dismissButton = {
-                TextButton(
+                Button(
                     onClick = {
                         showDeleteDialog = false
                     }
@@ -69,17 +73,17 @@ fun BlandMusicRow(
                     Text("Annuler")
                 }
             },
-            containerColor = Color(0xFF1A1A1A)
+            containerColor = MaterialTheme.colorScheme.background
         )
     }
 
-    Card(
+    ElevatedCard(
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
-            .shadow(2.dp)
+            .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1A1A1A)
+            containerColor = MaterialTheme.colorScheme.background
         )
     ) {
         Row(
@@ -95,7 +99,7 @@ fun BlandMusicRow(
             ) {
                 Text(
                     text = text,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = undertext,

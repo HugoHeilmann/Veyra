@@ -37,7 +37,7 @@ fun ArtistSelectorInput(
 
     onRefCreated: ((() -> Unit) -> Unit)? = null
 ) {
-    val dialogBg = Color(0xFF2C2C2C)
+    val dialogBg = MaterialTheme.colorScheme.background
 
     var artistText by remember { mutableStateOf(initialArtist) }
     var artistExpanded by remember { mutableStateOf(false) }
@@ -117,7 +117,7 @@ fun ArtistSelectorInput(
                         if (listToShow.isEmpty()) {
                             Text(
                                 "Aucun résultat",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(12.dp)
                             )
                         } else {
@@ -125,7 +125,7 @@ fun ArtistSelectorInput(
                                 items(listToShow) { item ->
                                     Text(
                                         text = item,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onBackground,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(12.dp)
@@ -203,14 +203,14 @@ fun ArtistSelectorInput(
                     Text(
                         text = "Feats",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onBackground
                     )
 
                     IconButton(onClick = { featsDialogOpen = false }) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Fermer",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 }
@@ -221,7 +221,7 @@ fun ArtistSelectorInput(
                     if (feats.isEmpty()) {
                         Text(
                             "Aucun feat",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier.padding(vertical = 6.dp)
                         )
                     } else {
@@ -250,7 +250,7 @@ fun ArtistSelectorInput(
 
                     Text(
                         "Ajouter un feat",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.labelLarge
                     )
                     Spacer(Modifier.height(6.dp))
@@ -292,7 +292,7 @@ private fun FeatRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = feat, color = Color.White)
+        Text(text = feat, color = MaterialTheme.colorScheme.onBackground)
         Text(
             text = "Supprimer",
             color = Color(0xFFCCCCCC),
@@ -348,10 +348,23 @@ private fun FeatAddSelectorWithButton(
                     if (text.isEmpty() && placeholder.isNotEmpty()) Text(placeholder)
                 },
                 trailingIcon = {
-                    IconButton(enabled = enabled, onClick = { expanded = !expanded }) {
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Ouvrir la liste")
+                    IconButton(
+                        enabled = enabled,
+                        onClick = { expanded = !expanded }
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowDropDown,
+                            contentDescription = "Ouvrir la liste",
+                        )
                     }
-                }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    cursorColor = MaterialTheme.colorScheme.primary
+                )
             )
 
             if (expanded) {
@@ -371,7 +384,7 @@ private fun FeatAddSelectorWithButton(
                         if (filtered.isEmpty()) {
                             Text(
                                 "Aucun résultat",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(12.dp)
                             )
                         } else {
@@ -379,7 +392,7 @@ private fun FeatAddSelectorWithButton(
                                 items(filtered) { item ->
                                     Text(
                                         text = item,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onBackground,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(12.dp)
@@ -405,7 +418,7 @@ private fun FeatAddSelectorWithButton(
                 contentDescription = "Ajouter le feat",
                 tint = if (enabled && text.trim().isNotEmpty())
                     MaterialTheme.colorScheme.primary
-                else Color(0x88FFFFFF)
+                else Color.Transparent
             )
         }
     }

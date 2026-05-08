@@ -240,7 +240,7 @@ fun PlaylistsScreen(navController: NavController) {
                             Text("Annuler", color = Color.Red)
                         }
                     },
-                    containerColor = Color(0xFF2C2C2C)
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             }
 

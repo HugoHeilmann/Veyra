@@ -41,7 +41,7 @@ fun PlaylistItem(
             .clickable { onClick() },
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.elevatedCardColors(
-            containerColor = Color(0xFF1A1A1A)
+            containerColor = MaterialTheme.colorScheme.background
         )
     ) {
         Row(

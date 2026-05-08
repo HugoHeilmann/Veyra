@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +22,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.veyra.ui.theme.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,45 +31,58 @@ fun FullColorPickerDialog(
     show: Boolean,
     onDismiss: () -> Unit,
     initialColor: Color = MaterialTheme.colorScheme.primary,
-    onConfirm: (Color) -> Unit
+    onConfirm: (Color, Boolean) -> Unit
 ) {
     if (!show) return
 
+    val themeVm: ThemeViewModel = viewModel()
+
+    var isDarkTheme by remember { mutableStateOf(themeVm.isDarkTheme.value) }
+
     var pickerSize by remember { mutableStateOf(IntSize(1, 1)) }
+    var hueBarSize by remember { mutableStateOf(IntSize(1, 1)) }
+
     var cursor by remember { mutableStateOf(Offset.Zero) }
+    var hueCursorX by remember { mutableFloatStateOf(0f) }
+
+    var hue by remember { mutableFloatStateOf(0f) }
     var didInitCursor by remember(show) { mutableStateOf(false) }
 
-    // Couleur actuelle depuis la position du curseur
-    val currentColor by remember(cursor, pickerSize) {
+    val currentColor by remember(cursor, pickerSize, hue) {
         derivedStateOf {
             val w = pickerSize.width.toFloat().coerceAtLeast(1f)
             val h = pickerSize.height.toFloat().coerceAtLeast(1f)
 
-            val x = (cursor.x / w).coerceIn(0f, 1f)
-            val y = (cursor.y / h).coerceIn(0f, 1f)
+            val saturation = (cursor.x / w).coerceIn(0f, 1f)
+            val value = (1f - cursor.y / h).coerceIn(0f, 1f)
 
-            val hue = x * 360f
-            val sat = 1f
-            val value = 1f - y // haut = lumineux, bas = noir
-
-            Color.hsv(hue, sat, value)
+            Color.hsv(hue, saturation, value)
         }
     }
 
-    // Init curseur DYNAMIQUE (en fonction de initialColor) dès qu'on connaît la taille
-    LaunchedEffect(show, pickerSize, initialColor) {
+    LaunchedEffect(show, pickerSize, hueBarSize, initialColor) {
         if (!show) return@LaunchedEffect
         if (pickerSize.width <= 1 || pickerSize.height <= 1) return@LaunchedEffect
+        if (hueBarSize.width <= 1) return@LaunchedEffect
         if (didInitCursor) return@LaunchedEffect
 
         val hsv = initialColor.toHsv()
-        val xNorm = (hsv[0] / 360f).coerceIn(0f, 1f)
-        val yNorm = (1f - hsv[2]).coerceIn(0f, 1f)
 
-        val x = xNorm * pickerSize.width.toFloat()
-        val y = yNorm * pickerSize.height.toFloat()
+        hue = hsv[0]
 
-        cursor = clampOffset(Offset(x, y), pickerSize)
+        val saturation = hsv[1].coerceIn(0f, 1f)
+        val value = hsv[2].coerceIn(0f, 1f)
+
+        cursor = clampOffset(
+            Offset(
+                x = saturation * pickerSize.width.toFloat(),
+                y = (1f - value) * pickerSize.height.toFloat()
+            ),
+            pickerSize
+        )
+
+        hueCursorX = (hue / 360f).coerceIn(0f, 1f) * hueBarSize.width.toFloat()
+
         didInitCursor = true
     }
 
@@ -76,11 +92,11 @@ fun FullColorPickerDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
-                // Carré de sélection : TAP + DRAG
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
+                        .clip(RoundedCornerShape(12.dp))
                         .onSizeChanged { pickerSize = it }
                         .pointerInput(pickerSize) {
                             detectTapGestures { offset ->
@@ -99,31 +115,22 @@ fun FullColorPickerDialog(
                         }
                 ) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
-                        // 1) Teinte horizontale
-                        val hueBrush = Brush.horizontalGradient(
-                            listOf(
-                                Color.Red,
-                                Color.Yellow,
-                                Color.Green,
-                                Color.Cyan,
-                                Color.Blue,
-                                Color.Magenta,
-                                Color.Red
+                        drawRect(Color.hsv(hue, 1f, 1f))
+
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(Color.White, Color.Transparent)
                             )
                         )
-                        drawRect(brush = hueBrush)
 
-                        // 2) Luminosité verticale vers noir
-                        val valueBrush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black)
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black)
+                            )
                         )
-                        drawRect(brush = valueBrush)
 
-                        // Curseur
-                        val w = size.width.coerceAtLeast(1f)
-                        val h = size.height.coerceAtLeast(1f)
-                        val cx = cursor.x.coerceIn(0f, w)
-                        val cy = cursor.y.coerceIn(0f, h)
+                        val cx = cursor.x.coerceIn(0f, size.width)
+                        val cy = cursor.y.coerceIn(0f, size.height)
 
                         drawCircle(
                             color = Color.White,
@@ -131,6 +138,7 @@ fun FullColorPickerDialog(
                             center = Offset(cx, cy),
                             style = Stroke(width = 3.dp.toPx())
                         )
+
                         drawCircle(
                             color = Color.Black,
                             radius = 10.dp.toPx(),
@@ -139,11 +147,9 @@ fun FullColorPickerDialog(
                         )
                     }
 
-                    // Bord léger
                     Box(
                         modifier = Modifier
                             .matchParentSize()
-                            .clip(RoundedCornerShape(12.dp))
                             .border(
                                 1.dp,
                                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
@@ -152,10 +158,69 @@ fun FullColorPickerDialog(
                     )
                 }
 
-                // Preview + HEX
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                        .clip(RoundedCornerShape(50))
+                        .onSizeChanged { hueBarSize = it }
+                        .pointerInput(hueBarSize) {
+                            detectTapGestures { offset ->
+                                val w = hueBarSize.width.toFloat().coerceAtLeast(1f)
+                                hueCursorX = offset.x.coerceIn(0f, w)
+                                hue = (hueCursorX / w) * 360f
+                            }
+                        }
+                        .pointerInput(hueBarSize) {
+                            detectDragGestures(
+                                onDragStart = { offset ->
+                                    val w = hueBarSize.width.toFloat().coerceAtLeast(1f)
+                                    hueCursorX = offset.x.coerceIn(0f, w)
+                                    hue = (hueCursorX / w) * 360f
+                                },
+                                onDrag = { change, _ ->
+                                    val w = hueBarSize.width.toFloat().coerceAtLeast(1f)
+                                    hueCursorX = change.position.x.coerceIn(0f, w)
+                                    hue = (hueCursorX / w) * 360f
+                                }
+                            )
+                        }
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawRect(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Red,
+                                    Color.Yellow,
+                                    Color.Green,
+                                    Color.Cyan,
+                                    Color.Blue,
+                                    Color.Magenta,
+                                    Color.Red
+                                )
+                            )
+                        )
+
+                        val cx = hueCursorX.coerceIn(0f, size.width)
+
+                        drawCircle(
+                            color = Color.White,
+                            radius = 9.dp.toPx(),
+                            center = Offset(cx, size.height / 2f),
+                            style = Stroke(width = 3.dp.toPx())
+                        )
+
+                        drawCircle(
+                            color = Color.Black,
+                            radius = 9.dp.toPx(),
+                            center = Offset(cx, size.height / 2f),
+                            style = Stroke(width = 1.dp.toPx())
+                        )
+                    }
+                }
+
                 val hex = remember(currentColor) {
-                    val argb = currentColor.toArgb()
-                    String.format("#%08X", argb)
+                    String.format("#%08X", currentColor.toArgb())
                 }
 
                 Row(
@@ -166,14 +231,38 @@ fun FullColorPickerDialog(
                         modifier = Modifier
                             .size(28.dp)
                             .background(currentColor, RoundedCornerShape(8.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                            .border(
+                                1.dp,
+                                Color.White.copy(alpha = 0.2f),
+                                RoundedCornerShape(8.dp)
+                            )
                     )
-                    Text(text = hex, style = MaterialTheme.typography.bodyMedium)
+
+                    Text(
+                        text = hex,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (isDarkTheme) "Thème sombre" else "Thème clair",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Switch(
+                        checked = isDarkTheme,
+                        onCheckedChange = { isDarkTheme = it }
+                    )
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(currentColor) }) {
+            TextButton(onClick = { onConfirm(currentColor, isDarkTheme) }) {
                 Text("OK")
             }
         },
@@ -182,7 +271,7 @@ fun FullColorPickerDialog(
                 Text("Annuler")
             }
         },
-        containerColor = Color(0xFF1A1A1A)
+        containerColor = MaterialTheme.colorScheme.background
     )
 }
 

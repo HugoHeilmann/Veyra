@@ -55,7 +55,7 @@ fun PlaylistSelector(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 250.dp)
-                .background(Color(0xFF2C2C2C))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             playlists.forEach { name ->
                 val isChecked = selectedPlaylists.contains(name)

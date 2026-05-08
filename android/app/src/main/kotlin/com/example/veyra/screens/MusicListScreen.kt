@@ -56,6 +56,7 @@ import java.util.Locale
 fun MusicListScreen(
     navController: NavHostController,
     onColorSelected: (Color) -> Unit,
+    onThemeSelected: (Boolean) -> Unit,
     defaultTab: String = "Chansons"
 ) {
     val context = LocalContext.current
@@ -395,8 +396,9 @@ fun MusicListScreen(
                 FullColorPickerDialog(
                     show = showColorDialog && !isBulkDeleting,
                     onDismiss = { showColorDialog = false },
-                    onConfirm = { color ->
+                    onConfirm = { color, isDarkTheme ->
                         onColorSelected(color)
+                        onThemeSelected(isDarkTheme)
                         showColorDialog = false
                     }
                 )
