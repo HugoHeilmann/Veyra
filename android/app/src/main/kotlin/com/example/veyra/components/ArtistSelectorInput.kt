@@ -39,6 +39,7 @@ fun ArtistSelectorInput(
 
     onRefCreated: ((() -> Unit) -> Unit)? = null
 ) {
+    val disabledColor = Color(0x88FFFFFF)
     val dialogBg = Color(0xFF2C2C2C)
 
     var artistText by remember { mutableStateOf(initialArtist) }
@@ -160,7 +161,8 @@ fun ArtistSelectorInput(
                 Icon(
                     imageVector = Icons.Default.Group,
                     contentDescription = if (featsDialogOpen) "Fermer les feats" else "Gérer les feats",
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = if (enabled) MaterialTheme.colorScheme.primary
+                    else disabledColor
                 )
             }
 
@@ -317,6 +319,8 @@ private fun FeatAddSelectorWithButton(
     currentFeats: List<String>,
     onAddFeat: (String) -> Unit
 ) {
+    val disabledColor = Color(0x88FFFFFF)
+
     var text by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
 
@@ -413,7 +417,7 @@ private fun FeatAddSelectorWithButton(
                 contentDescription = "Ajouter le feat",
                 tint = if (enabled && text.trim().isNotEmpty())
                     MaterialTheme.colorScheme.primary
-                else Color(0x88FFFFFF)
+                else disabledColor
             )
         }
     }
