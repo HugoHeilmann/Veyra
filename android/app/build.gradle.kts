@@ -76,7 +76,7 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.48")
 
     // NewPipe / extraction
-    implementation("com.github.teamnewpipe:newpipeextractor:v0.25.1")
+    implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.25.2")
 
     // FFmpeg kit (local AAR + exceptions)
     implementation(files("libs/ffmpeg-kit.aar"))

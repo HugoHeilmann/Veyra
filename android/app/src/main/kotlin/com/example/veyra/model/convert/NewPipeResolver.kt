@@ -41,23 +41,41 @@ object NewPipeResolver {
         ensureInit()
 
         val normalized = normalizeYoutubeUrl(url)
+
         try {
-            // v0.25.1 : API directe
             val service = NewPipe.getServiceByUrl(normalized)
             val info = StreamInfo.getInfo(service, normalized)
+
+            Log.d(TAG, "Title=${info.name}")
+            Log.d(TAG, "audioStreams=${info.audioStreams.size}")
+            Log.d(TAG, "videoStreams=${info.videoStreams.size}")
+            Log.d(TAG, "videoOnlyStreams=${info.videoOnlyStreams.size}")
 
             val bestAudio = info.audioStreams
                 .filter { !it.url.isNullOrBlank() }
                 .maxByOrNull { it.bitrate }
 
-            val audioUrl = bestAudio?.url
-            if (audioUrl.isNullOrBlank()) {
-                Log.e(TAG, "No audio stream found for url=$normalized")
+            val fallbackVideoWithAudio = info.videoStreams
+                .filter { !it.url.isNullOrBlank()}
+                .filter { !it.isVideoOnly }
+                .maxByOrNull { it.bitrate }
+
+            val streamUrl = bestAudio?.url ?: fallbackVideoWithAudio?.url
+
+            if (streamUrl.isNullOrBlank()) {
+                Log.e(
+                    TAG,
+                    "No usable stream found for url=$normalized " +
+                            "audio=${info.audioStreams.size}, " +
+                            "video=${info.videoStreams.size}, " +
+                            "videoOnly=${info.videoOnlyStreams.size}"
+                )
+
                 return@withContext null
             }
 
             Resolved(
-                audioUrl = audioUrl,
+                audioUrl = streamUrl,
                 title = info.name ?: "Unknown title"
             )
         } catch (e: Exception) {
