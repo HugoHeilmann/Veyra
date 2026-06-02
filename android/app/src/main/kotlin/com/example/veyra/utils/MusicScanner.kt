@@ -2,6 +2,8 @@ package com.example.veyra.utils
 
 import android.content.Context
 import android.media.MediaMetadataRetriever
+import android.media.MediaScannerConnection
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import com.example.veyra.R
@@ -27,6 +29,26 @@ private val SUPPORTED_EXTENSIONS = listOf(
     ".m4a",
     ".opus"
 )
+
+fun scanMusicFolder(context: Context) {
+    val musicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath)
+
+    if (musicDir.exists()) {
+        musicDir.listFiles()?.forEach { file ->
+            if (file.extension.equals("mp3", ignoreCase = true)) {
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(file.absolutePath),
+                    arrayOf("audio/mpeg")
+                ) { path, uri ->
+                    Log.d("Scan", "Fichier scanné : $path -> $uri")
+                }
+            }
+        }
+    } else {
+        Log.d("Scan", "Dossier /Music/ introuvable")
+    }
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope {
@@ -99,11 +121,21 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
             val deferredList = rows.map { row ->
                 async(workerDispatcher) {
                     val data = row.path
+
                     val filename = data.substringAfterLast("/").substringBeforeLast(".")
 
                     val existingMetadata = MetadataManager.getByPath(context, data)
-                    val embeddedCoverPath = extractEmbeddedCoverToCache(context, data)
-                    val coverPath = embeddedCoverPath ?: existingMetadata?.coverPath
+
+                    val file = File(data)
+                    val fileLastModified = file.lastModified()
+
+                    val hasChanged = existingMetadata?.lastModified != fileLastModified
+
+                    val coverPath = if (hasChanged) {
+                        extractEmbeddedCoverToCache(context, data) ?: existingMetadata?.coverPath
+                    } else {
+                        existingMetadata.coverPath
+                    }
 
                     val title = row.rawTitle
                         ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
@@ -126,17 +158,8 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
                         artist = artist,
                         album = album,
                         filePath = data,
-                        coverPath = coverPath
-                    )
-
-                    MetadataManager.addIfNotExists(context, metadata)
-                    MetadataManager.updateMetadata(
-                        context = context,
-                        filePath = data,
-                        title = title,
-                        artist = artist,
-                        album = album,
-                        coverPath = coverPath
+                        coverPath = coverPath,
+                        lastModified = fileLastModified
                     )
 
                     Music(
@@ -150,7 +173,11 @@ suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope 
                 }
             }
 
-            deferredList.awaitAll()
+            val musics = deferredList.awaitAll()
+
+            MetadataManager.rebuildFromMusics(context, musics)
+
+            musics
         }
     }
 }

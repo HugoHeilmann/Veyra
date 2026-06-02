@@ -34,6 +34,7 @@ import com.example.veyra.utils.BulkTagEditRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,7 +129,8 @@ fun EditArtistOrAlbumScreen(
                         title = request.title,
                         artist = request.artist,
                         album = request.album,
-                        coverPath = request.coverPath
+                        coverPath = request.coverPath,
+                        lastModified = File(newPath).lastModified()
                     )
 
                     MusicHolder.updateMusic(

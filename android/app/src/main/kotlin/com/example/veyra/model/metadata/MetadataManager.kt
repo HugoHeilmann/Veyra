@@ -1,6 +1,7 @@
 package com.example.veyra.model.metadata
 
 import android.content.Context
+import com.example.veyra.model.Music
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
@@ -88,13 +89,33 @@ object MetadataManager {
         }
     }
 
+    fun rebuildFromMusics(context: Context, musics: List<Music>) {
+        val existingByPath = readAll(context).associateBy { stableKey(it.filePath) }
+
+        val metadataList = musics.map { music ->
+            val existing = existingByPath[stableKey(music.uri)]
+
+            MusicMetadata(
+                fileName = File(music.uri).name,
+                title = music.name,
+                artist = music.artist ?: existing?.artist ?: "Unknown Artist",
+                album = music.album ?: existing?.album ?: "Unknown Album",
+                filePath = music.uri,
+                coverPath = music.coverPath ?: existing?.coverPath
+            )
+        }
+
+        writeAll(context, metadataList)
+    }
+
     fun updateMetadata(
         context: Context,
         filePath: String?,
         title: String,
         artist: String,
         album: String,
-        coverPath: String? = null
+        coverPath: String? = null,
+        lastModified: Long? = null
     ) {
         val key = stableKey(filePath) ?: return
 
@@ -108,7 +129,8 @@ object MetadataManager {
                 title = title,
                 artist = artist,
                 album = album,
-                coverPath = coverPath ?: existing.coverPath
+                coverPath = coverPath ?: existing.coverPath,
+                lastModified = lastModified ?: existing.lastModified
             )
             writeAll(context, list)
         }

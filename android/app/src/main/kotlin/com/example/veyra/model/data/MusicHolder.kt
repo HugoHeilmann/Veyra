@@ -1,13 +1,17 @@
 package com.example.veyra.model.data
 
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.net.toUri
 import com.example.veyra.model.Music
+import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.PlaylistManager
+import java.io.File
 
 object MusicHolder {
     var currentMusic by mutableStateOf<Music?>(null)
@@ -85,6 +89,26 @@ object MusicHolder {
         playMusic(context, music)
     }
 
+    fun removeMusic(music: Music) {
+        setMusicList(musicList.filter { it.uri != music.uri })
+    }
+
+    fun musicExists(context: Context, music: Music): Boolean {
+        return try {
+            if (music.uri.startsWith("content://")) {
+                context.contentResolver
+                    .openInputStream(music.uri.toUri())
+                    ?.use {}
+
+                true
+            } else {
+                File(music.uri).exists()
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     fun setCurrentMusic(
         context: Context,
         music: Music,
@@ -92,6 +116,18 @@ object MusicHolder {
         contextList: List<Music>? = null,
         keepOrder: Boolean = false,
     ) {
+        if (!musicExists(context, music)) {
+            removeMusic(music)
+
+            Toast.makeText(
+                context,
+                "Cette musique n'existe plus",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
         setContextName(contextName)
         currentMusic = music
 

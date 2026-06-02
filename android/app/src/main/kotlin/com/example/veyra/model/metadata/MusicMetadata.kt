@@ -9,7 +9,8 @@ data class MusicMetadata(
     var artist: String,                                  // artiste (modifiable en local)
     var album: String,                                   // album (modifiable en local)
     val filePath: String,                                // chemin complet pour le MediaPlayer
-    var coverPath: String? = null
+    var coverPath: String? = null,
+    val lastModified: Long = 0L
 )
 
 fun MusicMetadata.toMusic(): Music {
