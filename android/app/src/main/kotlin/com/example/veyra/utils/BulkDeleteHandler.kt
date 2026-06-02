@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class BulkDeleteHandlerState(
     val isProcessing: Boolean,
@@ -71,7 +72,8 @@ fun rememberBulkDeleteHandler(
                         title = request.title,
                         artist = request.artist,
                         album = request.album,
-                        coverPath = request.coverPath
+                        coverPath = request.coverPath,
+                        lastModified = File(newPath).lastModified()
                     )
 
                     MusicHolder.applyBulkLocalUpdate(

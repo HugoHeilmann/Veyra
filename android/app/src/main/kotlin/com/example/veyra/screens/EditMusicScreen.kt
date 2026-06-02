@@ -116,7 +116,8 @@ fun EditMusicScreen(
             title = finalTitle,
             artist = finalArtist,
             album = finalAlbum,
-            coverPath = finalCoverPath
+            coverPath = finalCoverPath,
+            lastModified = File(newPath).lastModified()
         )
 
         music.uri = newPath

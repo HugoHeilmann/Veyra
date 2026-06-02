@@ -9,20 +9,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +25,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.veyra.components.BottomNavigationBar
-import com.example.veyra.components.animations.CustomLoader
 import com.example.veyra.components.MiniPlayerBar
 import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.data.MediaSessionManager
@@ -244,28 +237,11 @@ fun VeyraApp() {
                         onDownloadedMusicEditClick = { music ->
                             val encodedUri = java.net.URLEncoder.encode(
                                 music.uri,
-                                java.nio.charset.StandardCharsets.UTF_8.toString()
+                                StandardCharsets.UTF_8.toString()
                             )
                             navController.navigate("editMusic/$encodedUri")
                         }
                     )
-                }
-            }
-
-            if (!appUiVm.isBottomBarEnabled) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.30f))
-                        .clickable(enabled = false) {},
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CustomLoader(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(128.dp)
-                        )
-                    }
                 }
             }
         }

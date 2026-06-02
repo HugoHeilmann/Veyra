@@ -1,10 +1,6 @@
 package com.example.veyra.screens
 
-import android.content.Context
-import android.media.MediaScannerConnection
 import android.net.Uri
-import android.os.Environment
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
@@ -33,19 +29,13 @@ import com.example.veyra.components.FullColorPickerDialog
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.PlayerButton
+import com.example.veyra.components.animations.CustomLoader
 import com.example.veyra.components.animations.WaveBars
-import com.example.veyra.model.Music
 import com.example.veyra.model.Section
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
-import com.example.veyra.utils.loadMusicFromDevice
 import com.example.veyra.utils.rememberBulkDeleteHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.Normalizer
@@ -62,9 +52,11 @@ fun MusicListScreen(
     val appUiVm: AppUIViewModel = viewModel(context as ComponentActivity)
     val scope = rememberCoroutineScope()
 
+    var isSyncingLibrary = appUiVm.isSyncingLibrary
+    var allMusic = appUiVm.displayedMusics
+
     var searchText by remember { mutableStateOf("") }
     var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
-    var allMusic by remember { mutableStateOf<List<Music>>(emptyList()) }
 
     val metadataByPath by remember(allMusic) {
         mutableStateOf(
@@ -85,29 +77,12 @@ fun MusicListScreen(
             appUiVm.updateBottomBarEnabled(!processing)
         },
         onCompleted = {
-            allMusic = MusicHolder.getMusicList().toList()
+            appUiVm.refreshDisplayedMusicsFromHolder()
         }
     )
 
     LaunchedEffect(Unit) {
-        if (MusicHolder.getMusicList().isEmpty()) {
-            allMusic = emptyList()
-            appUiVm.updateBottomBarEnabled(false)
-
-            launch(Dispatchers.IO) {
-                async { scanMusicFolder(context) }.await()
-                val musics = async { loadMusicFromDevice(context) }.await()
-
-                withContext(Dispatchers.Main) {
-                    MusicHolder.setMusicList(musics)
-                    allMusic = musics.toList()
-                    appUiVm.updateBottomBarEnabled(true)
-                }
-            }
-        } else {
-            allMusic = MusicHolder.getMusicList().toList()
-            appUiVm.updateBottomBarEnabled(true)
-        }
+        appUiVm.initializeLibrary(context)
     }
 
     val musicList by remember(allMusic, searchText) {
@@ -151,27 +126,50 @@ fun MusicListScreen(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.fillMaxWidth(),
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            WaveBars(MaterialTheme.colorScheme.primary)
+                            if (isSyncingLibrary) {
+                                Row(
+                                    modifier = Modifier.align(Alignment.CenterStart),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CustomLoader(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(32.dp)
+                                    )
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
 
-                            Text(
-                                text = "Veyra",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.clickable(enabled = !isBulkDeleting) {
-                                    showColorDialog = true
+                                    Text(
+                                        text = "Sync...",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
                                 }
-                            )
+                            }
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Row(
+                                modifier = Modifier.align(Alignment.Center),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                WaveBars(MaterialTheme.colorScheme.primary)
 
-                            WaveBars(MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(
+                                    text = "Veyra",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    modifier = Modifier.clickable(enabled = !isBulkDeleting) {
+                                        showColorDialog = true
+                                    }
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                WaveBars(MaterialTheme.colorScheme.primary)
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -402,26 +400,6 @@ fun MusicListScreen(
                 )
             }
         }
-    }
-}
-
-fun scanMusicFolder(context: Context) {
-    val musicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath)
-
-    if (musicDir.exists()) {
-        musicDir.listFiles()?.forEach { file ->
-            if (file.extension.equals("mp3", ignoreCase = true)) {
-                MediaScannerConnection.scanFile(
-                    context,
-                    arrayOf(file.absolutePath),
-                    arrayOf("audio/mpeg")
-                ) { path, uri ->
-                    Log.d("Scan", "Fichier scanné : $path -> $uri")
-                }
-            }
-        }
-    } else {
-        Log.d("Scan", "Dossier /Music/ introuvable")
     }
 }
 
