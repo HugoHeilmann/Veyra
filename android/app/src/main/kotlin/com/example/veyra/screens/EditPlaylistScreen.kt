@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.veyra.components.TopBar
+import com.example.veyra.components.form.SearchField
 import com.example.veyra.model.Music
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.PlaylistManager
@@ -246,32 +247,25 @@ fun EditPlaylistScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             // --- 🔎 Barre de recherche en "pill" ---
-            BasicTextField(
-                value = searchText,
-                onValueChange = { searchText = it },
-                singleLine = true,
-                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
-                    .padding(12.dp),
-                decorationBox = { innerTextField ->
-                    if (searchText.isEmpty()) {
-                        Text("Rechercher...", color = Color.Gray)
+                    .padding(12.dp)
+                    .padding(bottom = 0.dp)
+            ) {
+                SearchField(
+                    onValueChange = {
+                        searchText = it
                     }
-                    innerTextField()
-                }
-            )
-
-            Spacer(Modifier.height(8.dp))
+                )
+            }
 
             // Ligne filtre + compteur
             Row(
                 modifier = Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -304,7 +298,9 @@ fun EditPlaylistScreen(
 
             // --- Liste des morceaux filtrés ---
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     bottom = 80.dp // pour ne pas être caché par la bottom bar

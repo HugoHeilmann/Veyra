@@ -31,11 +31,15 @@ import com.example.veyra.components.NewArtistOrAlbum
 import com.example.veyra.components.PlayerButton
 import com.example.veyra.components.animations.CustomLoader
 import com.example.veyra.components.animations.WaveBars
+import com.example.veyra.components.form.SearchField
 import com.example.veyra.model.Section
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.toMusic
 import com.example.veyra.utils.rememberBulkDeleteHandler
+import com.example.veyra.utils.filterResults
+import com.example.veyra.utils.updateAlbumMap
+import com.example.veyra.utils.updateArtistMap
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.Normalizer
@@ -85,34 +89,16 @@ fun MusicListScreen(
         appUiVm.initializeLibrary(context)
     }
 
-    val musicList by remember(allMusic, searchText) {
-        derivedStateOf {
-            allMusic.filter {
-                it.name.contains(searchText, ignoreCase = true) ||
-                        it.artist?.contains(searchText, ignoreCase = true) == true ||
-                        it.album?.contains(searchText, ignoreCase = true) == true
-            }
-        }
+    val musicList = remember(allMusic, searchText) {
+        filterResults(allMusic, searchText)
     }
 
-    val artistMap by remember(musicList) {
-        derivedStateOf {
-            musicList
-                .filter { !it.artist.isNullOrBlank() }
-                .groupBy {
-                    it.artist!!
-                        .replace(Regex("\\s+(ft\\.?|feat\\.?|featuring)\\s+.*", RegexOption.IGNORE_CASE), "")
-                        .trim()
-                }
-        }
+    val artistMap = remember(musicList) {
+        updateArtistMap(musicList)
     }
 
-    val albumMap by remember(musicList) {
-        derivedStateOf {
-            musicList
-                .filter { !it.album.isNullOrBlank() }
-                .groupBy { it.album!! }
-        }
+    val albumMap = remember(musicList) {
+        updateAlbumMap(musicList)
     }
 
     val songsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
@@ -185,27 +171,17 @@ fun MusicListScreen(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                BasicTextField(
-                    value = searchText,
-                    onValueChange = {
-                        if (!isBulkDeleting) {
-                            searchText = it
+                Box(
+                    modifier = Modifier.padding(12.dp)
+                ) {
+                    SearchField(
+                        onValueChange = {
+                            if (!isBulkDeleting) {
+                                searchText = it
+                            }
                         }
-                    },
-                    singleLine = true,
-                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
-                        .padding(12.dp),
-                    decorationBox = { innerTextField ->
-                        if (searchText.isEmpty()) {
-                            Text("Rechercher...", color = Color.Gray)
-                        }
-                        innerTextField()
-                    }
-                )
+                    )
+                }
 
                 Row(
                     modifier = Modifier

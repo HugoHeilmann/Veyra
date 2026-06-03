@@ -22,10 +22,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.veyra.components.ArtistSelectorInput
+import com.example.veyra.components.form.ArtistSelectorInput
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.PlaylistSelector
-import com.example.veyra.components.SelectorInput
+import com.example.veyra.components.form.SelectorInput
 import com.example.veyra.components.animations.AnimatedDownloadIcon
 import com.example.veyra.model.Music
 import com.example.veyra.model.convert.DownloadHolder
