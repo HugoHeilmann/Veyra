@@ -1,4 +1,4 @@
-package com.example.veyra.components
+package com.example.veyra.components.form
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

@@ -41,6 +41,7 @@ import androidx.navigation.NavHostController
 import com.example.veyra.components.AlphabeticalListWithFastScroller
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.TopBar
+import com.example.veyra.components.form.SearchField
 import com.example.veyra.model.Music
 import com.example.veyra.model.Section
 import com.example.veyra.model.data.MusicHolder
@@ -116,23 +117,13 @@ fun PlaylistPreviewScreen(
             Spacer(Modifier.height(12.dp))
 
             // --- 🔎 Barre de recherche ---
-            BasicTextField(
-                value = searchText,
-                onValueChange = { searchText = it },
-                singleLine = true,
-                textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp)
-                    .background(MaterialTheme.colorScheme.inverseOnSurface, shape = MaterialTheme.shapes.small)
-                    .padding(12.dp),
-                decorationBox = { innerTextField ->
-                    if (searchText.isEmpty()) {
-                        Text("Rechercher...", color = Color.Gray)
-                    }
-                    innerTextField()
-                }
-            )
+            Box(
+                modifier = Modifier.padding(horizontal = 12.dp)
+            ) {
+                SearchField(
+                    onValueChange = { searchText = it }
+                )
+            }
 
             Spacer(Modifier.height(12.dp))
 
