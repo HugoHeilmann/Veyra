@@ -19,8 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,20 +43,44 @@ fun ArtistSelectorInput(
 
     var artistText by remember { mutableStateOf(initialArtist) }
     var artistExpanded by remember { mutableStateOf(false) }
+    var debouncedArtistText by remember { mutableStateOf("") }
 
     var feats by remember { mutableStateOf(initialFeats.distinct().filter { it.isNotBlank() }) }
     var featsDialogOpen by remember { mutableStateOf(false) }
 
-    val filteredArtistsForMain = remember(artistText, artists) {
+    val filteredArtistsForMain = remember(debouncedArtistText, artists) {
+        if (debouncedArtistText.length < 3) {
+            emptyList()
+        } else {
+            artists.filter {
+                it.contains(debouncedArtistText, ignoreCase = true)
+            }
+        }
+    }
+
+    LaunchedEffect(artistText, enabled) {
+        if (!enabled) return@LaunchedEffect
+
         val query = artistText.trim()
-        if (query.isEmpty()) emptyList()
-        else artists.filter { it.contains(query, ignoreCase = true) }
+
+        if (query.length < 3) {
+            artistExpanded = false
+            debouncedArtistText = ""
+            return@LaunchedEffect
+        }
+
+        artistExpanded = true
+
+        delay(250)
+
+        debouncedArtistText = query
     }
 
     LaunchedEffect(Unit) {
         onRefCreated?.invoke {
             artistText = ""
             artistExpanded = false
+            debouncedArtistText = ""
             feats = emptyList()
             featsDialogOpen = false
             onArtistChange("")
@@ -69,86 +93,69 @@ fun ArtistSelectorInput(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // ----- Champ artiste principal
         Column(modifier = Modifier.weight(1f)) {
-            OutlinedTextField(
-                value = artistText,
-                onValueChange = {
-                    artistText = it
-                    onArtistChange(it)
-                },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words
-                ),
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                placeholder = {
-                    if (artistText.isEmpty() && artistPlaceholder.isNotEmpty()) {
-                        Text(artistPlaceholder)
-                    }
-                },
-                trailingIcon = {
-                    IconButton(
-                        enabled = enabled,
-                        onClick = { artistExpanded = !artistExpanded }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Ouvrir la liste"
-                        )
-                    }
-                }
-            )
-
-            if (artistExpanded) {
-                Popup(
-                    onDismissRequest = { artistExpanded = false },
-                    properties = PopupProperties(focusable = true)
-                ) {
-                    Surface(
-                        color = dialogBg,
-                        shape = MaterialTheme.shapes.medium,
-                        tonalElevation = 6.dp,
-                        shadowElevation = 6.dp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp)
-                    ) {
-                        val listToShow =
-                            if (artistText.trim().isEmpty()) emptyList()
-                            else filteredArtistsForMain
-
-                        if (listToShow.isEmpty()) {
-                            Text(
-                                "Aucun résultat",
-                                color = Color.White,
-                                modifier = Modifier.padding(12.dp)
-                            )
-                        } else {
-                            LazyColumn {
-                                items(listToShow) { item ->
-                                    Text(
-                                        text = item,
-                                        color = Color.White,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp)
-                                            .clickable {
-                                                artistText = item
-                                                onArtistChange(item)
-                                                artistExpanded = false
-                                            }
-                                    )
-                                }
+            Box {
+                OutlinedTextField(
+                    value = artistText,
+                    onValueChange = {
+                        artistText = it
+                        onArtistChange(it)
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words
+                    ),
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = {
+                        if (artistText.isEmpty() && artistPlaceholder.isNotEmpty()) {
+                            Text(artistPlaceholder)
+                        }
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            enabled = enabled,
+                            onClick = {
+                                artistExpanded = !artistExpanded
                             }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Ouvrir la liste"
+                            )
+                        }
+                    }
+                )
+
+                DropdownMenu(
+                    expanded = artistExpanded,
+                    onDismissRequest = { artistExpanded = false },
+                    properties = PopupProperties(focusable = false),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                ) {
+                    if (filteredArtistsForMain.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("Aucun résultat") },
+                            onClick = {}
+                        )
+                    } else {
+                        filteredArtistsForMain.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    artistText = item
+                                    onArtistChange(item)
+                                    artistExpanded = false
+                                }
+                            )
                         }
                     }
                 }
             }
         }
 
-        // ----- Bouton Feats
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(48.dp)
@@ -160,8 +167,7 @@ fun ArtistSelectorInput(
                 Icon(
                     imageVector = Icons.Default.Group,
                     contentDescription = if (featsDialogOpen) "Fermer les feats" else "Gérer les feats",
-                    tint = if (enabled) MaterialTheme.colorScheme.primary
-                    else disabledColor
+                    tint = if (enabled) MaterialTheme.colorScheme.primary else disabledColor
                 )
             }
 
@@ -223,7 +229,6 @@ fun ArtistSelectorInput(
             },
             text = {
                 Column {
-                    // Liste feats existants
                     if (feats.isEmpty()) {
                         Text(
                             "Aucun feat",
@@ -259,6 +264,7 @@ fun ArtistSelectorInput(
                         color = Color.White,
                         style = MaterialTheme.typography.labelLarge
                     )
+
                     Spacer(Modifier.height(6.dp))
 
                     FeatAddSelectorWithButton(
@@ -322,11 +328,34 @@ private fun FeatAddSelectorWithButton(
 
     var text by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+    var debouncedText by remember { mutableStateOf("") }
 
-    val filtered = remember(text, artists) {
-        val q = text.trim()
-        if (q.isEmpty()) emptyList()
-        else artists.filter { it.contains(q, ignoreCase = true) }
+    val filtered = remember(debouncedText, artists) {
+        if (debouncedText.length < 3) {
+            emptyList()
+        } else {
+            artists.filter {
+                it.contains(debouncedText, ignoreCase = true)
+            }
+        }
+    }
+
+    LaunchedEffect(text, enabled) {
+        if (!enabled) return@LaunchedEffect
+
+        val query = text.trim()
+
+        if (query.length < 3) {
+            expanded = false
+            debouncedText = ""
+            return@LaunchedEffect
+        }
+
+        expanded = true
+
+        delay(250)
+
+        debouncedText = query
     }
 
     fun tryAddAndClear(value: String) {
@@ -338,6 +367,7 @@ private fun FeatAddSelectorWithButton(
         onAddFeat(cleaned)
         text = ""
         expanded = false
+        debouncedText = ""
     }
 
     Row(
@@ -346,61 +376,56 @@ private fun FeatAddSelectorWithButton(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                placeholder = {
-                    if (text.isEmpty() && placeholder.isNotEmpty()) Text(placeholder)
-                },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words
-                ),
-                trailingIcon = {
-                    IconButton(enabled = enabled, onClick = { expanded = !expanded }) {
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Ouvrir la liste")
-                    }
-                }
-            )
-
-            if (expanded) {
-                Popup(
-                    onDismissRequest = { expanded = false },
-                    properties = PopupProperties(focusable = true)
-                ) {
-                    Surface(
-                        color = dialogBg,
-                        shape = MaterialTheme.shapes.medium,
-                        tonalElevation = 6.dp,
-                        shadowElevation = 6.dp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 260.dp)
-                    ) {
-                        if (filtered.isEmpty()) {
-                            Text(
-                                "Aucun résultat",
-                                color = Color.White,
-                                modifier = Modifier.padding(12.dp)
+            Box {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = {
+                        if (text.isEmpty() && placeholder.isNotEmpty()) {
+                            Text(placeholder)
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words
+                    ),
+                    trailingIcon = {
+                        IconButton(
+                            enabled = enabled,
+                            onClick = { expanded = !expanded }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = "Ouvrir la liste"
                             )
-                        } else {
-                            LazyColumn {
-                                items(filtered) { item ->
-                                    Text(
-                                        text = item,
-                                        color = Color.White,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp)
-                                            .clickable {
-                                                text = item
-                                                expanded = false
-                                            }
-                                    )
+                        }
+                    }
+                )
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    properties = PopupProperties(focusable = false),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 260.dp)
+                ) {
+                    if (filtered.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("Aucun résultat") },
+                            onClick = {}
+                        )
+                    } else {
+                        filtered.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    text = item
+                                    expanded = false
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -414,9 +439,11 @@ private fun FeatAddSelectorWithButton(
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Ajouter le feat",
-                tint = if (enabled && text.trim().isNotEmpty())
+                tint = if (enabled && text.trim().isNotEmpty()) {
                     MaterialTheme.colorScheme.primary
-                else disabledColor
+                } else {
+                    disabledColor
+                }
             )
         }
     }

@@ -84,11 +84,31 @@ private fun levenshteinDistance(a: String, b: String): Int {
 fun updateArtistMap(list: List<Music>): Map<String, List<Music>> {
     return list
         .filter { !it.artist.isNullOrBlank() }
-        .groupBy {
-            it.artist!!
-                .replace(Regex("\\s+(ft\\.?|feat\\.?|featuring)\\s+.*", RegexOption.IGNORE_CASE), "")
-                .trim()
+        .flatMap { music ->
+            extractArtists(music.artist!!).map { artist ->
+                artist to music
+            }
         }
+        .groupBy(
+            keySelector = { it.first },
+            valueTransform = { it.second }
+        )
+}
+
+private fun extractArtists(artist: String): List<String> {
+    val parts = artist.split(
+        Regex("(?i)\\s+(ft\\.?|feat\\.?|featuring)\\s+")
+    )
+
+    val mainArtist = parts.first().trim()
+
+    val feats = parts
+        .drop(1)
+        .flatMap { it.split("&") }
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+
+    return listOf(mainArtist) + feats
 }
 
 fun updateAlbumMap(list: List<Music>): Map<String, List<Music>> {

@@ -214,7 +214,38 @@ object MusicHolder {
     fun getArtistList(): List<String> =
         artistMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
 
-    fun getArtistSongs(artist: String): List<Music> = artistMap[artist] ?: emptyList()
+    fun getArtistsAndFeats(): List<String> =
+        musicList
+            .mapNotNull { it.artist }
+            .flatMap { parseArtistsAndFeats(it) }
+            .distinctBy { it.lowercase() }
+            .sortedWith(String.CASE_INSENSITIVE_ORDER)
+
+    private fun parseArtistsAndFeats(artist: String): List<String> {
+        val parts = artist.split(Regex("(?i)\\s+ft\\.\\s+"))
+
+        val mainArtist = parts.getOrNull(0)?.trim()
+        val feats = parts
+            .drop(1)
+            .flatMap { it.split("&") }
+            .map { it.trim() }
+
+        return listOfNotNull(mainArtist)
+            .plus(feats)
+            .filter { it.isNotBlank() }
+    }
+
+    fun getArtistSongs(artist: String): List<Music> =
+        musicList
+            .filter { music ->
+                music.artist
+                    ?.let { parseArtistsAndFeats(it) }
+                    ?.any { parsedArtist ->
+                        parsedArtist.equals(artist.trim(), ignoreCase = true)
+                    } == true
+            }
+            .distinctBy { it.uri }
+            .sortedBy { it.name.lowercase() }
 
     fun getAlbumList(): List<String> =
         albumMap.keys.toMutableList().sortedWith(String.CASE_INSENSITIVE_ORDER)
