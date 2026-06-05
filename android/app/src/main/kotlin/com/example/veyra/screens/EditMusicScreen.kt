@@ -478,7 +478,7 @@ fun EditMusicScreen(
                     )
 
                     ArtistSelectorInput(
-                        artists = MusicHolder.getArtistList(),
+                        artists = MusicHolder.getArtistsAndFeats(),
                         enabled = !isSaving,
                         initialArtist = mainArtist,
                         initialFeats = feats.toList(),

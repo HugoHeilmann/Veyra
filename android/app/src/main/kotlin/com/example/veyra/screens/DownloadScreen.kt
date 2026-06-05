@@ -278,7 +278,7 @@ fun DownloadScreen(
                     )
 
                     ArtistSelectorInput(
-                        artists = MusicHolder.getArtistList(),
+                        artists = MusicHolder.getArtistsAndFeats(),
                         enabled = !isLoading,
                         initialArtist = artist,
                         initialFeats = feats.toList(),
