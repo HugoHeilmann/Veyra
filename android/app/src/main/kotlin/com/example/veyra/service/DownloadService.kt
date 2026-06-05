@@ -7,6 +7,7 @@ import android.os.Environment
 import android.os.IBinder
 import android.util.Log
 import com.arthenica.ffmpegkit.FFmpegKit
+import com.example.veyra.R
 import com.example.veyra.model.Music
 import com.example.veyra.model.convert.DownloadBroadcast
 import com.example.veyra.model.convert.DownloadHolder
@@ -50,6 +51,7 @@ class DownloadService : Service() {
         }
 
         val url = intent?.getStringExtra("url")
+        val coverPath = intent?.getStringExtra("coverPath")
         val title = intent?.getStringExtra("title") ?: ""
         val artist = intent?.getStringExtra("artist") ?: ""
         val album = intent?.getStringExtra("album") ?: ""
@@ -63,7 +65,7 @@ class DownloadService : Service() {
 
         scope.launch {
             try {
-                downloadAndConvert(url, title, artist, album, playlists)
+                downloadAndConvert(url, coverPath, title, artist, album, playlists)
             } catch (ce: CancellationException) {
                 Log.i(TAG, "Cancelled", ce)
             } catch (e: Exception) {
@@ -154,6 +156,7 @@ class DownloadService : Service() {
 
     private suspend fun downloadAndConvert(
         url: String,
+        coverPath: String?,
         title: String,
         artist: String,
         album: String,
@@ -232,7 +235,8 @@ class DownloadService : Service() {
                         title = finalTitle,
                         artist = finalArtist ?: "Unknown",
                         album = finalAlbum ?: "Unknown Album",
-                        filePath = outputFile.absolutePath
+                        filePath = outputFile.absolutePath,
+                        coverPath = coverPath
                     )
                 )
 
@@ -251,7 +255,9 @@ class DownloadService : Service() {
                 uri = outputFile.absolutePath,
                 name = finalTitle,
                 artist = finalArtist,
-                album = finalAlbum
+                album = finalAlbum,
+                image = if (coverPath == null) R.drawable.default_album_cover else 0,
+                coverPath = coverPath
             )
             MusicHolder.addMusic(newMusic)
 
