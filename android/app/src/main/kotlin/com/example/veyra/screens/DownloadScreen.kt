@@ -1,12 +1,19 @@
 package com.example.veyra.screens
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
@@ -22,6 +29,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
+import com.example.veyra.R
 import com.example.veyra.components.form.ArtistSelectorInput
 import com.example.veyra.components.MusicRow
 import com.example.veyra.components.PlaylistSelector
@@ -32,7 +43,13 @@ import com.example.veyra.model.convert.DownloadHolder
 import com.example.veyra.model.data.MusicHolder
 import com.example.veyra.model.metadata.PlaylistManager
 import com.example.veyra.service.DownloadService
+import com.example.veyra.utils.FileUtils
+import com.yalantis.ucrop.UCrop
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.net.URL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +82,132 @@ fun DownloadScreen(
     var pendingDownloadedTitle by remember { mutableStateOf("") }
     var pendingDownloadedArtist by remember { mutableStateOf("") }
     var lastHandledTerminalStatus by remember { mutableStateOf("") }
+
+    val defaultCover = R.drawable.default_album_cover
+
+    var coverPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var coverVersion by rememberSaveable { mutableIntStateOf(0) }
+    var userSelectedCover by rememberSaveable { mutableStateOf(false) }
+    var lastAutoCoverVideoId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val cropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) {
+            return@rememberLauncherForActivityResult
+        }
+
+        val croppedUri = UCrop.getOutput(result.data ?: return@rememberLauncherForActivityResult)
+
+        if (croppedUri != null) {
+            val copiedPath = FileUtils.copyImageToInternalStorage(
+                context = context,
+                uri = croppedUri,
+                musicId = title.ifBlank { url }.ifBlank { "download_${System.currentTimeMillis()}" }
+            )
+
+            if (copiedPath != null) {
+                userSelectedCover = true
+                coverPath = copiedPath
+                coverVersion++
+            } else {
+                Toast.makeText(
+                    context,
+                    "Impossible de copier l'image",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { sourceUri ->
+            context.contentResolver.takePersistableUriPermission(
+                sourceUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+
+            val destinationUri = Uri.fromFile(
+                File(context.cacheDir, "cropped_cover_${System.currentTimeMillis()}.jpg")
+            )
+
+            val cropOptions = UCrop.Options().apply {
+                setToolbarTitle("Recadrer l'image")
+
+                setToolbarColor(AndroidColor.BLACK)
+                setStatusBarColor(AndroidColor.BLACK)
+                setToolbarWidgetColor(AndroidColor.WHITE)
+                setActiveControlsWidgetColor(AndroidColor.WHITE)
+
+                setHideBottomControls(false)
+
+                setMaxScaleMultiplier(5f)
+                setImageToCropBoundsAnimDuration(200)
+
+                setMaxBitmapSize(1000)
+            }
+
+            val cropIntent = UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(1f, 1f)
+                .withMaxResultSize(1000, 1000)
+                .withOptions(cropOptions)
+                .getIntent(context)
+
+            cropLauncher.launch(cropIntent)
+        }
+    }
+
+    fun extractYoutubeVideoId(rawUrl: String): String? {
+        val value = rawUrl.trim()
+
+        return when {
+            value.contains("youtu.be/") ->
+                value.substringAfter("youtu.be/")
+                    .substringBefore("?")
+                    .substringBefore("&")
+                    .substringBefore("/")
+
+            value.contains("watch?v=") ->
+                value.substringAfter("watch?v=")
+                    .substringBefore("&")
+
+            value.contains("music.youtube.com/watch?v=") ->
+                value.substringAfter("watch?v=")
+                    .substringBefore("&")
+
+            value.contains("youtube.com/shorts/") ->
+                value.substringAfter("youtube.com/shorts/")
+                    .substringBefore("?")
+                    .substringBefore("&")
+                    .substringBefore("/")
+
+            else -> null
+        }?.takeIf { it.length >= 8 }
+    }
+
+    suspend fun downloadYoutubeThumbnailToInternalStorage(
+        context: Context,
+        videoId: String
+    ): String? = withContext(Dispatchers.IO) {
+        try {
+            val thumbnailUrl = "https://img.youtube.com/vi/$videoId/hqdefault.jpg"
+            val file = File(context.filesDir, "covers/youtube_$videoId.jpg")
+
+            file.parentFile?.mkdirs()
+
+            URL(thumbnailUrl).openStream().use { input ->
+                file.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            file.absolutePath
+        } catch (_: Exception) {
+            null
+        }
+    }
 
     fun extractMainArtist(rawArtist: String?): String? {
         if (rawArtist.isNullOrBlank()) return null
@@ -127,6 +270,10 @@ fun DownloadScreen(
     }
 
     fun clearForm() {
+        coverPath = null
+        coverVersion++
+        userSelectedCover = false
+        lastAutoCoverVideoId = null
         url = ""
         title = ""
         artist = ""
@@ -135,6 +282,27 @@ fun DownloadScreen(
         restoreArtistSelector?.invoke()
         restoreAlbumSelector?.invoke()
         selectedPlaylists.clear()
+    }
+
+    LaunchedEffect(url) {
+        delay(700)
+
+        val videoId = extractYoutubeVideoId(url) ?: return@LaunchedEffect
+
+        if (videoId == lastAutoCoverVideoId) return@LaunchedEffect
+        if (userSelectedCover) return@LaunchedEffect
+
+        lastAutoCoverVideoId = videoId
+
+        val downloadedCoverPath = downloadYoutubeThumbnailToInternalStorage(
+            context = context,
+            videoId = videoId
+        )
+
+        if (downloadedCoverPath != null) {
+            coverPath = downloadedCoverPath
+            coverVersion++
+        }
     }
 
     LaunchedEffect(state) {
@@ -195,6 +363,7 @@ fun DownloadScreen(
 
         val intent = Intent(context, DownloadService::class.java).apply {
             putExtra("url", url)
+            putExtra("coverPath", coverPath)
             putExtra("title", title)
             putExtra("artist", finalArtistForService)
             putExtra("album", finalAlbum)
@@ -253,16 +422,40 @@ fun DownloadScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    OutlinedTextField(
-                        value = url,
-                        onValueChange = { url = it },
-                        enabled = !isLoading,
-                        label = { Text("URL YouTube") },
-                        placeholder = { Text("https://youtu.be/...") },
-                        singleLine = true,
-                        maxLines = 1,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = url,
+                            onValueChange = { url = it },
+                            enabled = !isLoading,
+                            label = { Text("URL YouTube") },
+                            placeholder = { Text("https://youtu.be/...") },
+                            singleLine = true,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(coverPath ?: defaultCover)
+                                .crossfade(true)
+                                .error(defaultCover)
+                                .fallback(defaultCover)
+                                .memoryCacheKey("${coverPath ?: defaultCover}-$coverVersion")
+                                .diskCacheKey("${coverPath ?: defaultCover}-$coverVersion")
+                                .build(),
+                            contentDescription = "Pochette du morceau",
+                            modifier = Modifier
+                                .size(60.dp)
+                                .padding(top = 6.dp)
+                                .clickable(enabled = !isLoading) {
+                                    imagePicker.launch(arrayOf("image/*"))
+                                }
+                        )
+                    }
 
                     OutlinedTextField(
                         value = title,
