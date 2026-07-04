@@ -97,5 +97,21 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Veyra.UCrop" />
+
+        <activity
+            android:name=".AudioPreviewActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Veyra.AudioPreview">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+
+        </activity>
     </application>
 </manifest>
