@@ -63,16 +63,13 @@ class AppUIViewModel : ViewModel() {
             try {
                 val updatedMusics = withContext(Dispatchers.IO) {
                     scanMusicFolder(appContext)
-
-                    val musics = loadMusicFromDevice(appContext)
-
-                    MetadataManager.cleanup(appContext)
-
-                    musics
+                    loadMusicFromDevice(appContext)
                 }
 
-                MusicHolder.setMusicList(updatedMusics)
-                displayedMusics = updatedMusics
+                if (updatedMusics != displayedMusics) {
+                    MusicHolder.setMusicList(updatedMusics)
+                    displayedMusics = updatedMusics
+                }
             } finally {
                 isSyncingLibrary = false
                 updateBottomBarEnabled(true)

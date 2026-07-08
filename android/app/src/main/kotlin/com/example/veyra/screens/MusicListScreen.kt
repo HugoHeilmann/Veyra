@@ -40,6 +40,7 @@ import com.example.veyra.utils.rememberBulkDeleteHandler
 import com.example.veyra.utils.filterResults
 import com.example.veyra.utils.updateAlbumMap
 import com.example.veyra.utils.updateArtistMap
+import kotlinx.coroutines.delay
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.Normalizer
@@ -60,13 +61,13 @@ fun MusicListScreen(
     var allMusic = appUiVm.displayedMusics
 
     var searchText by remember { mutableStateOf("") }
-    var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
-
-    val metadataByPath by remember(allMusic) {
-        mutableStateOf(
-            MetadataManager.readAll(context).associateBy { it.filePath }
-        )
+    var debouncedSearchText by remember { mutableStateOf("") }
+    LaunchedEffect(searchText) {
+        delay(500)
+        debouncedSearchText = searchText
     }
+
+    var selectedTab by rememberSaveable { mutableStateOf(defaultTab) }
 
     var showColorDialog by remember { mutableStateOf(false) }
     var isBulkDeleting by remember { mutableStateOf(false) }
@@ -89,21 +90,20 @@ fun MusicListScreen(
         appUiVm.initializeLibrary(context)
     }
 
-    val musicList = remember(allMusic, searchText) {
-        filterResults(allMusic, searchText)
-    }
-
-    val artistMap = remember(musicList) {
-        updateArtistMap(musicList)
-    }
-
-    val albumMap = remember(musicList) {
-        updateAlbumMap(musicList)
-    }
-
     val songsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val artistsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val albumsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+
+    val musicList = remember(allMusic, debouncedSearchText) {
+        filterResults(allMusic, debouncedSearchText)
+    }
+    LaunchedEffect(musicList) {
+        when (selectedTab) {
+            "Chansons" -> songsListState.scrollToItem(0)
+            "Artistes" -> artistsListState.scrollToItem(0)
+            "Albums" -> albumsListState.scrollToItem(0)
+        }
+    }
 
     val tabs = listOf("Chansons", "Artistes", "Albums")
 
@@ -246,10 +246,8 @@ fun MusicListScreen(
                                 )
                             },
                             itemContent = { music ->
-                                val musicReference = metadataByPath[music.uri]?.toMusic() ?: music
-
                                 MusicRow(
-                                    music = musicReference,
+                                    music = music,
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .padding(vertical = 8.dp, horizontal = 16.dp),
@@ -263,7 +261,7 @@ fun MusicListScreen(
                                     onEditClick = { _ ->
                                         if (!isBulkDeleting) {
                                             val encodedUri = URLEncoder.encode(
-                                                musicReference.uri,
+                                                music.uri,
                                                 StandardCharsets.UTF_8.toString()
                                             )
                                             navController.navigate("editMusic/${encodedUri}")
@@ -276,6 +274,9 @@ fun MusicListScreen(
                     }
 
                     "Artistes" -> {
+                        val artistMap = remember(musicList) {
+                            updateArtistMap(musicList)
+                        }
                         val groupedArtists = remember(artistMap.keys) {
                             groupByFirstLetter(artistMap.keys.toList()) { it }
                         }
@@ -321,6 +322,9 @@ fun MusicListScreen(
                     }
 
                     "Albums" -> {
+                        val albumMap = remember(musicList) {
+                            updateAlbumMap(musicList)
+                        }
                         val groupedAlbums = remember(albumMap.keys) {
                             groupByFirstLetter(albumMap.keys.toList()) { it }
                         }
