@@ -260,6 +260,7 @@ class DownloadService : Service() {
                 coverPath = coverPath
             )
             MusicHolder.addMusic(newMusic)
+            DownloadHolder.downloadedMusic.value = newMusic
 
             sendStatus("✅ Fini : ${outputFile.absolutePath}")
         } else {

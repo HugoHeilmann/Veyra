@@ -10,6 +10,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.graphics.Color as AndroidColor
@@ -29,9 +30,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import coil.size.Size
+import com.example.veyra.AppUIViewModel
 import com.example.veyra.R
 import com.example.veyra.components.form.ArtistSelectorInput
 import com.example.veyra.components.MusicRow
@@ -58,6 +60,8 @@ fun DownloadScreen(
     onDownloadedMusicClick: (Music) -> Unit = {},
     onDownloadedMusicEditClick: (Music) -> Unit = {}
 ) {
+    val appUiVm: AppUIViewModel = viewModel(context as ComponentActivity)
+
     var url by rememberSaveable { mutableStateOf("") }
     var title by rememberSaveable { mutableStateOf("") }
     var artist by rememberSaveable { mutableStateOf("") }
@@ -78,9 +82,8 @@ fun DownloadScreen(
     var showCancelDialog by remember { mutableStateOf(false) }
     var showVerificationDialog by remember { mutableStateOf(false) }
 
-    var lastDownloadedMusic by remember { mutableStateOf<Music?>(null) }
-    var pendingDownloadedTitle by remember { mutableStateOf("") }
-    var pendingDownloadedArtist by remember { mutableStateOf("") }
+    val downloadedMusic by DownloadHolder.downloadedMusic
+
     var lastHandledTerminalStatus by remember { mutableStateOf("") }
 
     val defaultCover = R.drawable.default_album_cover
@@ -222,21 +225,6 @@ fun DownloadScreen(
             .trim()
     }
 
-    fun findDownloadedMusic(titleToFind: String, artistToFind: String): Music? {
-        return MusicHolder.getMusicList()
-            .asReversed()
-            .firstOrNull { music ->
-                music.name.equals(titleToFind.trim(), ignoreCase = true) &&
-                        (
-                                artistToFind.isBlank() ||
-                                        extractMainArtist(music.artist)?.equals(
-                                            artistToFind.trim(),
-                                            ignoreCase = true
-                                        ) == true
-                                )
-            }
-    }
-
     fun vibrateBrieflyIfAllowed() {
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         if (powerManager?.isPowerSaveMode == true) return
@@ -308,26 +296,15 @@ fun DownloadScreen(
     LaunchedEffect(state) {
         val isTerminal = state != 0
 
-        if (!isTerminal || status == lastHandledTerminalStatus) return@LaunchedEffect
+        if (!isTerminal || status == lastHandledTerminalStatus) {
+            return@LaunchedEffect
+        }
 
         lastHandledTerminalStatus = status
         vibrateBrieflyIfAllowed()
 
         if (state > 0) {
-            var foundMusic: Music? = null
-
-            repeat(20) {
-                foundMusic = findDownloadedMusic(
-                    titleToFind = pendingDownloadedTitle,
-                    artistToFind = pendingDownloadedArtist
-                )
-
-                if (foundMusic != null) return@repeat
-                delay(250)
-            }
-
-            lastDownloadedMusic = foundMusic
-
+            appUiVm.refreshDisplayedMusicsFromHolder()
             clearForm()
         }
     }
@@ -351,15 +328,12 @@ fun DownloadScreen(
     }
 
     fun startDownload() {
-        lastDownloadedMusic = null
-        pendingDownloadedTitle = title.trim()
-        pendingDownloadedArtist = artist.trim()
-
         val finalAlbum = album.trim().ifBlank { "Unknown Album" }
 
         DownloadHolder.status.value = "Extraction…"
         DownloadHolder.state.intValue = 0
         DownloadHolder.isLoading.value = true
+        DownloadHolder.downloadedMusic.value = null
 
         val intent = Intent(context, DownloadService::class.java).apply {
             putExtra("url", url)
@@ -574,14 +548,14 @@ fun DownloadScreen(
                 }
             }
 
-            lastDownloadedMusic?.let { downloadedMusic ->
+            downloadedMusic?.let { music ->
                 Spacer(modifier = Modifier.height(4.dp))
 
                 MusicRow(
-                    music = downloadedMusic,
+                    music = music,
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        onDownloadedMusicClick(downloadedMusic)
+                        onDownloadedMusicClick(music)
                         MusicHolder.setContextName("Musique téléchargée")
                     },
                     onEditClick = {
