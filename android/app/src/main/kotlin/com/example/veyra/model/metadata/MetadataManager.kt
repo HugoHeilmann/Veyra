@@ -77,6 +77,13 @@ object MetadataManager {
         writeTextAtomic(file, json)
     }
 
+    fun replaceAll(
+        context: Context,
+        metadataList: List<MusicMetadata>
+    ) {
+        writeAll(context, metadataList)
+    }
+
     fun addIfNotExists(context: Context, metadata: MusicMetadata) {
         val keyNew = stableKey(metadata.filePath) ?: return
 

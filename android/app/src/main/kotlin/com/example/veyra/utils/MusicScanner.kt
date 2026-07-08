@@ -6,18 +6,21 @@ import android.media.MediaScannerConnection
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import com.example.veyra.R
 import com.example.veyra.model.Music
 import com.example.veyra.model.metadata.MetadataManager
 import com.example.veyra.model.metadata.MusicMetadata
+import com.example.veyra.model.metadata.toMusic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.resume
 
 private val SUPPORTED_EXTENSIONS = listOf(
     ".mp3",
@@ -30,171 +33,240 @@ private val SUPPORTED_EXTENSIONS = listOf(
     ".opus"
 )
 
-fun scanMusicFolder(context: Context) {
-    val musicDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC).absolutePath)
+suspend fun scanMusicFolder(
+    context: Context
+) = withContext(Dispatchers.IO) {
+    val musicDir = File(
+        Environment.getExternalStoragePublicDirectory(
+            Environment.DIRECTORY_MUSIC
+        ).absolutePath
+    )
 
-    if (musicDir.exists()) {
-        musicDir.listFiles()?.forEach { file ->
-            if (file.extension.equals("mp3", ignoreCase = true)) {
-                MediaScannerConnection.scanFile(
-                    context,
-                    arrayOf(file.absolutePath),
-                    arrayOf("audio/mpeg")
-                ) { path, uri ->
-                    Log.d("Scan", "Fichier scanné : $path -> $uri")
-                }
+    if (!musicDir.exists()) {
+        Log.d("Scan", "Dossier /Music/ introuvable")
+        return@withContext
+    }
+
+    val mediaStorePaths = mutableSetOf<String>()
+
+    context.contentResolver.query(
+        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+        arrayOf(MediaStore.Audio.Media.DATA),
+        null,
+        null,
+        null
+    )?.use { cursor ->
+        val dataColumn = cursor.getColumnIndexOrThrow(
+            MediaStore.Audio.Media.DATA
+        )
+
+        while (cursor.moveToNext()) {
+            cursor.getString(dataColumn)?.let(mediaStorePaths::add)
+        }
+    }
+
+    val filesToScan = musicDir
+        .walkTopDown()
+        .filter { file ->
+            file.isFile &&
+                    SUPPORTED_EXTENSIONS.any { extension ->
+                        file.name.endsWith(extension, ignoreCase = true)
+                    }
+        }
+        .filter { file ->
+            file.absolutePath !in mediaStorePaths
+        }
+        .toList()
+
+    if (filesToScan.isEmpty()) {
+        return@withContext
+    }
+
+    suspendCancellableCoroutine { continuation ->
+        val remainingFiles = AtomicInteger(filesToScan.size)
+
+        MediaScannerConnection.scanFile(
+            context,
+            filesToScan
+                .map { it.absolutePath }
+                .toTypedArray(),
+            filesToScan
+                .map { getAudioMimeType(it) }
+                .toTypedArray()
+        ) { path, uri ->
+            Log.d("Scan", "Fichier scanné : $path -> $uri")
+
+            if (
+                remainingFiles.decrementAndGet() == 0 &&
+                continuation.isActive
+            ) {
+                continuation.resume(Unit)
             }
         }
-    } else {
-        Log.d("Scan", "Dossier /Music/ introuvable")
     }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-suspend fun loadMusicFromDevice(context: Context): List<Music> = coroutineScope {
-    withContext(Dispatchers.IO) {
-        val contentResolver = context.contentResolver
-        val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+suspend fun loadMusicFromDevice(
+    context: Context
+): List<Music> = withContext(Dispatchers.IO) {
+    val metadataByPath = MetadataManager.readAll(context)
+        .associateBy { it.filePath }
 
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.ALBUM,
+    val contentResolver = context.contentResolver
+    val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+
+    val projection = arrayOf(
+        MediaStore.Audio.Media._ID,
+        MediaStore.Audio.Media.TITLE,
+        MediaStore.Audio.Media.ARTIST,
+        MediaStore.Audio.Media.ALBUM,
+        MediaStore.Audio.Media.DATA
+    )
+
+    val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+    val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
+
+    data class Row(
+        val path: String,
+        val rawTitle: String?,
+        val rawArtist: String?,
+        val rawAlbum: String?
+    )
+
+    val rows = mutableListOf<Row>()
+
+    contentResolver.query(
+        uri,
+        projection,
+        selection,
+        null,
+        sortOrder
+    )?.use { cursor ->
+        val dataColumn = cursor.getColumnIndexOrThrow(
             MediaStore.Audio.Media.DATA
         )
-
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
-        val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
-
-        val cursor = contentResolver.query(
-            uri,
-            projection,
-            selection,
-            null,
-            sortOrder
-        ) ?: return@withContext emptyList<Music>()
-
-        data class Row(
-            val path: String,
-            val rawTitle: String?,
-            val rawArtist: String?,
-            val rawAlbum: String?
+        val titleColumn = cursor.getColumnIndexOrThrow(
+            MediaStore.Audio.Media.TITLE
+        )
+        val artistColumn = cursor.getColumnIndexOrThrow(
+            MediaStore.Audio.Media.ARTIST
+        )
+        val albumColumn = cursor.getColumnIndexOrThrow(
+            MediaStore.Audio.Media.ALBUM
         )
 
-        val rows = mutableListOf<Row>()
+        while (cursor.moveToNext()) {
+            val data = cursor.getString(dataColumn) ?: continue
 
-        cursor.use { it ->
-            val dataColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            val titleColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-            val artistColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-            val albumColumn = it.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-
-            while (it.moveToNext()) {
-                val data = it.getString(dataColumn) ?: continue
-                val rawTitle = it.getString(titleColumn)
-                val rawArtist = it.getString(artistColumn)
-                val rawAlbum = it.getString(albumColumn)
-
-                val isSupportedExtension = SUPPORTED_EXTENSIONS.any { ext ->
-                    data.endsWith(ext, ignoreCase = true)
-                }
-
-                val isInMusicFolder = data.contains("/Music/", ignoreCase = true)
-
-                if (isSupportedExtension && isInMusicFolder) {
-                    rows += Row(
-                        path = data,
-                        rawTitle = rawTitle,
-                        rawArtist = rawArtist,
-                        rawAlbum = rawAlbum
-                    )
-                }
+            val isSupportedExtension = SUPPORTED_EXTENSIONS.any { extension ->
+                data.endsWith(extension, ignoreCase = true)
             }
+
+            val isInMusicFolder = data.contains(
+                "/Music/",
+                ignoreCase = true
+            )
+
+            if (!isSupportedExtension || !isInMusicFolder) {
+                continue
+            }
+
+            rows += Row(
+                path = data,
+                rawTitle = cursor.getString(titleColumn),
+                rawArtist = cursor.getString(artistColumn),
+                rawAlbum = cursor.getString(albumColumn)
+            )
         }
+    }
 
-        if (rows.isEmpty()) return@withContext emptyList<Music>()
+    val workerDispatcher = Dispatchers.IO.limitedParallelism(4)
 
-        coroutineScope {
-            val workerDispatcher = Dispatchers.Default.limitedParallelism(8)
+    val metadataList = coroutineScope {
+        rows.map { row ->
+            async(workerDispatcher) {
+                val file = File(row.path)
+                val fileLastModified = file.lastModified()
 
-            val deferredList = rows.map { row ->
-                async(workerDispatcher) {
-                    val data = row.path
+                val existingMetadata = metadataByPath[row.path]
 
-                    val filename = data.substringAfterLast("/").substringBeforeLast(".")
+                if (
+                    existingMetadata != null &&
+                    existingMetadata.lastModified == fileLastModified
+                ) {
+                    return@async existingMetadata
+                }
 
-                    val existingMetadata = MetadataManager.getByPath(context, data)
+                val coverPath = extractEmbeddedCoverToCache(
+                    context = context,
+                    audioPath = row.path
+                ) ?: existingMetadata?.coverPath
 
-                    val file = File(data)
-                    val fileLastModified = file.lastModified()
-
-                    val hasChanged = existingMetadata?.lastModified != fileLastModified
-
-                    val coverPath = if (hasChanged) {
-                        extractEmbeddedCoverToCache(context, data) ?: existingMetadata?.coverPath
-                    } else {
-                        existingMetadata.coverPath
+                val title = row.rawTitle
+                    ?.takeIf {
+                        it.isNotBlank() &&
+                                !it.equals("<unknown>", ignoreCase = true)
                     }
+                    ?: existingMetadata?.title
+                    ?: file.nameWithoutExtension
 
-                    val title = row.rawTitle
-                        ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
-                        ?: existingMetadata?.title
-                        ?: filename
+                val artist = row.rawArtist
+                    ?.takeIf {
+                        it.isNotBlank() &&
+                                !it.equals("<unknown>", ignoreCase = true)
+                    }
+                    ?: existingMetadata?.artist
+                    ?: "Unknown Artist"
 
-                    val artist = row.rawArtist
-                        ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
-                        ?: existingMetadata?.artist
-                        ?: "Unknown Artist"
+                val album = row.rawAlbum
+                    ?.takeIf {
+                        it.isNotBlank() &&
+                                !it.equals("<unknown>", ignoreCase = true)
+                    }
+                    ?: existingMetadata?.album
+                    ?: "Unknown Album"
 
-                    val album = row.rawAlbum
-                        ?.takeIf { it.isNotBlank() && !it.equals("<unknown>", ignoreCase = true) }
-                        ?: existingMetadata?.album
-                        ?: "Unknown Album"
-
-                    val metadata = MusicMetadata(
-                        fileName = data.substringAfterLast("/"),
-                        title = title,
-                        artist = artist,
-                        album = album,
-                        filePath = data,
-                        coverPath = coverPath,
-                        lastModified = fileLastModified
-                    )
-
-                    Music(
-                        name = title,
-                        artist = artist,
-                        album = album,
-                        image = if (coverPath != null) 0 else R.drawable.default_album_cover,
-                        uri = data,
-                        coverPath = coverPath
-                    )
-                }
+                MusicMetadata(
+                    fileName = file.name,
+                    title = title,
+                    artist = artist,
+                    album = album,
+                    filePath = row.path,
+                    coverPath = coverPath,
+                    lastModified = fileLastModified
+                )
             }
+        }.awaitAll()
+    }
 
-            val musics = deferredList.awaitAll()
+    MetadataManager.replaceAll(
+        context = context,
+        metadataList = metadataList
+    )
 
-            MetadataManager.rebuildFromMusics(context, musics)
-
-            musics
-        }
+    metadataList.map { metadata ->
+        metadata.toMusic()
     }
 }
 
-private fun extractEmbeddedCoverToCache(context: Context, audioPath: String): String? {
+private fun extractEmbeddedCoverToCache(
+    context: Context,
+    audioPath: String
+): String? {
     val retriever = MediaMetadataRetriever()
 
     return try {
         retriever.setDataSource(audioPath)
 
         val artBytes = retriever.embeddedPicture
-        retriever.release()
-
-        if (artBytes == null) return null
+            ?: return null
 
         val coversDir = File(context.cacheDir, "covers")
-        if (!coversDir.exists()) coversDir.mkdirs()
+
+        if (!coversDir.exists()) {
+            coversDir.mkdirs()
+        }
 
         val safeName = audioPath.hashCode().toString()
         val coverFile = File(coversDir, "$safeName.jpg")
@@ -204,10 +276,33 @@ private fun extractEmbeddedCoverToCache(context: Context, audioPath: String): St
         }
 
         coverFile.absolutePath
-    } catch (e: Exception) {
-        e.message?.let { Log.e("EXTRACT COVER", it) }
+    } catch (exception: Exception) {
+        Log.e(
+            "EXTRACT COVER",
+            exception.message ?: "Erreur inconnue",
+            exception
+        )
+
         null
     } finally {
         retriever.release()
+    }
+}
+
+private fun getAudioMimeType(
+    file: File
+): String {
+    return when (file.extension.lowercase()) {
+        "mp3" -> "audio/mpeg"
+        "flac" -> "audio/flac"
+        "aac" -> "audio/aac"
+        "wav" -> "audio/wav"
+        "ogg",
+        "oga" -> "audio/ogg"
+
+        "m4a" -> "audio/mp4"
+        "opus" -> "audio/opus"
+
+        else -> "audio/*"
     }
 }
